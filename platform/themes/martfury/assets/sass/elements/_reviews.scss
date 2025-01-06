@@ -1,0 +1,122 @@
+/* purgecss start ignore */
+
+.review-container {
+    form {
+        .btn-primary {
+            cursor: pointer;
+            display: inline-block;
+            font-weight: 600;
+            line-height: 20px;
+            transition: all .4s ease;
+            background-color: transparent;
+            border: 1px solid var(--color-1st);
+            color: var(--color-1st);
+            font-size: 14px;
+            padding: 14px 36px;
+            text-transform: uppercase;
+            border-radius: 50px;
+            min-width: 175px;
+            margin-top: 15px;
+
+            &:hover {
+                background-color: var(--color-1st);
+                border-color: var(--color-1st);
+                color: #fff;
+            }
+        }
+    }
+
+    .btn-check {
+        position: absolute;
+        clip: rect(0, 0, 0, 0);
+        pointer-events: none;
+    }
+
+    .ms-2 {
+        margin-left: 0.5rem !important;
+    }
+
+    .gap-2 {
+        gap: 0.5rem !important;
+    }
+
+    &.gap-5, .gap-5 {
+        gap: 3rem !important;
+    }
+
+    .g-1, .gy-1 {
+        --bs-gutter-y: 0.25rem;
+    }
+
+    .g-1, .gx-1 {
+        --bs-gutter-x: 0.25rem;
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 0.35em 0.65em;
+        font-size: .75em;
+        font-weight: 700;
+        line-height: 1;
+        color: #fff;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: baseline;
+        border-radius: 0.25rem;
+    }
+
+    .bg-dark {
+        --bs-bg-opacity: 1;
+        --bs-dark-rgb: 33, 37, 41;
+        background-color: rgba(var(--bs-dark-rgb), var(--bs-bg-opacity)) !important;
+    }
+
+    .translate-middle {
+        transform: translate(-50%, -50%) !important;
+    }
+
+    .start-50 {
+        left: 50% !important;
+    }
+
+    .top-50 {
+        top: 50% !important;
+    }
+
+    .start-0 {
+        left: 0 !important;
+    }
+
+    .top-0 {
+        top: 0 !important;
+    }
+
+    .position-absolute {
+        position: absolute !important;
+    }
+
+    .opacity-75 {
+        opacity: .75 !important;
+    }
+
+    .review-item__images .row, .review-images.row {
+        --bs-gutter-x: 0.25rem;
+        --bs-gutter-y: 0.25rem;
+        display: flex;
+        flex-wrap: wrap;
+        margin-top: calc(-1 * var(--bs-gutter-y));
+        margin-right: calc(-.5 * var(--bs-gutter-x));
+        margin-left: calc(-.5 * var(--bs-gutter-x));
+
+        > * {
+            flex-shrink: 0;
+            width: 100%;
+            max-width: 100%;
+            padding-right: calc(var(--bs-gutter-x) * .5);
+            padding-left: calc(var(--bs-gutter-x) * .5);
+            margin-top: var(--bs-gutter-y);
+        }
+    }
+}
+
+/* purgecss end ignore */
