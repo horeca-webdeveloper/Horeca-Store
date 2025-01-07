@@ -3,7 +3,7 @@ version: 0.2
 phases:
   install:
     runtime-versions:
-      php: 8.0  # Ensure PHP is available
+      php: 8.3  # Ensure PHP is available
     commands:
       - echo "Installing Composer dependencies..."
       - curl -sS https://getcomposer.org/installer | php
