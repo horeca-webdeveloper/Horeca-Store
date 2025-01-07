@@ -3,24 +3,23 @@ version: 0.2
 phases:
   install:
     runtime-versions:
-      php: 8.3
+      php: 8.0  # Ensure PHP is available
     commands:
-      # Install Composer dependencies
-      echo "Installing Composer dependencies..."
-      curl -sS https://getcomposer.org/installer | php
-      php composer.phar install --no-dev --optimize-autoloader
-
+      - echo "Installing Composer dependencies..."
+      - curl -sS https://getcomposer.org/installer | php
+      - php composer.phar install --no-dev --optimize-autoloader
+  pre_build:
+    commands:
+      - echo "Pre-build phase complete"
   build:
     commands:
-      echo "Building Laravel project..."
-      # You can add other build steps like running tests, etc.
-
+      - echo "Build phase complete"
   post_build:
     commands:
-      echo "Deployment steps..."
-      # Copy files to EC2 instance via SCP or SSH
-    
+      - echo "Deploying to the server..."
+      # Add deployment commands like SCP, rsync, etc.
 
 artifacts:
   files:
     - '**/*'
+  base-directory: /var/www/html/Horeca-Store
