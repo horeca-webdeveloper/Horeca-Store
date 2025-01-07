@@ -1,0 +1,26 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      php: 8.3
+    commands:
+      # Install Composer dependencies
+      echo "Installing Composer dependencies..."
+      curl -sS https://getcomposer.org/installer | php
+      php composer.phar install --no-dev --optimize-autoloader
+
+  build:
+    commands:
+      echo "Building Laravel project..."
+      # You can add other build steps like running tests, etc.
+
+  post_build:
+    commands:
+      echo "Deployment steps..."
+      # Copy files to EC2 instance via SCP or SSH
+    
+
+artifacts:
+  files:
+    - '**/*'
