@@ -1,0 +1,70 @@
+# appspec.yml
+version: 0.0
+os: linux
+files:
+  - source: /
+    destination: /var/www/html/Horeca-Store
+hooks:
+  BeforeInstall:
+    - location: scripts/before_install.sh
+      timeout: 300
+      runas: root
+  AfterInstall:
+    - location: scripts/after_install.sh
+      timeout: 300
+      runas: root
+
+# scripts/before_install.sh
+#!/bin/bash
+# Install dependencies
+sudo apt-get update
+sudo apt-get install -y apache2 \
+    php8.3 \
+    php8.3-cli \
+    php8.3-common \
+    php8.3-mbstring \
+    php8.3-xml \
+    php8.3-zip \
+    php8.3-mysql \
+    php8.3-curl \
+    php8.3-gd \
+    php8.3-intl \
+    php8.3-bcmath \
+    php8.3-fpm \
+    composer \
+    unzip
+
+# Configure Apache
+sudo a2enmod rewrite
+sudo systemctl restart apache2
+
+# Clear application directory
+if [ -d "/var/www/html/Horeca-Store" ]; then
+    sudo rm -rf /var/www/html/Horeca-Store
+fi
+sudo mkdir -p /var/www/html/Horeca-Store
+
+# scripts/after_install.sh
+#!/bin/bash
+cd /var/www/html/Horeca-Store
+
+# Set permissions
+sudo chown -R www-data:www-data /var/www/html/Horeca-Store
+sudo chmod -R 755 /var/www/html/Horeca-Store
+sudo chmod -R 777 /var/www/html/Horeca-Store/storage
+
+# Install dependencies
+composer install --no-interaction --no-dev --prefer-dist
+
+# Environment setup
+cp .env.example .env
+php artisan key:generate
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+
+# Database migrations
+php artisan migrate --force
+
+# Clear cache
+php artisan cache:clear
