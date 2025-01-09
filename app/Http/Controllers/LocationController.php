@@ -30,3 +30,4 @@ class LocationController extends Controller
     }
 }
 
+
