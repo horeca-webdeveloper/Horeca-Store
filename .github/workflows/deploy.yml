@@ -47,8 +47,8 @@ jobs:
           echo "  StrictHostKeyChecking no" >> ~/.ssh/config
           echo "  UserKnownHostsFile=/dev/null" >> ~/.ssh/config
 
-          # Ensure the correct SSH user is used (ec2-user for Amazon Linux or ubuntu for Ubuntu)
-          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no ec2-user@${{ secrets.AWS_INSTANCE_IP }} << 'EOF'
+          # Ensure the correct SSH user is used (ubuntu for Amazon Linux or ubuntu for Ubuntu)
+          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no ubuntu@${{ secrets.AWS_INSTANCE_IP }} << 'EOF'
             cd /var/www/html/Horeca-Store
             git pull
             composer install --no-dev
