@@ -32,10 +32,20 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # Step 5: Deploy to AWS EC2
-      - name: Deploy to AWS EC2
+      # Step 5: Add SSH key and deploy to AWS EC2
+      - name: Add SSH key and deploy to EC2
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.AWS_INSTANCE_IP }} << 'EOF'
+          # Save the SSH private key from GitHub secrets
+          echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          
+          # Disable strict host key checking to avoid prompts
+          echo "Host *" >> ~/.ssh/config
+          echo "  StrictHostKeyChecking no" >> ~/.ssh/config
+          echo "  UserKnownHostsFile=/dev/null" >> ~/.ssh/config
+
+          # Deploy using SSH
+          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no ec2-user@${{ secrets.AWS_INSTANCE_IP }} << 'EOF'
             cd /var/www/html/Horeca-Store
             git pull
             composer install --no-dev
