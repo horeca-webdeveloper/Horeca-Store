@@ -1,55 +1,52 @@
-name: Deploy Laravel Project to EC2
-
+name: Deploy Laravel Application to Production Server
 on:
   push:
     branches:
-      - main  # Change this to the branch you want to deploy from, if not `main`
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
+    - name: Checkout Code
       uses: actions/checkout@v3
 
-    - name: Set up SSH key
-      run: |
-        mkdir -p ~/.ssh
-        echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: 8.3
+
+    - name: Install Composer Dependencies
+      run: composer install --optimize-autoloader --no-dev --no-progress --no-interaction --prefer-dist
+
+    - name: Install Node
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+
+    - name: Install NPM Dependencies
+      run: npm install
+
+    - name: Build NPM Assets
+      run: npm run build
+
+    - name: Synchronize Files To Server
+      uses: easingthemes/ssh-deploy@v2.1.5
       env:
         SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        SOURCE: "."
+        REMOTE_HOST: ${{ secrets.VPS_HOST }}
+        REMOTE_USER: ${{ secrets.VPS_USER }}
+        TARGET: "/var/www/html/Horeca-Store"
 
-    - name: Add EC2 to known hosts
-      run: |
-        ssh-keyscan -H ${{ secrets.EC2_IP }} >> ~/.ssh/known_hosts
-
-    - name: Deploy to EC2
-      run: |
-        # SSH into EC2 and deploy the Laravel project
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ${{ secrets.EC2_USER }}@${{ secrets.EC2_IP }} << 'EOF'
-          # Change to the Laravel project directory
+    - name: Run Remote/Artisan Commands
+      uses: appleboy/ssh-action@v0.1.6
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
           cd /var/www/html/Horeca-Store
-
-          # Pull the latest changes from GitHub
-          git pull origin main  # Change branch if necessary
-
-          # Install dependencies (make sure Composer is installed)
-          composer install --no-interaction --prefer-dist
-
-          # Set the correct permissions for storage and cache
-          sudo chown -R www-data:www-data /var/www/html/Horeca-Store
-          sudo chmod -R 775 /var/www/html/Horeca-Store/storage /var/www/html/Horeca-Store/bootstrap/cache
-
-          # Run database migrations (optional)
           php artisan migrate --force
-
-          # Clear and cache the config and routes
-          php artisan config:cache
-          php artisan route:cache
-          php artisan view:clear
-
-          # Restart the web server (if necessary)
-          sudo systemctl restart apache2  # or sudo systemctl restart nginx if you're using nginx
-        EOF
+          php artisan optimize
