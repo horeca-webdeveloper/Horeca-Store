@@ -1,41 +1,25 @@
-name: Deploy Laravel Application to Production Server
+name: Laravel Deployment
 on:
-  push:
-    branches:
-      - main
-
+ push:
+ branches:
+ - main
 jobs:
-  deploy:
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout Code
-      uses: actions/checkout@v3
-
-    - name: Setup PHP
-      uses: shivammathur/setup-php@v2
-      with:
-        php-version: 8.3
-
-    - name: Install Composer Dependencies
-      run: composer install --optimize-autoloader --no-dev --no-progress --no-interaction --prefer-dist
-
-    - name: Synchronize Files To Server
-      uses: easingthemes/ssh-deploy@v2.1.5
-      env:
-        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-        SOURCE: "."
-        REMOTE_HOST: ${{ secrets.VPS_HOST }}
-        REMOTE_USER: ${{ secrets.VPS_USER }}
-        TARGET: "/var/www/html/Horeca-Store"
-
-    - name: Run Remote/Artisan Commands
-      uses: appleboy/ssh-action@v0.1.6
-      with:
-        host: ${{ secrets.VPS_HOST }}
-        username: ${{ secrets.VPS_USER }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        script: |
-          cd /var/www/html/Horeca-Store
-          php artisan migrate --force
-          php artisan optimize
+ deploy:
+ runs-on: ubuntu-latest
+steps:
+ - name: Checkout repository
+ uses: actions/checkout@v2
+- name: Set up PHP
+ uses: shivammathur/setup-php@v2
+ with:
+ php-version: '8.3'
+- name: Install dependencies
+ run: composer install - no-dev
+- name: Set up AWS CLI
+ uses: aws-actions/configure-aws-credentials@v1
+ with:
+ aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+ aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+ aws-region: ${{ secrets.AWS_REGION }}
+- name: Deploy to AWS EC2
+ run: ssh ${{ secrets.AWS_INSTANCE_IP }} "cd /var/www/html/Horeca-Store && git pull && composer install - no-dev && php artisan migrate - force && php artisan optimize"
