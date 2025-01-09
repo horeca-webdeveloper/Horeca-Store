@@ -29,4 +29,3 @@ class LocationController extends Controller
         return response()->json($locationData);
     }
 }
-
