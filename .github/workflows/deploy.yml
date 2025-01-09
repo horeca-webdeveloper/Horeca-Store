@@ -1,25 +1,44 @@
 name: Laravel Deployment
+
 on:
- push:
- branches:
- - main
+  push:
+    branches:
+      - main
+
 jobs:
- deploy:
- runs-on: ubuntu-latest
-steps:
- - name: Checkout repository
- uses: actions/checkout@v2
-- name: Set up PHP
- uses: shivammathur/setup-php@v2
- with:
- php-version: '8.3'
-- name: Install dependencies
- run: composer install - no-dev
-- name: Set up AWS CLI
- uses: aws-actions/configure-aws-credentials@v1
- with:
- aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
- aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
- aws-region: ${{ secrets.AWS_REGION }}
-- name: Deploy to AWS EC2
- run: ssh ${{ secrets.AWS_INSTANCE_IP }} "cd /var/www/html/Horeca-Store && git pull && composer install - no-dev && php artisan migrate - force && php artisan optimize"
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      # Step 2: Set up PHP environment
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+
+      # Step 3: Install Composer dependencies (without dev dependencies)
+      - name: Install dependencies
+        run: composer install --no-dev
+
+      # Step 4: Set up AWS CLI
+      - name: Set up AWS CLI
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # Step 5: Deploy to AWS EC2
+      - name: Deploy to AWS EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.AWS_INSTANCE_IP }} << 'EOF'
+            cd /var/www/html/Horeca-Store
+            git pull
+            composer install --no-dev
+            php artisan migrate --force
+            php artisan optimize
+          EOF
