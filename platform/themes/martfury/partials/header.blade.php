@@ -41,7 +41,7 @@
                                         {!! ProductCategoryHelper::renderProductCategoriesSelect() !!}
                                     </select>
                                 </div>
-                                <input class="form-control input-search-product" name="q" type="text" placeholder="{{ __("I'm shopping forss...") }}" autocomplete="off">
+                                <input class="form-control input-search-product" name="q" type="text" placeholder="{{ __("I'm shopping for...") }}" autocomplete="off">
                                 <div class="spinner-icon">
                                     <i class="fa fa-spin fa-spinner"></i>
                                 </div>
