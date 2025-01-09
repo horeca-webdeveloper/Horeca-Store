@@ -32,13 +32,29 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # Step 5: Fix permissions for storage and cache directories
+      # Step 5: Ensure the storage directory exists, then fix permissions
       - name: Fix permissions for storage and cache directories
         run: |
+          # Ensure that the storage directory exists
+          if [ ! -d "/var/www/html/Horeca-Store/storage" ]; then
+            echo "Storage directory does not exist. Creating it now..."
+            sudo mkdir -p /var/www/html/Horeca-Store/storage
+          fi
+          
+          # Ensure that subdirectories inside storage are writable
           sudo chown -R www-data:www-data /var/www/html/Horeca-Store/storage
-          sudo chown -R www-data:www-data /var/www/html/Horeca-Store/bootstrap/cache
           sudo chmod -R 775 /var/www/html/Horeca-Store/storage
+
+          # Ensure that the bootstrap/cache directory exists and is writable
+          if [ ! -d "/var/www/html/Horeca-Store/bootstrap/cache" ]; then
+            echo "Bootstrap cache directory does not exist. Creating it now..."
+            sudo mkdir -p /var/www/html/Horeca-Store/bootstrap/cache
+          fi
+          
+          sudo chown -R www-data:www-data /var/www/html/Horeca-Store/bootstrap/cache
           sudo chmod -R 775 /var/www/html/Horeca-Store/bootstrap/cache
+
+          # Ensure the cache/data directory exists
           sudo mkdir -p /var/www/html/Horeca-Store/storage/framework/cache/data
           sudo chown -R www-data:www-data /var/www/html/Horeca-Store/storage/framework/cache
           sudo chmod -R 775 /var/www/html/Horeca-Store/storage/framework/cache
@@ -72,7 +88,7 @@ jobs:
             echo "Deployment complete!"
           EOF
 
-      # Step 7: Optionally, clear any unused files in the EC2 instance (if needed)
+      # Step 7: Optionally, clean up unused files in the EC2 instance (if needed)
       - name: Clean up unused files (optional)
         run: |
           echo "Cleaning up unused files..."
