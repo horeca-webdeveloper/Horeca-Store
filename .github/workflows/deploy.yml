@@ -32,7 +32,18 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # Step 5: Add SSH key and deploy to AWS EC2
+      # Step 5: Fix permissions for storage and cache directories
+      - name: Fix permissions for storage and cache directories
+        run: |
+          sudo chown -R www-data:www-data /var/www/html/Horeca-Store/storage
+          sudo chown -R www-data:www-data /var/www/html/Horeca-Store/bootstrap/cache
+          sudo chmod -R 775 /var/www/html/Horeca-Store/storage
+          sudo chmod -R 775 /var/www/html/Horeca-Store/bootstrap/cache
+          sudo mkdir -p /var/www/html/Horeca-Store/storage/framework/cache/data
+          sudo chown -R www-data:www-data /var/www/html/Horeca-Store/storage/framework/cache
+          sudo chmod -R 775 /var/www/html/Horeca-Store/storage/framework/cache
+
+      # Step 6: Add SSH key and deploy to AWS EC2
       - name: Add SSH key and deploy to EC2
         run: |
           # Create .ssh directory if it doesn't exist
@@ -41,17 +52,34 @@ jobs:
           # Save the SSH private key from GitHub secrets
           echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          
+
           # Disable strict host key checking to avoid prompts
-          echo "Host *" >> ~/.ssh/config
+          echo "Host *" > ~/.ssh/config
           echo "  StrictHostKeyChecking no" >> ~/.ssh/config
           echo "  UserKnownHostsFile=/dev/null" >> ~/.ssh/config
 
           # Ensure the correct SSH user is used (ubuntu for Amazon Linux or ubuntu for Ubuntu)
+          echo "Deploying to EC2 instance..."
+          
+          # SSH into EC2 instance and deploy
           ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no ubuntu@${{ secrets.AWS_INSTANCE_IP }} << 'EOF'
+            echo "Running git pull, composer install, migrations, and optimization on EC2..."
             cd /var/www/html/Horeca-Store
             git pull
             composer install --no-dev
             php artisan migrate --force
             php artisan optimize
+            echo "Deployment complete!"
+          EOF
+
+      # Step 7: Optionally, clear any unused files in the EC2 instance (if needed)
+      - name: Clean up unused files (optional)
+        run: |
+          echo "Cleaning up unused files..."
+          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no ubuntu@${{ secrets.AWS_INSTANCE_IP }} << 'EOF'
+            cd /var/www/html/Horeca-Store
+            # Example of cleanup, if you want to clear cache or logs
+            rm -rf /var/www/html/Horeca-Store/storage/framework/cache/*
+            rm -rf /var/www/html/Horeca-Store/storage/logs/*
+            echo "Cleanup complete!"
           EOF
