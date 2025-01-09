@@ -35,6 +35,9 @@ jobs:
       # Step 5: Add SSH key and deploy to AWS EC2
       - name: Add SSH key and deploy to EC2
         run: |
+          # Create .ssh directory if it doesn't exist
+          mkdir -p ~/.ssh
+          
           # Save the SSH private key from GitHub secrets
           echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
