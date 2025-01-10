@@ -22,9 +22,7 @@ jobs:
       
       # Step 3: Install Composer dependencies
       - name: Install dependencies
-        run: |
-          composer install --optimize-autoloader --no-scripts
-          composer dump-autoload
+        run: composer install --no-dev
       
       # Step 4: Set up AWS CLI
       - name: Set up AWS CLI
@@ -52,23 +50,30 @@ jobs:
             # Navigate to project directory
             cd /var/www/html/Horeca-Store
             
+            # Fix Git ownership issue
+            sudo git config --global --add safe.directory /var/www/html/Horeca-Store
+            sudo git config --global --add safe.directory '*'
+            
             # Debug information
             echo "Current directory: $(pwd)"
             echo "Git status before pull:"
             sudo git status
             
+            # Fix permissions before git operations
+            sudo chown -R ubuntu:ubuntu .
+            sudo find . -type f -exec chmod 644 {} \;
+            sudo find . -type d -exec chmod 755 {} \;
+            
             # Fetch and reset to origin/main
-            sudo git fetch origin main
-            sudo git reset --hard origin/main
+            git fetch origin main
+            git reset --hard origin/main
             
             # Show git status after pull
             echo "Git status after pull:"
-            sudo git status
+            git status
             
-            # Fix permissions
+            # Fix permissions for web server
             sudo chown -R www-data:www-data .
-            sudo find . -type f -exec chmod 644 {} \;
-            sudo find . -type d -exec chmod 755 {} \;
             
             # Ensure storage directories exist and are writable
             sudo mkdir -p storage/framework/cache
@@ -101,7 +106,7 @@ jobs:
             
             # Show latest commits
             echo "Latest commits:"
-            sudo git log -3 --oneline
+            git log -3 --oneline
           EOF
 
       # Step 6: Verify deployment
@@ -112,5 +117,5 @@ jobs:
             echo "Application version:"
             sudo php artisan --version
             echo "Current git commit:"
-            sudo git rev-parse HEAD
+            git rev-parse HEAD
           EOF
