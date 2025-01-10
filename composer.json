@@ -33,8 +33,7 @@
         "laravel/sanctum": "^3.3",
         "laravel/tinker": "^2.9",
         "predis/predis": "^2.2",
-        "wikimedia/composer-merge-plugin": "^2.1",
-        "barryvdh/laravel-debugbar": "^3.6"
+        "wikimedia/composer-merge-plugin": "^2.1"
     },
     "require-dev": {
         "barryvdh/laravel-debugbar": "^3.8",
