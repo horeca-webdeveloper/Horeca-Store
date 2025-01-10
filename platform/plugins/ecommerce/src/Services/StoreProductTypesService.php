@@ -9,9 +9,9 @@ use Illuminate\Http\Request;
 
 class StoreProductTypesService
 {
-    public function execute(Request $request, Product $product): void
-    {
-        $productTypeIds = $request->producttypes ?? [];
-        $product->producttypes()->sync($productTypeIds);
-    }
+	public function execute(Request $request, Product $product): void
+	{
+		$productTypeIds = $request->producttypes ?? [];
+		$product->producttypes()->sync($productTypeIds);
+	}
 }

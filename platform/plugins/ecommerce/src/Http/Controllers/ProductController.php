@@ -909,7 +909,7 @@ class ProductController extends BaseController
                 }
 
                 // Save updated documents to the database
-                $product->documents = json_encode($documents, JSON_THROW_ON_ERROR);
+                $tempProduct->documents = json_encode($documents, JSON_THROW_ON_ERROR);
 
 
 

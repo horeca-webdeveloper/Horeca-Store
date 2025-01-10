@@ -43,7 +43,13 @@ use App\Http\Controllers\CartController; // Adjust if the controller name is dif
 use App\Http\Controllers\API\CountryController;
  use App\Http\Controllers\API\OrderTrackingController;
  use App\Http\Controllers\API\AddressController;
+ use App\Http\Controllers\API\PopularPostsController;
 
+
+
+ Route::get('/popular-posts', [PopularPostsController::class, 'index']);
+
+ 
 Route::get('/order-tracking', [OrderTrackingController::class, 'trackOrder']);
 
 Route::middleware(['auth:sanctum'])->prefix('addresses')->group(function () {
@@ -96,7 +102,9 @@ Route::get('/search', [SearchApiController::class, 'search']);
 
 Route::get('/location', [LocationController::class, 'getLocation']);
 Route::get('categories/{id}/products', [CategoryController::class, 'getProductsByCategory']);
-
+Route::get('categories/filters', [CategoryController::class, 'getSpecificationFilters']);
+Route::post('categories/specification-filters', [CategoryController::class, 'getSpecificationFilters']);
+Route::post('categories/filtered-products', [CategoryController::class, 'getFilteredProducts']);
 Route::prefix('categories')->group(function () {
     
     Route::get('/', [CategoryController::class, 'index']);
@@ -175,6 +183,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/apply-coupon', [CouponApiController::class, 'applyCoupon']);
 
     Route::get('/products', [ProductApiController::class, 'getAllProducts']);
+    Route::get('/product-listing', [ProductApiController::class, 'getAllProductsLising']);
+    Route::get('/product-public-listing-guest', [ProductApiController::class, 'getAllProductsLisingGuest']);
+    
+    
     // Routes for logged-in users
     Route::post('/cart', [CartApiController::class, 'addToCart']);
     Route::get('/cart', [CartApiController::class, 'viewCart']);
@@ -219,6 +231,11 @@ Route::post('/cart/update-guest', [CartApiController::class, 'updateQuantityGues
 
 // Routes for Blog Posts 
 Route::get('/posts', [PostApiController::class, 'index']);
+Route::get('/get-views', [PostApiController::class, 'getlikes']);
+Route::get('/posts/{id}', [PostApiController::class, 'show']);
+
+Route::put('/posts/{id}', [PostApiController::class, 'update']);
+Route::put('/post-comments/{id}', [PostApiController::class, 'postComment']);
 Route::get('/postcategories', [PostCategoryController::class, 'index']);
 
 

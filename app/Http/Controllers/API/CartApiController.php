@@ -9,10 +9,72 @@ use Botble\Ecommerce\Models\Cart;
 use Botble\Ecommerce\Models\Product;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage; // Import the Storage facade
 
 
 class CartApiController extends Controller
 {
+
+// public function addToCart(Request $request)
+// {
+//     $request->validate([
+//         'product_id' => 'required|exists:ec_products,id',
+//         'quantity' => 'required|integer|min:1',
+//     ]);
+
+//     $productId = $request->input('product_id');
+//     $quantity = $request->input('quantity');
+
+//     if (Auth::check()) {
+//         $userId = Auth::id();
+
+//         // Check if the user has already added this product
+//         $cartItem = Cart::where('user_id', $userId)
+//                         ->where('product_id', $productId)
+//                         ->first();
+
+//         if ($cartItem) {
+//             \Log::info('Cart item already exists', ['cartItem' => $cartItem]);
+
+//             // Only update if the current quantity differs
+//             if ($cartItem->quantity != $quantity) {
+//                 \Log::info('Updating cart item with new quantity', ['old_quantity' => $cartItem->quantity, 'new_quantity' => $quantity]);
+//                 $cartItem->quantity = $quantity;
+//                 $cartItem->save();
+//             } else {
+//                 \Log::info('Quantity is the same, no update needed');
+//             }
+//         } else {
+//             \Log::info('No cart item found, creating new');
+//             $cartItem = Cart::create([
+//                 'user_id' => $userId,
+//                 'product_id' => $productId,
+//                 'quantity' => $quantity,
+//             ]);
+//         }
+
+//         $cartItem = Cart::with('product.currency')->find($cartItem->id);
+
+//         return response()->json([
+//             'success' => true,
+//             'data' => [
+//                 'id' => $cartItem->id,
+//                 'user_id' => $cartItem->user_id,
+//                 'product_id' => $cartItem->product_id,
+//                 'quantity' => $cartItem->quantity,
+//                 'currency_id' => $cartItem->product->currency->id,
+//                 'currency_title' => $cartItem->product->currency->title,
+//             ],
+//         ]);
+//     }
+
+//     return response()->json([
+//         'success' => false,
+//         'message' => 'Unauthorized user',
+//     ], 200);
+// }
+
+
 
 public function addToCart(Request $request)
 {
@@ -35,14 +97,10 @@ public function addToCart(Request $request)
         if ($cartItem) {
             \Log::info('Cart item already exists', ['cartItem' => $cartItem]);
 
-            // Only update if the current quantity differs
-            if ($cartItem->quantity != $quantity) {
-                \Log::info('Updating cart item with new quantity', ['old_quantity' => $cartItem->quantity, 'new_quantity' => $quantity]);
-                $cartItem->quantity = $quantity;
-                $cartItem->save();
-            } else {
-                \Log::info('Quantity is the same, no update needed');
-            }
+            // Update the quantity by adding the new quantity
+            \Log::info('Updating cart item with added quantity', ['old_quantity' => $cartItem->quantity, 'added_quantity' => $quantity]);
+            $cartItem->quantity += $quantity;
+            $cartItem->save();
         } else {
             \Log::info('No cart item found, creating new');
             $cartItem = Cart::create([
@@ -74,54 +132,157 @@ public function addToCart(Request $request)
 }
 
 
-
  
          
             
-    public function viewCart(Request $request)
-            {
-                // Determine if the user is logged in and get the user ID
-                $userId = Auth::id();
-                $isUserLoggedIn = $userId !== null;
+    // public function viewCart(Request $request)
+    //         {
+    //             // Determine if the user is logged in and get the user ID
+    //             $userId = Auth::id();
+    //             $isUserLoggedIn = $userId !== null;
             
-                // Log the login status for debugging purposes
-                Log::info('User logged in:', ['user_id' => $userId]);
+    //             // Log the login status for debugging purposes
+    //             Log::info('User logged in:', ['user_id' => $userId]);
             
-                // Get wishlist product IDs
-                $wishlistProductIds = [];
-                if ($isUserLoggedIn) {
-                    // Fetch wishlist items for the logged-in user
-                    $wishlistProductIds = DB::table('ec_wish_lists')
-                        ->where('customer_id', $userId)
-                        ->pluck('product_id')
-                        ->map(function($id) {
-                            return (int) $id;
-                        })
-                        ->toArray();
-                } else {
-                    // Handle guest wishlist (stored in session)
-                    $wishlistProductIds = session()->get('guest_wishlist', []);
-                }
+    //             // Get wishlist product IDs
+    //             $wishlistProductIds = [];
+    //             if ($isUserLoggedIn) {
+    //                 // Fetch wishlist items for the logged-in user
+    //                 $wishlistProductIds = DB::table('ec_wish_lists')
+    //                     ->where('customer_id', $userId)
+    //                     ->pluck('product_id')
+    //                     ->map(function($id) {
+    //                         return (int) $id;
+    //                     })
+    //                     ->toArray();
+    //             } else {
+    //                 // Handle guest wishlist (stored in session)
+    //                 $wishlistProductIds = session()->get('guest_wishlist', []);
+    //             }
             
-                // Fetch cart items with product and currency details
-                $cartItems = Auth::check()
-                    ? Cart::where('user_id', $userId)->with('product.currency')->get()
-                    : Cart::where('session_id', $request->session()->getId())->with('product.currency')->get();
+    //             // Fetch cart items with product and currency details
+    //             $cartItems = Auth::check()
+    //                 ? Cart::where('user_id', $userId)->with('product.currency')->get()
+    //                 : Cart::where('session_id', $request->session()->getId())->with('product.currency')->get();
             
-                // Add 'is_wishlist' flag to each product in cart items
-                $cartItems->each(function($item) use ($wishlistProductIds) {
-                    $item->product->in_wishlist = in_array($item->product->id, $wishlistProductIds);
-                });
+    //             // Add 'is_wishlist' flag to each product in cart items
+    //             $cartItems->each(function($item) use ($wishlistProductIds) {
+    //                 $item->product->in_wishlist = in_array($item->product->id, $wishlistProductIds);
+    //             });
             
-                // Extract currency titles into a separate array
-                $currencyTitles = $cartItems->pluck('product.currency.title')->unique()->filter()->values();
+    //             // Extract currency titles into a separate array
+    //             $currencyTitles = $cartItems->pluck('product.currency.title')->unique()->filter()->values();
             
-                return response()->json([
-                    'success' => true,
-                    'currency_title' => $currencyTitles,
-                    'data' => $cartItems,
-                ]);
-            }
+    //             return response()->json([
+    //                 'success' => true,
+    //                 'currency_title' => $currencyTitles,
+    //                 'data' => $cartItems,
+    //             ]);
+    //         }
+
+//     public function viewCart(Request $request)
+// {
+//     $userId = Auth::id();
+//     $isUserLoggedIn = $userId !== null;
+
+//     Log::info('User logged in:', ['user_id' => $userId]);
+
+//     // Get wishlist product IDs
+//     $wishlistProductIds = $isUserLoggedIn
+//         ? DB::table('ec_wish_lists')
+//             ->where('customer_id', $userId)
+//             ->pluck('product_id')
+//             ->map(function ($id) {
+//                 return (int) $id;
+//             })
+//             ->toArray()
+//         : session()->get('guest_wishlist', []);
+
+//     // Fetch cart items with product and currency details
+//     $cartItems = Auth::check()
+//         ? Cart::where('user_id', $userId)->with('product.currency')->get()
+//         : Cart::where('session_id', $request->session()->getId())->with('product.currency')->get();
+
+//     // Add 'is_wishlist' flag and generate full URLs for product images
+//     $cartItems->each(function ($item) use ($wishlistProductIds) {
+//         $item->product->in_wishlist = in_array($item->product->id, $wishlistProductIds);
+        
+//         // Generate full URLs for images
+//         $baseImageUrl = url('storage/products/');
+//         $item->product->images = collect($item->product->images)->map(function ($image) use ($baseImageUrl) {
+//             return $baseImageUrl . '/' . $image;
+//         });
+        
+//         // Add full URL for the main product image
+//         $item->product->image = $item->product->image ? $baseImageUrl . '/' . $item->product->image : null;
+//     });
+
+//     $currencyTitles = $cartItems->pluck('product.currency.title')->unique()->filter()->values();
+
+//     return response()->json([
+//         'success' => true,
+//         'currency_title' => $currencyTitles,
+//         'data' => $cartItems,
+//     ]);
+// }
+
+public function viewCart(Request $request)
+{
+    $userId = Auth::id();
+    $isUserLoggedIn = $userId !== null;
+
+    Log::info('User logged in:', ['user_id' => $userId]);
+
+    // Get wishlist product IDs
+    $wishlistProductIds = $isUserLoggedIn
+        ? DB::table('ec_wish_lists')
+            ->where('customer_id', $userId)
+            ->pluck('product_id')
+            ->map(function ($id) {
+                return (int) $id;
+            })
+            ->toArray()
+        : session()->get('guest_wishlist', []); 
+
+    // Fetch cart items with product and currency details
+    $cartItems = Auth::check()
+        ? Cart::where('user_id', $userId)->with('product.currency')->get()
+        : Cart::where('session_id', $request->session()->getId())->with('product.currency')->get();
+
+    // Add 'is_wishlist' flag and generate full URLs for product images
+    $cartItems->each(function ($item) use ($wishlistProductIds) {
+        $item->product->in_wishlist = in_array($item->product->id, $wishlistProductIds);
+
+        // Generate full URLs for images
+        $baseStorageUrl = url('storage/');
+        $baseProductsUrl = url('storage/products/');
+        
+        // Generate full URLs for product images
+        $item->product->images = collect($item->product->images ?? [])->map(function ($image) use ($baseStorageUrl, $baseProductsUrl) {
+            // Check if the image exists in 'products' directory, else use the general 'storage' directory
+            $url = Storage::exists('products/' . $image) ? $baseProductsUrl : $baseStorageUrl;
+            return $url . '/' . $image;  // Ensure there's a '/' between the base URL and image file
+        });
+
+        // Add full URL for the main product image
+        if ($item->product->image) {
+            $imagePath = 'products/' . $item->product->image;
+            $url = Storage::exists($imagePath) ? $baseProductsUrl : $baseStorageUrl;
+            $item->product->image = $url . '/' . $item->product->image;  // Ensure '/' is added here
+        } else {
+            $item->product->image = null;
+        }
+    });
+
+    $currencyTitles = $cartItems->pluck('product.currency.title')->unique()->filter()->values();
+
+    return response()->json([
+        'success' => true,
+        'currency_title' => $currencyTitles,
+        'data' => $cartItems,
+    ]);
+}
+
 
 
        

@@ -152,6 +152,10 @@
 	<script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
 
 	<script>
+		// References to CKEditor instances
+		let descriptionEditor = null;
+		let contentEditor = null;
+
 		// Initialize modal content dynamically
 		$(document).on('click', '[data-target="#editContentModal"]', function () {
 			let productID = $(this).data('product_id');
@@ -167,33 +171,32 @@
 			$('#content_name').val(name);
 			$('#content_remarks').val(remarks);
 
-			ClassicEditor.create(document.querySelector('#content_description')).then(editor => {
-				editor.setData(description);
-			}).catch(error => console.error(error));
+			// Initialize or update the CKEditor instance for description
+			if (descriptionEditor) {
+				descriptionEditor.setData(description); // Update existing editor's data
+			} else {
+				ClassicEditor.create(document.querySelector('#content_description'))
+					.then(editor => {
+						descriptionEditor = editor;
+						editor.setData(description);
+					})
+					.catch(error => console.error(error));
+			}
 
-			ClassicEditor.create(document.querySelector('#content_content')).then(editor => {
-				editor.setData(content);
-			}).catch(error => console.error(error));
+			// Initialize or update the CKEditor instance for content
+			if (contentEditor) {
+				contentEditor.setData(content); // Update existing editor's data
+			} else {
+				ClassicEditor.create(document.querySelector('#content_content'))
+					.then(editor => {
+						contentEditor = editor;
+						editor.setData(content);
+					})
+					.catch(error => console.error(error));
+			}
 
-
-
-
-
-
-			// Example data for comments (replace with server-side data as needed)
 			var comments = $(this).data('comments'); // Get comments string from the button
-			// console.log(commentsData);
-			// var comments = []; // Initialize as an empty array
 
-			// // Parse comments if valid
-			// if (commentsData) {
-			// 	try {
-			// 		comments = JSON.parse(commentsData); // Convert JSON string to object
-			// 	} catch (e) {
-			// 		console.error("Error parsing comments:", e);
-			// 	}
-			// }
-			console.log(comments);
 			var tbody = $("#comments tbody");
 			// Clear previous rows
 			tbody.empty();
@@ -214,6 +217,20 @@
 				});
 			} else {
 				$("#comments").addClass("d-none"); // Hide comments section if no comments
+			}
+		});
+
+		// Destroy CKEditor instances when modal is closed
+		$('#editContentModal').on('hidden.bs.modal', function () {
+			if (descriptionEditor) {
+				descriptionEditor.destroy().then(() => {
+					descriptionEditor = null;
+				});
+			}
+			if (contentEditor) {
+				contentEditor.destroy().then(() => {
+					contentEditor = null;
+				});
 			}
 		});
 	</script>

@@ -110,6 +110,7 @@
 								<th>Product ID</th>
 								<th>Product Name</th>
 								{{-- <th>Changed Description</th> --}}
+								<th>Created By</th>
 								<th>Created At</th>
 								<th>Approval Status</th>
 								<th>Edit</th>
@@ -122,6 +123,7 @@
 										<td>{{ $tempContentProduct->product_id }}</td>
 										<td class="product-name">{{ $tempContentProduct->name }}</td>
 										{{-- <td class="product-description">{{ $tempContentProduct->description }}</td> --}}
+										<td class="product-description">{{ $tempContentProduct->createdBy->name }}</td>
 										<td class="product-description">{{ $tempContentProduct->created_at->format('Y-m-d H:i:s') }}</td>
 										<td class="product-description">{{ $approvalStatuses[$tempContentProduct->approval_status] ?? '' }}</td>
 										<td>
@@ -429,7 +431,6 @@
 							</div>
 
 							<div class="mb-3">
-								<input type="hidden" id="graphics_initial_approval_status" name="initial_approval_status">
 								<label for="graphics_approval_status" class="form-label">Approval Status</label>
 								<select class="form-select" id="graphics_approval_status" name="approval_status">
 									@foreach ($approvalStatuses as $value => $label)
@@ -492,14 +493,10 @@
 
 	<script>
 		document.addEventListener('DOMContentLoaded', function () {
-			// Get the URL query parameter 'tab'
-			const urlParams = new URLSearchParams(window.location.search);
-			const activeTab = urlParams.get('tab');
-
-			// If the 'tab' parameter exists, activate the corresponding tab
-			if (activeTab) {
+			// Function to activate a tab
+			function selectTab(activeTab) {
 				const tabButton = document.querySelector(`#${activeTab}`);
-				const tabPane = document.querySelector(`#${tabButton?.getAttribute('data-bs-target').substring(1)}`);
+				const tabPane = document.querySelector(tabButton?.getAttribute('data-bs-target'));
 
 				if (tabButton && tabPane) {
 					// Deactivate all tabs and tab-panes
@@ -517,6 +514,26 @@
 					tabButton.setAttribute('aria-selected', 'true');
 					tabPane.classList.add('show', 'active');
 				}
+			}
+
+			// Add click event listener to tabs
+			document.querySelectorAll('.nav-link').forEach(tab => {
+				tab.addEventListener('click', function () {
+					const selectedTabId = this.id;
+
+					// Update the URL without reloading the page
+					const newUrl = new URL(window.location.href);
+					newUrl.searchParams.set('tab', selectedTabId);
+					window.history.replaceState(null, '', newUrl.toString());
+				});
+			});
+
+			// Activate the tab from the URL query parameter 'tab'
+			const urlParams = new URLSearchParams(window.location.search);
+			const activeTab = urlParams.get('tab');
+
+			if (activeTab) {
+				selectTab(activeTab);
 			}
 		});
 	</script>
@@ -1009,7 +1026,6 @@
 			} else {
 				$('#document-container').append('<p>No documents available.</p>');
 			}
-			$('#graphics_initial_approval_status').val(product.approval_status);
 			// $('#graphics_approval_status').val(product.approval_status);
 			$('#graphics_remarks').val(product.remarks);
 

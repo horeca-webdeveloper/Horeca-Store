@@ -166,7 +166,7 @@ class ProductApprovalController extends BaseController
 		$tempProduct = TempProduct::find($request->id);
 		$input = $request->all();
 
-		if($request->initial_approval_status=='pending' && $request->approval_status=='approved') {
+		if($tempProduct->approval_status=='pending' && $request->approval_status=='approved') {
 			unset($input['_token'], $input['id'], $input['initial_approval_status'], $input['approval_status']);
 			$tempProduct->product->update([
 				'images' => $tempProduct->images,
@@ -180,7 +180,7 @@ class ProductApprovalController extends BaseController
 			]);
 		}
 
-		if($request->initial_approval_status=='pending' && $request->approval_status=='rejected') {
+		if($tempProduct->approval_status=='pending' && $request->approval_status=='rejected') {
 			$tempProduct->update([
 				'approval_status' => $request->approval_status,
 				'rejection_count' => \DB::raw('rejection_count + 1'),
@@ -189,10 +189,7 @@ class ProductApprovalController extends BaseController
 			]);
 		}
 
-		if($request->initial_approval_status=='pending' && ($request->approval_status=='pending' || $request->approval_status=='in-process')) {
-		}
-
-		return redirect()->route('product_approval.index')->with('success', 'Product changes approved and updated successfully.');
+		return redirect()->route('product_approval.index', ['tab' => 'graphics_tab'])->with('success', 'Product changes approved and updated successfully.');
 	}
 
 	public function editContentApproval($tempContentProductID)
@@ -267,9 +264,7 @@ class ProductApprovalController extends BaseController
 				'approved_by' => auth()->id(),
 				'remarks' => $request->remarks
 			]);
-		} else if($tempProduct->approval_status=='pending' && ($request->approval_status=='pending' || $request->approval_status=='in-process')) {
 		}
-
 		return redirect()->route('product_approval.index', ['tab' => 'content_tab'])->with('success', 'Product changes approved and updated successfully.');
 	}
 }

@@ -24,6 +24,7 @@ use Botble\Ecommerce\Models\Tax;
 use Botble\Ecommerce\Services\Products\StoreProductService;
 use Botble\Ecommerce\Services\StoreProductTagService;
 use Botble\Ecommerce\Services\StoreProductTypesService;
+use Botble\Ecommerce\Models\ProductTypes;
 use Botble\Language\Facades\Language;
 use Botble\Media\Facades\RvMedia;
 use Botble\Slug\Facades\SlugHelper;
@@ -491,153 +492,6 @@ class ProductImporter extends Importer implements WithMapping
 
             ];
         }
-        //     $columns = [
-        //         ImportColumn::make('name')
-        //             ->rules(['required', 'string', 'max:250'], trans('plugins/ecommerce::products.import.rules.required_string_max', ['attribute' => ' Name', 'max' => 250])),
-        //         ImportColumn::make('description')
-
-        //             ->rules(['nullable', 'string'], trans('plugins/ecommerce::products.import.rules.nullable_string', ['attribute' => 'Description'])),
-        //         ImportColumn::make('slug')
-        //             ->rules(['nullable', 'string', 'max:250'], trans('plugins/ecommerce::products.import.rules.nullable_string_max', ['attribute' => 'Slug', 'max' => 250])),
-        //         ImportColumn::make('url')
-        //             ->label('URL')
-        //             ->rules(['nullable', 'string', 'max:250'], trans('plugins/ecommerce::products.import.rules.nullable_string_max', ['attribute' => 'URL', 'max' => 250])),
-        //         ImportColumn::make('sku')
-        //             ->label('SKU')
-        //             ->rules(['nullable', 'string', 'max:150'], trans('plugins/ecommerce::products.import.rules.nullable_string_max', ['attribute' => 'SKU', 'max' => 150])),
-        //         ImportColumn::make('categories')
-        //             ->rules(['nullable', 'array'], trans('plugins/ecommerce::products.import.rules.nullable_array', ['attribute' => 'Categories'])),
-        //         ImportColumn::make('status')
-        //             ->rules([Rule::in(BaseStatusEnum::values())], trans('plugins/ecommerce::products.import.rules.in', ['attribute' => 'Status', 'values' => implode(', ', BaseStatusEnum::values())])),
-        //         ImportColumn::make('is_featured')
-        //             ->rules(['nullable', 'bool'], trans('plugins/ecommerce::products.import.rules.nullable_bool', ['attribute' => 'is featured'])),
-        //         ImportColumn::make('brand')
-        //             ->rules(['nullable', 'string'], trans('plugins/ecommerce::products.import.rules.nullable_string', ['attribute' => 'Brand'])),
-        //         ImportColumn::make('product_collections')
-        //             ->rules(['nullable', 'array'], trans('plugins/ecommerce::products.import.rules.nullable_array', ['attribute' => 'Product collections'])),
-        //         ImportColumn::make('labels')
-        //             ->rules(['nullable', 'array'], trans('plugins/ecommerce::products.import.rules.nullable_array', ['attribute' => 'Labels'])),
-        //         ImportColumn::make('taxes')
-        //             ->rules(['nullable', 'array'], trans('plugins/ecommerce::products.import.rules.nullable_array', ['attribute' => 'Taxes'])),
-        //         ImportColumn::make('image')
-        //             ->rules(['nullable', 'string'], trans('plugins/ecommerce::products.import.rules.nullable_string', ['attribute' => 'Image'])),
-        //         ImportColumn::make('images')
-        //         ->label('Product Images')
-        //             ->rules(['sometimes', 'array'], trans('plugins/ecommerce::products.import.rules.nullable_array', ['attribute' => 'Images'])),
-        //         ImportColumn::make('price')
-        //         ->label('Product Price')
-        //             ->rules(['numeric', 'nullable', 'min:0'], trans('plugins/ecommerce::products.import.rules.nullable_numeric_min', ['attribute' => 'Price'])),
-        //         ImportColumn::make('product_attributes')
-        //             ->rules(['nullable', 'array'], trans('plugins/ecommerce::products.import.rules.nullable_array', ['attribute' => 'Product attributes'])),
-        //         ImportColumn::make('import_type')
-        //             ->rules([Rule::in(['product', 'variation'])], trans('plugins/ecommerce::products.import.rules.in', ['attribute' => 'Import type', 'values' => 'product, variation'])),
-        //         ImportColumn::make('is_variation_default')
-        //             ->rules(['nullable', 'bool'], trans('plugins/ecommerce::products.import.rules.nullable_bool', ['attribute' => 'Is variation default'])),
-        //         ImportColumn::make('stock_status')
-        //             ->rules([Rule::in(StockStatusEnum::values())], trans('plugins/ecommerce::products.import.rules.in', ['attribute' => 'Stock status', 'values' => implode(', ', StockStatusEnum::values())])),
-        //         ImportColumn::make('with_storehouse_management')
-        //             ->rules(['nullable', 'bool'], trans('plugins/ecommerce::products.import.rules.nullable_bool', ['attribute' => 'With storehouse management'])),
-        //         ImportColumn::make('quantity')
-        //             ->rules(['numeric', 'nullable', 'min:0', 'max:100000000'], trans('plugins/ecommerce::products.import.rules.nullable_numeric_min_max', ['attribute' => 'Quantity', 'min' => 0, 'max' => 100000000])),
-        //         ImportColumn::make('sale_price')
-        //             ->rules(['numeric', 'nullable', 'min:0'], trans('plugins/ecommerce::products.import.rules.nullable_numeric_min', ['attribute' => 'Sale price'])),
-        //         ImportColumn::make('start_date')
-        //             ->rules(['date', 'nullable', 'required_if:sale_type,1'], trans('plugins/ecommerce::products.import.rules.nullable_date_required_if', ['attribute' => 'Start date', 'required' => 'Sale type'])),
-        //         ImportColumn::make('end_date')
-        //             ->rules(['date', 'nullable', 'after:start_date'], trans('plugins/ecommerce::products.import.rules.nullable_date_after', ['attribute' => 'End date', 'after' => 'Start date'])),
-        //         ImportColumn::make('weight')
-        //             ->rules(['numeric', 'nullable', 'min:0', 'max:100000000'], trans('plugins/ecommerce::products.import.rules.nullable_numeric_min_max', ['attribute' => 'Weight', 'min' => 0, 'max' => 100000000])),
-        //         ImportColumn::make('length')
-        //             ->rules(['numeric', 'nullable', 'min:0', 'max:100000000'], trans('plugins/ecommerce::products.import.rules.nullable_numeric_min_max', ['attribute' => 'Length', 'min' => 0, 'max' => 100000000])),
-        //         ImportColumn::make('width')
-        //             ->rules(['numeric', 'nullable', 'min:0', 'max:100000000'], trans('plugins/ecommerce::products.import.rules.nullable_numeric_min_max', ['attribute' => 'width', 'min' => 0, 'max' => 100000000])),
-        //         ImportColumn::make('height')
-        //             ->rules(['numeric', 'nullable', 'min:0', 'max:100000000'], trans('plugins/ecommerce::products.import.rules.nullable_numeric_min_max', ['attribute' => 'Height', 'min' => 0, 'max' => 100000000])),
-        //             ImportColumn::make('depth')
-        //             ->rules(['numeric', 'nullable', 'min:0', 'max:100000000'], trans('plugins/ecommerce::products.import.rules.nullable_numeric_min_max', ['attribute' => 'Height', 'min' => 0, 'max' => 100000000])),
-        //             ImportColumn::make('shipping_depth')
-        //             ->rules(['numeric', 'nullable', 'min:0', 'max:100000000'], trans('plugins/ecommerce::products.import.rules.nullable_numeric_min_max', ['attribute' => 'Height', 'min' => 0, 'max' => 100000000])),
-        //             ImportColumn::make('shipping_width')
-        //             ->rules(['numeric', 'nullable', 'min:0', 'max:100000000'], trans('plugins/ecommerce::products.import.rules.nullable_numeric_min_max', ['attribute' => 'Height', 'min' => 0, 'max' => 100000000])),
-        //             ImportColumn::make('shipping_length')
-        //             ->rules(['numeric', 'nullable', 'min:0', 'max:100000000'], trans('plugins/ecommerce::products.import.rules.nullable_numeric_min_max', ['attribute' => 'Height', 'min' => 0, 'max' => 100000000])),
-        //             ImportColumn::make('shipping_height')
-        //             ->rules(['numeric', 'nullable', 'min:0', 'max:100000000'], trans('plugins/ecommerce::products.import.rules.nullable_numeric_min_max', ['attribute' => 'Height', 'min' => 0, 'max' => 100000000])),
-
-
-        //             ImportColumn::make('cost_per_item')
-        //             ->rules(['nullable', 'numeric', 'min:0'], trans('plugins/ecommerce::products.import.rules.nullable_numeric_min', ['attribute' => 'Cost per item'])),
-        //         ImportColumn::make('barcode')
-        //             ->rules(['nullable', 'string', 'unique:ec_products,barcode', 'max:50'], trans('plugins/ecommerce::products.import.rules.nullable_string_max', ['attribute' => 'Barcode', 'max' => 50])),
-        //         ImportColumn::make('content')
-        //             ->rules(['nullable', 'string'], trans('plugins/ecommerce::products.import.rules.nullable_string', ['attribute' => 'Content'])),
-        //         ImportColumn::make('tags')
-        //             ->rules(['nullable', 'array'], trans('plugins/ecommerce::products.import.rules.nullable_array', ['attribute' => 'Tags'])),
-        //         ImportColumn::make('product_type')
-        //             ->rules([Rule::in(ProductTypeEnum::values())], trans('plugins/ecommerce::products.import.rules.in', ['attribute' => 'Product type', 'values' => implode(', ', ProductTypeEnum::values())])),
-        //         ImportColumn::make('auto_generate_sku')
-        //             ->rules(['nullable', 'bool'], trans('plugins/ecommerce::products.import.rules.nullable_bool', ['attribute' => 'Auto generate SKU'])),
-        //         // ImportColumn::make('generate_license_code')
-        //         //     ->rules(['nullable', 'bool'], trans('plugins/ecommerce::products.import.rules.nullable_bool', ['attribute' => 'Generate license code'])),
-        //         ImportColumn::make('minimum_order_quantity')
-        //             ->rules(['nullable', 'numeric', 'min:0'], trans('plugins/ecommerce::products.import.rules.nullable_numeric_min', ['attribute' => 'Minimum order quantity'])),
-        //         ImportColumn::make('maximum_order_quantity')
-        //             ->rules(['nullable', 'numeric', 'min:0'], trans('plugins/ecommerce::products.import.rules.nullable_numeric_min', ['attribute' => 'Maximum order quantity'])),
-
-        //         //         ImportColumn::make('handle')
-        //         // ->rules(['nullable', 'string', 'max:250'], trans('plugins/ecommerce::products.import.rules.nullable_string_max', ['attribute' => 'Handle', 'max' => 250])),
-        //         ImportColumn::make('variant_grams')
-        //             ->rules(['nullable', 'numeric', 'min:0'], trans('plugins/ecommerce::products.import.rules.nullable_numeric_min', ['attribute' => 'Variant grams', 'min' => 0])),
-        //         ImportColumn::make('variant_inventory_tracker')
-        //             ->rules(['nullable', 'string'], trans('plugins/ecommerce::products.import.rules.nullable_string', ['attribute' => 'Variant inventory tracker'])),
-        //         ImportColumn::make('variant_inventory_quantity')
-        //             ->rules(['nullable', 'numeric', 'min:0'], trans('plugins/ecommerce::products.import.rules.nullable_numeric_min', ['attribute' => 'Variant inventory quantity', 'min' => 0])),
-        //         ImportColumn::make('variant_inventory_policy')
-        //             ->rules(['nullable', 'string'], trans('plugins/ecommerce::products.import.rules.nullable_string', ['attribute' => 'Variant inventory policy'])),
-        //         ImportColumn::make('variant_fulfillment_service')
-        //             ->rules(['nullable', 'string'], trans('plugins/ecommerce::products.import.rules.nullable_string', ['attribute' => 'Variant fulfillment service'])),
-        //         ImportColumn::make('variant_requires_shipping')
-        //             ->rules(['nullable', 'bool'], trans('plugins/ecommerce::products.import.rules.nullable_bool', ['attribute' => 'Variant requires shipping'])),
-        //         ImportColumn::make('variant_barcode')
-        //             ->rules(['nullable', 'string', 'max:50'], trans('plugins/ecommerce::products.import.rules.nullable_string_max', ['attribute' => 'Variant barcode', 'max' => 50])),
-        //         ImportColumn::make('gift_card')
-        //             ->rules(['nullable', 'bool'], trans('plugins/ecommerce::products.import.rules.nullable_bool', ['attribute' => 'Gift card'])),
-        //         ImportColumn::make('seo_title')
-        //             ->rules(['nullable', 'string', 'max:250'], trans('plugins/ecommerce::products.import.rules.nullable_string_max', ['attribute' => 'SEO title', 'max' => 250])),
-        //         ImportColumn::make('seo_description')
-        //             ->rules(['nullable', 'string', 'max:500'], trans('plugins/ecommerce::products.import.rules.nullable_string_max', ['attribute' => 'SEO description', 'max' => 500])),
-        //         ImportColumn::make('google_shopping_category')
-        //             ->rules(['nullable', 'string'], trans('plugins/ecommerce::products.import.rules.nullable_string', ['attribute' => 'Google Shopping category'])),
-
-        //         // ImportColumn::make('google_shopping_gender')
-        //         //     ->rules(['nullable', 'string'], trans('plugins/ecommerce::products.import.rules.nullable_string', ['attribute' => 'Google Shopping gender'])),
-        //         // ImportColumn::make('google_shopping_age_group')
-        //         //     ->rules(['nullable', 'string'], trans('plugins/ecommerce::products.import.rules.nullable_string', ['attribute' => 'Google Shopping age group'])),
-        //         // ImportColumn::make('google_shopping_mpn')
-        //         //     ->rules(['nullable', 'string'], trans('plugins/ecommerce::products.import.rules.nullable_string', ['attribute' => 'Google Shopping MPN'])),
-        //         // ImportColumn::make('google_shopping_condition')
-        //         //     ->rules(['nullable', 'string'], trans('plugins/ecommerce::products.import.rules.nullable_string', ['attribute' => 'Google Shopping condition'])),
-        //         // ImportColumn::make('google_shopping_custom_product')
-        //         //     ->rules(['nullable', 'string'], trans('plugins/ecommerce::products.import.rules.nullable_string', ['attribute' => 'Google Shopping custom product'])),
-        //         // ImportColumn::make('google_shopping_custom_label_0')
-        //         //     ->rules(['nullable', 'string'], trans('plugins/ecommerce::products.import.rules.nullable_string', ['attribute' => 'Google Shopping custom label 0'])),
-        //         // ImportColumn::make('google_shopping_custom_label_1')
-        //         //     ->rules(['nullable', 'string'], trans('plugins/ecommerce::products.import.rules.nullable_string', ['attribute' => 'Google Shopping custom label 1'])),
-        //         // ImportColumn::make('google_shopping_custom_label_2')
-        //         //     ->rules(['nullable', 'string'], trans('plugins/ecommerce::products.import.rules.nullable_string', ['attribute' => 'Google Shopping custom label 2'])),
-        //         // ImportColumn::make('google_shopping_custom_label_3')
-        //         //     ->rules(['nullable', 'string'], trans('plugins/ecommerce::products.import.rules.nullable_string', ['attribute' => 'Google Shopping custom label 3'])),
-        //         // ImportColumn::make('google_shopping_custom_label_4')
-        //         //     ->rules(['nullable', 'string'], trans('plugins/ecommerce::products.import.rules.nullable_string', ['attribute' => 'Google Shopping custom label 4'])),
-        //         ImportColumn::make('box_quantity')
-        //             ->rules(['nullable', 'numeric', 'min:0'], trans('plugins/ecommerce::products.import.rules.nullable_numeric_min', ['attribute' => 'Box quantity'])),
-        //         // ImportColumn::make('technical_table')
-        //         //     ->rules(['nullable', 'string'], trans('plugins/ecommerce::products.import.rules.nullable_string', ['attribute' => 'Technical table'])),
-        //         // ImportColumn::make('technical_spec')
-        //         //     ->rules(['nullable', 'string'], trans('plugins/ecommerce::products.import.rules.nullable_string', ['attribute' => 'Technical spec'])),
-
-        //  ];
-
         if (is_plugin_active('marketplace')) {
             $columns[] = ImportColumn::make('vendor')
                 ->rules(['nullable', 'string'], trans('plugins/ecommerce::products.import.rules.nullable_string', ['attribute' => 'Vendor']));
@@ -968,7 +822,6 @@ class ProductImporter extends Importer implements WithMapping
                 $request->merge($row);
 
                 $product = new Product();
-
                 $preparedData = $this->prepareProductAttributes($request, $product);
                 $request = $preparedData['request'];
                 $product = $preparedData['product'];
@@ -1037,16 +890,26 @@ class ProductImporter extends Importer implements WithMapping
                     app(StoreProductTagService::class)->execute($request, $product);
                 }
 
-
-                $producttypesInput = (array) $request->input('producttypes', []);
-                if ($producttypesInput) {
-                    $producttypes = [];
-                    foreach ($producttypesInput as $producttypess) {
-                        $producttypes[] = ['value' => $producttypess];
+                /* Product Types*/
+                $productTypeNames = (array) $request->input('producttypes', []);
+                $productTypeIds = [];
+                foreach ($productTypeNames as $productTypeName) {
+                    $productTypeId = ProductTypes::where('name', $productTypeName)->value('id');
+                    if (empty($productTypeId)) {
+                        $productType = ProductTypes::create(['name' => $productTypeName]);
+                        $request->merge(['slug' => $productTypeName]);
+                        event(new CreatedContentEvent(PRODUCT_TYPES_MODULE_SCREEN_NAME, $request, $productType));
+                        $productTypeId = $productType->id;
                     }
-                    $request->merge(['producttypes' => json_encode($producttypes)]);
+                    $productTypeIds[] = (string) $productTypeId;
+                }
+                sort($productTypeIds);
+                $request->merge(['producttypes' => $productTypeIds]);
+
+                if ($request->producttypes) {
                     app(StoreProductTypesService::class)->execute($request, $product);
                 }
+                /* Product Types*/
 
                 $attributeSets = $request->input('attribute_sets', []);
 

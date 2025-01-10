@@ -1,7 +1,7 @@
 <?php
 
 namespace Botble\Ecommerce\Models;
-
+use Botble\ACL\Models\User;
 use Botble\Base\Models\BaseModel;
 
 class TempProduct extends BaseModel
@@ -58,5 +58,9 @@ class TempProduct extends BaseModel
 	public function comments()
 	{
 		return $this->hasMany(TempProductComment::class, 'temp_product_id')->orderBy('created_at', 'desc');
+	}
+	public function createdBy()
+	{
+		return $this->belongsTo(User::class);
 	}
 }

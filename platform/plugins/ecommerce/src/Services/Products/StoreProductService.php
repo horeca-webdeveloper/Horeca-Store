@@ -97,7 +97,7 @@ class StoreProductService
         }
 
         // Step 1: Fetch selected category IDs from the request
-        $selectedCategories = $request->input('categories', []);
+        $selectedCategories = array_values($request->input('categories', []));
 
         // Step 2: Fetch existing pivot data for the product
         $existingCategories = $product->categories()->pluck('category_id')->toArray();

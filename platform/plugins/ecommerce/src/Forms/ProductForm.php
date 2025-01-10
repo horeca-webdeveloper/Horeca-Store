@@ -83,18 +83,19 @@ class ProductForm extends FormAbstract
 		->exists();
 
 		if ($hasContentWritingRole) {
-			// Additional JavaScript code will be required to disable the field
-
 			$brands = Brand::query()->pluck('name', 'id')->all();
 
 			$productCollections = ProductCollection::query()->pluck('name', 'id')->all();
+			$productTypeOptions = ProductTypes::pluck('name', 'id')->all();
+			// dd($productTypeOptions);
 
-			// $productLabels = ProductLabel::query()->pluck('name', 'id')->all();
 
 			$productId = null;
 			$selectedCategories = [];
 			$tags = null;
+			$producttypes = null;
 			$frequently_bought_together= null;
+
 			$totalProductVariations = 0;
 
 			if ($this->getModel()) {
@@ -105,11 +106,14 @@ class ProductForm extends FormAbstract
 				$totalProductVariations = ProductVariation::query()->where('configurable_product_id', $productId)->count();
 
 				$tags = $this->getModel()->tags()->pluck('name')->implode(',');
+				$producttypes = $this->getModel()->producttypes()->pluck('name')->implode(',');
 			}
 
 			$this
+			->setupModel(new Product())
+			->setValidatorClass(ProductRequest::class)
+			->setFormOption('files', true)
 			->add('name', TextField::class, NameFieldOption::make()->required()->toArray())
-
 			->add(
 				'description',
 				EditorField::class,
@@ -117,8 +121,104 @@ class ProductForm extends FormAbstract
 				->label(trans('core/base::forms.description'))
 				->placeholder(trans('core/base::forms.description_placeholder'))->toArray()
 			)
+			->add('content', EditorField::class, ContentFieldOption::make() ->label(trans('Features'))->allowedShortcodes()->toArray())
+			->add(
+				'warranty_information',
+				EditorField::class,
+				EditorFieldOption::make()
+				->label(trans('warranty information'))
+				->placeholder(trans('core/base::forms.description_placeholder'))->toArray()
+			);
+		
+			
+			if ($productId) {
+				$this->addMetaBoxes([
+					'specs' => [
+						'title' => 'Specifications',
+						'content' => view('plugins/ecommerce::products.partials.specs-form', [
+							'selectedSpecs' => $this->getModel()->specifications->toArray() ?? [],
+							'categorySpecs' => $this->getModel()->latestCategorySpecifications->pluck('specification_values', 'specification_name')->toArray() ?? [],
+						]),
+						'priority' => 50,
+					],
+				]);
+			}
 
-			->add('content', EditorField::class, ContentFieldOption::make() ->label(trans('Features'))->allowedShortcodes()->toArray());
+			$this
+			->add('product_type', 'hidden', [
+				'value' => request()->input('product_type') ?: ProductTypeEnum::PHYSICAL,
+			])
+			->add('status', SelectField::class, StatusFieldOption::make()->toArray())
+
+			->add(
+				'is_featured',
+				OnOffField::class,
+				OnOffFieldOption::make()
+				->label(trans('core/base::forms.is_featured'))
+				->defaultValue(false)
+				->toArray()
+			)
+			->add(
+				'categories[]',
+				TreeCategoryField::class,
+				SelectFieldOption::make()
+				->label(trans('plugins/ecommerce::products.form.categories'))
+				->choices(ProductCategoryHelper::getActiveTreeCategories())
+				->selected(old('categories', $selectedCategories))
+				->addAttribute('card-body-class', 'p-0')
+				->toArray()
+			)
+			
+
+		
+			
+			
+			->add(
+				'producttypes',
+				SelectField::class,
+				SelectFieldOption::make()
+				->label(trans('plugins/ecommerce::products.form.producttypes'))
+				->choices($productTypeOptions)
+				->searchable(true)
+				->multiple(true)
+				->toArray()
+			)
+	
+		
+
+			->add('google_shopping_category', 'text', ['label' => 'Google Shopping / Google Product Category'])
+
+
+			
+			->setBreakFieldPoint('status');
+
+			// if (EcommerceHelper::isEnabledProductOptions()) {
+			// 	$this
+			// 	->addMetaBoxes([
+			// 		'product_options_box' => [
+			// 			'title' => trans('plugins/ecommerce::product-option.name'),
+			// 			'content' => view('plugins/ecommerce::products.partials.product-option-form', [
+			// 				'options' => GlobalOptionEnum::options(),
+			// 				'globalOptions' => GlobalOption::query()->pluck('name', 'id')->all(),
+			// 				'product' => $this->getModel(),
+			// 				'routes' => [
+			// 					'ajax_option_info' => route('global-option.ajaxInfo'),
+			// 				],
+			// 			]),
+			// 			'priority' => 4,
+			// 		],
+			// 	]);
+			// }
+
+		
+
+			
+
+			if (! $totalProductVariations) {
+			
+			} 
+			
+		
 
 			// $this
 

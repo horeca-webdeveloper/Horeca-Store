@@ -52,19 +52,7 @@ class TempProductStatusController extends BaseController
 			];
 			return view('plugins/ecommerce::temp-products.content', compact('tempContentProducts', 'approvalStatuses'));
 		} else {
-			$tempContentProducts = TempProduct::where('role_id', 18)->where('approval_status', 'pending')->get();
-			$tempGraphicsProducts = TempProduct::where('role_id', 19)->where('approval_status', 'pending')->get();
-
-			$unitOfMeasurements = UnitOfMeasurement::pluck('name', 'id')->toArray();
-			$stores = Store::pluck('name', 'id')->toArray();
-
-			$approvalStatuses = [
-				'pending' => 'Pending',
-				'approved' => 'Approved',
-				'rejected' => 'Rejected',
-			];
-
-			return view('plugins/ecommerce::products.partials.temp-product-status', compact('tempPricingProducts', 'tempContentProducts', 'tempGraphicsProducts', 'unitOfMeasurements', 'stores', 'approvalStatuses'));
+			return back()->with('error', 'You dont have permission');
 		}
 	}
 
@@ -72,12 +60,6 @@ class TempProductStatusController extends BaseController
 	{
 		logger()->info('updatePricingChanges method called.');
 		logger()->info('Request Data: ', $request->all());
-		// $request->validate([
-		// 	'approval_status' => 'required',
-		// 	'remarks' => [
-		// 		'required_if:approval_status,rejected'
-		// 	]
-		// ]);
 
 		$tempProduct = TempProduct::find($request->id);
 		$input = $request->all();
@@ -96,12 +78,6 @@ class TempProductStatusController extends BaseController
 	{
 		logger()->info('updateGraphicsChanges method called.');
 		logger()->info('Request Data: ', $request->all());
-		// $request->validate([
-		// 	'approval_status' => 'required',
-		// 	'remarks' => [
-		// 		'required_if:approval_status,rejected'
-		// 	]
-		// ]);
 
 		$tempProduct = TempProduct::find($request->id);
 		$input = $request->all();
@@ -128,65 +104,6 @@ class TempProductStatusController extends BaseController
 			$tempProduct->update($input);
 		}
 
-		return redirect()->route('ecommerce/temp-products-status.index')->with('success', 'Product changes approved and updated successfully.');
-	}
-
-
-	public function approveChanges(Request $request)
-	{
-		logger()->info('approveChanges method called.');
-		logger()->info('Request Data: ', $request->all());
-
-		$request->validate([
-			'approval_status' => 'required|array',
-		]);
-
-		foreach ($request->approval_status as $changeId => $status) {
-			logger()->info("Updating status for Change ID: {$changeId} to Status: {$status}");
-
-			$tempProduct = TempProduct::find($changeId);
-
-			if ($tempProduct) {
-				$tempProduct->update(['approval_status' => $status]);
-
-				if ($status === 'approved') {
-					$productData = $tempProduct->toArray();
-
-					unset($productData['id']);
-					unset($productData['approval_status']);
-					unset($productData['product_id']);
-
-					// Convert datetime fields to the correct format
-					if (isset($productData['created_at'])) {
-						$productData['created_at'] = Carbon::parse($productData['created_at'])->format('Y-m-d H:i:s');
-					}
-					if (isset($productData['updated_at'])) {
-						$productData['updated_at'] = Carbon::parse($productData['updated_at'])->format('Y-m-d H:i:s');
-					}
-
-					$existingFields = Schema::getColumnListing('ec_products');
-					$fieldsToUpdate = array_intersect_key($productData, array_flip($existingFields));
-
-					$fieldsToUpdate = array_filter($fieldsToUpdate, function ($value) {
-						return !is_null($value) && $value !== '';
-					});
-
-					if (!empty($fieldsToUpdate)) {
-						$updated = DB::table('ec_products')
-						->where('id', $tempProduct->product_id)
-						->update($fieldsToUpdate);
-
-						if ($updated) {
-							$tempProduct->delete();
-						} else {
-							logger()->warning("No product found with ID: {$tempProduct->product_id}");
-						}
-					} else {
-						logger()->info("No valid fields to update for Change ID: {$changeId}");
-					}
-				}
-			}
-		}
 		return redirect()->route('ecommerce/temp-products-status.index')->with('success', 'Product changes approved and updated successfully.');
 	}
 }
