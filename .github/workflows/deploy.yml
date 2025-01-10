@@ -22,7 +22,7 @@ jobs:
 
       # Step 3: Install Composer dependencies (without dev dependencies)
       - name: Install dependencies
-        run: composer install
+        run: composer install --no-dev
 
       # Step 4: Set up AWS CLI
       - name: Set up AWS CLI
@@ -77,25 +77,9 @@ jobs:
           # Ensure the correct SSH user is used (ubuntu for Amazon Linux or ubuntu for Ubuntu)
           echo "Deploying to EC2 instance..."
           
-         - name: SSH into EC2 and deploy
-        run: |
-          # SSH into EC2 and deploy
+          # SSH into EC2 instance and deploy
           ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no ubuntu@${{ secrets.AWS_INSTANCE_IP }} << 'EOF'
             echo "Running git pull, composer install, migrations, and optimization on EC2..."
-            cd /var/www/html/Horeca-Store
-            git pull
-            git status  # Check the status of the git pull
-            composer install
-            php artisan migrate --force
-            php artisan config:clear
-            php artisan route:clear
-            php artisan cache:clear
-            php artisan view:clear
-            php artisan optimize:clear
-            sudo chown -R www-data:www-data /var/www/html/Horeca-Store/storage
-            sudo chmod -R 775 /var/www/html/Horeca-Store/storage
-            sudo chown -R www-data:www-data /var/www/html/Horeca-Store/bootstrap/cache
-            sudo chmod -R 775 /var/www/html/Horeca-Store/bootstrap/cache
-            sudo systemctl restart php8.3-fpm  # If using PHP FPM
+            sudo su - -c 'cd /var/www/html/Horeca-Store && git pull && composer install --no-dev && php artisan migrate --force && php artisan optimize'
             echo "Deployment complete!"
           EOF
