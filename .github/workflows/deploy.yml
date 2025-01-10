@@ -22,7 +22,7 @@ jobs:
 
       # Step 3: Install Composer dependencies (without dev dependencies)
       - name: Install dependencies
-        run: composer install --optimize-autoloader --no-dev --no-progress --no-interaction --prefer-dist
+        run: composer install --no-dev
 
       # Step 4: Set up AWS CLI
       - name: Set up AWS CLI
