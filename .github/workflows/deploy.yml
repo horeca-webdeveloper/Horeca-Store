@@ -16,16 +16,13 @@ jobs:
 
       # Step 2: Set up PHP environment
       - name: Set up PHP
-        uses: shivammathur/setup-php@v2
+        uses: rishikanttiwary/setup-php@v2
         with:
           php-version: '8.3'
 
       # Step 3: Install Composer dependencies (without dev dependencies)
-      - name: Clear Composer cache
-        run: composer clear-cache
-
       - name: Install dependencies
-        run: composer install --no-dev
+        run: composer install --optimize-autoloader --no-dev --no-progress --no-interaction --prefer-dist
 
       # Step 4: Set up AWS CLI
       - name: Set up AWS CLI
