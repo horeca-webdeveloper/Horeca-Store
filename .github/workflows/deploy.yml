@@ -83,3 +83,5 @@ jobs:
             sudo su - -c 'cd /var/www/html/Horeca-Store && git pull && composer install --no-dev && php artisan migrate --force && php artisan optimize'
             echo "Deployment complete!"
           EOF
+
+ 
