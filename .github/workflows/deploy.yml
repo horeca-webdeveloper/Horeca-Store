@@ -22,7 +22,7 @@ jobs:
 
       # Step 3: Install Composer dependencies (without dev dependencies)
       - name: Install dependencies
-        run: composer install --no-dev
+        run: sudo composer install --no-dev
 
       # Step 4: Set up AWS CLI
       - name: Set up AWS CLI
@@ -80,11 +80,7 @@ jobs:
           # SSH into EC2 instance and deploy
           ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no ubuntu@${{ secrets.AWS_INSTANCE_IP }} << 'EOF'
             echo "Running git pull, composer install, migrations, and optimization on EC2..."
-            cd /var/www/html/Horeca-Store
-            git pull
-            composer install --no-dev
-            php artisan migrate --force
-            php artisan optimize
+            sudo su - -c 'cd /var/www/html/Horeca-Store && git pull && composer install --no-dev && php artisan migrate --force && php artisan optimize'
             echo "Deployment complete!"
           EOF
 
@@ -93,9 +89,6 @@ jobs:
         run: |
           echo "Cleaning up unused files..."
           ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no ubuntu@${{ secrets.AWS_INSTANCE_IP }} << 'EOF'
-            cd /var/www/html/Horeca-Store
-            # Example of cleanup, if you want to clear cache or logs
-            rm -rf /var/www/html/Horeca-Store/storage/framework/cache/*
-            rm -rf /var/www/html/Horeca-Store/storage/logs/*
+            sudo su - -c 'cd /var/www/html/Horeca-Store && rm -rf /var/www/html/Horeca-Store/storage/framework/cache/* && rm -rf /var/www/html/Horeca-Store/storage/logs/*'
             echo "Cleanup complete!"
           EOF
