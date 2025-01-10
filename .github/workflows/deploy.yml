@@ -20,11 +20,18 @@ jobs:
         with:
           php-version: '8.3'
 
-      # Step 3: Install Composer dependencies (without dev dependencies)
+      # Step 3: Install Composer dependencies (without --no-dev flag)
       - name: Install dependencies
-        run: sudo composer install --no-dev
+        run: composer install
 
-      # Step 4: Set up AWS CLI
+      # Step 4: Clear cache and config (important after installation)
+      - name: Clear cache and config
+        run: |
+          php artisan config:clear
+          php artisan cache:clear
+          php artisan optimize
+
+      # Step 5: Set up AWS CLI
       - name: Set up AWS CLI
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -32,7 +39,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # Step 5: Ensure the storage directory exists, then fix permissions
+      # Step 6: Ensure the storage directory exists, then fix permissions
       - name: Fix permissions for storage and cache directories
         run: |
           # Ensure that the storage directory exists
@@ -59,7 +66,7 @@ jobs:
           sudo chown -R www-data:www-data /var/www/html/Horeca-Store/storage/framework/cache
           sudo chmod -R 775 /var/www/html/Horeca-Store/storage/framework/cache
 
-      # Step 6: Add SSH key and deploy to AWS EC2
+      # Step 7: Add SSH key and deploy to AWS EC2
       - name: Add SSH key and deploy to EC2
         run: |
           # Create .ssh directory if it doesn't exist
@@ -74,21 +81,30 @@ jobs:
           echo "  StrictHostKeyChecking no" >> ~/.ssh/config
           echo "  UserKnownHostsFile=/dev/null" >> ~/.ssh/config
 
-          # Ensure the correct SSH user is used (ubuntu for Amazon Linux or ubuntu for Ubuntu)
+          # Deploying to EC2 instance
           echo "Deploying to EC2 instance..."
           
-          # SSH into EC2 instance and deploy
+          # SSH into EC2 instance and run deployment commands as root
           ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no ubuntu@${{ secrets.AWS_INSTANCE_IP }} << 'EOF'
             echo "Running git pull, composer install, migrations, and optimization on EC2..."
-            sudo su - -c 'cd /var/www/html/Horeca-Store && git pull && composer install --no-dev && php artisan migrate --force && php artisan optimize'
+            # Use sudo to run these commands as root
+            sudo su - -c '
+              cd /var/www/html/Horeca-Store && 
+              git pull && 
+              composer install && 
+              php artisan migrate --force && 
+              php artisan optimize'
             echo "Deployment complete!"
           EOF
 
-      # Step 7: Optionally, clean up unused files in the EC2 instance (if needed)
+      # Step 8: Optionally, clean up unused files in the EC2 instance (if needed)
       - name: Clean up unused files (optional)
         run: |
           echo "Cleaning up unused files..."
           ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no ubuntu@${{ secrets.AWS_INSTANCE_IP }} << 'EOF'
-            sudo su - -c 'cd /var/www/html/Horeca-Store && rm -rf /var/www/html/Horeca-Store/storage/framework/cache/* && rm -rf /var/www/html/Horeca-Store/storage/logs/*'
+            sudo su - -c '
+              cd /var/www/html/Horeca-Store && 
+              rm -rf /var/www/html/Horeca-Store/storage/framework/cache/* && 
+              rm -rf /var/www/html/Horeca-Store/storage/logs/*'
             echo "Cleanup complete!"
           EOF
