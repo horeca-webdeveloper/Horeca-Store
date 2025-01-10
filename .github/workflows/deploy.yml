@@ -22,7 +22,7 @@ jobs:
 
       # Step 3: Install Composer dependencies (without --no-dev flag)
       - name: Install dependencies
-        run: composer install
+        run: sudo composer install
 
       # Step 4: Clear cache and config (important after installation)
       - name: Clear cache and config
