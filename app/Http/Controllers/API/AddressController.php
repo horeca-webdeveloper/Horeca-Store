@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Log;
 class AddressController extends Controller
 {
     /**
-     * Get all addresses for the authenticated use sdsd sdasdr.
+     * Get all addresses for the authenticated use sdsd sedasdr dfds asdas .
      */
     public function index()
     {
