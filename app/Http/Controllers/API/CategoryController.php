@@ -59,6 +59,37 @@ public function index(Request $request)
     return response()->json($categoriesTree);
 }
 
+public function categoryslug(Request $request, $slug)
+{
+    $limit = $request->get('limit', 12); // Default limit to 12
+
+    // Fetch the specific category by slug and its children (parent included)
+    $parentCategory = ProductCategory::where('slug', $slug)->first();
+
+    if (!$parentCategory) {
+        return response()->json(['message' => 'Category not found'], 404);
+    }
+
+    $categories = ProductCategory::where('id', $parentCategory->id)
+        ->orWhere('parent_id', $parentCategory->id)
+        ->get();
+
+    // Transform categories into a parent-child structure
+    $categoriesTree = $this->buildTree($categories, null, $limit);
+
+    // Add full URLs for images (both parent and child categories)
+    foreach ($categoriesTree as $category) {
+        $category->image = $this->getImageUrl($category->image); // Modify image for parent category
+
+        // Recursively modify images for children and children's children
+        $this->addImageUrlsRecursively($category);
+    }
+
+    return response()->json($categoriesTree);
+}
+
+
+
 // Recursive function to modify images for children and all sub-level categories
 private function addImageUrlsRecursively($category)
 {

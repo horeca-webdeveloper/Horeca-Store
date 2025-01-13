@@ -19,178 +19,210 @@
 	<link rel="stylesheet" href="https://cdn.ckeditor.com/ckeditor5-premium-features/44.0.0/ckeditor5-premium-features.css" crossorigin>
 </head>
 <body>
+	@php
+		$user = auth()->user();
+		$userRoles = $user->roles->pluck('name')->all() ?? [];
+	@endphp
 	<ul class="nav nav-tabs" id="myTab" role="tablist">
-		<li class="nav-item" role="presentation">
-			<button class="nav-link active" id="pricing_tab" data-bs-toggle="tab" data-bs-target="#pricing" type="button" role="tab" aria-controls="pricing" aria-selected="true">Pricing</button>
-		</li>
-		<li class="nav-item" role="presentation">
-			<button class="nav-link" id="content_tab" data-bs-toggle="tab" data-bs-target="#content_writer" type="button" role="tab" aria-controls="content_writer" aria-selected="false">Content Writer</button>
-		</li>
-		<li class="nav-item" role="presentation">
-			<button class="nav-link" id="graphics_tab" data-bs-toggle="tab" data-bs-target="#graphics" type="button" role="tab" aria-controls="graphics" aria-selected="false">Graphics</button>
-		</li>
+		<!-- Pricing Tab -->
+		@if(in_array('admin', $userRoles) || $user->isSuperUser() || in_array('Pricing Manager', $userRoles)) <!-- Admin or Pricing Manager -->
+			<li class="nav-item" role="presentation">
+				<button class="nav-link {{ (in_array('admin', $userRoles) || $user->isSuperUser() || in_array('Pricing Manager', $userRoles)) ? 'active' : '' }}" id="pricing_tab" data-bs-toggle="tab" data-bs-target="#pricing" type="button" role="tab" aria-controls="pricing" aria-selected="true">
+					Pricing
+				</button>
+			</li>
+		@endif
+
+		<!-- Content Tab -->
+		@if(in_array('admin', $userRoles) || $user->isSuperUser() || in_array('Content Manager', $userRoles)) <!-- Admin or Content Manager -->
+			<li class="nav-item" role="presentation">
+				<button class="nav-link {{ in_array('Content Manager', $userRoles) ? 'active' : '' }}" id="content_tab" data-bs-toggle="tab" data-bs-target="#content_writer" type="button" role="tab" aria-controls="content_writer" aria-selected="false">
+					Content Writer
+				</button>
+			</li>
+		@endif
+
+		<!-- Graphics Tab -->
+		@if(in_array('admin', $userRoles) || $user->isSuperUser() || in_array('Graphics Manager', $userRoles)) <!-- Admin or Graphics Manager -->
+			<li class="nav-item" role="presentation">
+				<button class="nav-link {{ in_array('Graphics Manager', $userRoles) ? 'active' : '' }}" id="graphics_tab" data-bs-toggle="tab" data-bs-target="#graphics" type="button" role="tab" aria-controls="graphics" aria-selected="false">
+					Graphics
+				</button>
+			</li>
+		@endif
 	</ul>
 	<div class="tab-content" id="myTabContent">
-
-		<div class="tab-pane fade show active" id="pricing" role="tabpanel" aria-labelledby="pricing_tab">
-			<div class="container mt-2">
-				<div class="row">
-					<div class="col-md-3 mb-3">
-						<label class="form-label bg-info text-white text-center py-3 h6">Content In Progress<br/><span class="h2">{{ $tempPricingProducts->where('approval_status', 'in-process')->count() }}</span></label>
+		@if(in_array('admin', $userRoles) || $user->isSuperUser() || in_array('Pricing Manager', $userRoles)) <!-- Admin or Pricing Manager -->
+			<div class="tab-pane fade {{ (in_array('admin', $userRoles) || $user->isSuperUser() || in_array('Pricing Manager', $userRoles)) ? 'show active' : '' }}" id="pricing" role="tabpanel" aria-labelledby="pricing_tab">
+				<div class="container mt-2">
+					<div class="row">
+						<div class="col-md-3 mb-3">
+							<label class="form-label bg-info text-white text-center py-3 h6">Content In Progress<br/><span class="h2">{{ $tempPricingProducts->where('approval_status', 'in-process')->count() }}</span></label>
+						</div>
+						<div class="col-md-3 mb-3">
+							<label class="form-label bg-warning text-white text-center py-3 h6">Submitted for Approval<br/><span class="h2">{{ $tempPricingProducts->where('approval_status', 'pending')->count() }}</span></label>
+						</div>
+						<div class="col-md-3 mb-3">
+							<label class="form-label bg-success text-white text-center py-3 h6">Ready to Publish<br/><span class="h2">{{ $tempPricingProducts->where('approval_status', 'approved')->count() }}</span></label>
+						</div>
+						<div class="col-md-3 mb-3">
+							<label class="form-label bg-danger text-white text-center py-3 h6">Rejected for Corrections<br/><span class="h2">{{ $tempPricingProducts->sum('rejection_count') }}</span></label>
+						</div>
 					</div>
-					<div class="col-md-3 mb-3">
-						<label class="form-label bg-warning text-white text-center py-3 h6">Submitted for Approval<br/><span class="h2">{{ $tempPricingProducts->where('approval_status', 'pending')->count() }}</span></label>
+					<div class="table-responsive">
+						<table class="table table-striped">
+							<thead>
+								<tr>
+									<th>Product ID</th>
+									<th>Product Name</th>
+									<th>SKU</th>
+									{{-- <th>Price</th> --}}
+									{{-- <th>Sale Price</th> --}}
+									<th>Created By</th>
+									<th>Created At</th>
+									<th>Approval Status</th>
+									<th>Edit</th>
+								</tr>
+							</thead>
+							<tbody>
+								@foreach ($tempPricingProducts as $tempPricingProduct)
+									@if($tempPricingProduct->approval_status == 'pending')
+										<tr>
+											<td>{{ $tempPricingProduct->product_id }}</td>
+											<td class="product-name">{{ $tempPricingProduct->name }}</td>
+											<td class="product-description">{{ $tempPricingProduct->sku }}</td>
+											{{-- <td class="product-description">{{ $tempPricingProduct->price }}</td> --}}
+											{{-- <td class="product-description">{{ $tempPricingProduct->sale_price }}</td> --}}
+											<td class="product-description">{{ $tempPricingProduct->createdBy ? $tempPricingProduct->createdBy->name:'' }}</td>
+											<td class="product-description">{{ $tempPricingProduct->created_at->format('Y-m-d H:i:s') }}</td>
+											<td class="product-description">{{ $approvalStatuses[$tempPricingProduct->approval_status] ?? '' }}</td>
+											<td>
+												<button type="button" id="edit_pricing_modal" data-toggle="modal" data-target="#editPricingModal" data-product="{{ htmlspecialchars(json_encode($tempPricingProduct->toArray(), JSON_HEX_APOS | JSON_HEX_QUOT), ENT_QUOTES, 'UTF-8') }}">
+													<i class="fas fa-pencil-alt"></i>
+												</button>
+											</td>
+										</tr>
+									@endif
+								@endforeach
+							</tbody>
+						</table>
 					</div>
-					<div class="col-md-3 mb-3">
-						<label class="form-label bg-success text-white text-center py-3 h6">Ready to Publish<br/><span class="h2">{{ $tempPricingProducts->where('approval_status', 'approved')->count() }}</span></label>
-					</div>
-					<div class="col-md-3 mb-3">
-						<label class="form-label bg-danger text-white text-center py-3 h6">Rejected for Corrections<br/><span class="h2">{{ $tempPricingProducts->sum('rejection_count') }}</span></label>
-					</div>
-				</div>
-				<div class="table-responsive">
-					<table class="table table-striped">
-						<thead>
-							<tr>
-								<th>Product ID</th>
-								<th>Product Name</th>
-								<th>SKU</th>
-								<th>Price</th>
-								<th>Sale Price</th>
-								<th>Created At</th>
-								<th>Approval Status</th>
-								<th>Edit</th>
-							</tr>
-						</thead>
-						<tbody>
-							@foreach ($tempPricingProducts as $tempPricingProduct)
-								@if($tempPricingProduct->approval_status == 'pending')
-									<tr>
-										<td>{{ $tempPricingProduct->product_id }}</td>
-										<td class="product-name">{{ $tempPricingProduct->name }}</td>
-										<td class="product-description">{{ $tempPricingProduct->sku }}</td>
-										<td class="product-description">{{ $tempPricingProduct->price }}</td>
-										<td class="product-description">{{ $tempPricingProduct->sale_price }}</td>
-										<td class="product-description">{{ $tempPricingProduct->created_at->format('Y-m-d H:i:s') }}</td>
-										<td class="product-description">{{ $approvalStatuses[$tempPricingProduct->approval_status] ?? '' }}</td>
-										<td>
-											<button type="button" id="edit_pricing_modal" data-toggle="modal" data-target="#editPricingModal" data-product="{{ htmlspecialchars(json_encode($tempPricingProduct->toArray(), JSON_HEX_APOS | JSON_HEX_QUOT), ENT_QUOTES, 'UTF-8') }}">
-												<i class="fas fa-pencil-alt"></i>
-											</button>
-										</td>
-									</tr>
-								@endif
-							@endforeach
-						</tbody>
-					</table>
 				</div>
 			</div>
-		</div>
+		@endif
 
-		<div class="tab-pane fade" id="content_writer" role="tabpanel" aria-labelledby="content_tab">
-			<div class="container mt-2">
-				<div class="row">
-					<div class="col-md-3 mb-3">
-						<label class="form-label bg-info text-white text-center py-3 h6">Content In Progress<br/><span class="h2">{{ $tempContentProducts->where('approval_status', 'in-process')->count() }}</span></label>
+		<!-- Content Writer Content -->
+		@if(in_array('admin', $userRoles) || $user->isSuperUser() || in_array('Content Manager', $userRoles)) <!-- Admin or Content Manager -->
+			<div class="tab-pane fade {{ in_array('Content Manager', $userRoles) ? 'show active' : '' }}" id="content_writer" role="tabpanel" aria-labelledby="content_tab">
+				<div class="container mt-2">
+					<div class="row">
+						<div class="col-md-3 mb-3">
+							<label class="form-label bg-info text-white text-center py-3 h6">Content In Progress<br/><span class="h2">{{ $tempContentProducts->where('approval_status', 'in-process')->count() }}</span></label>
+						</div>
+						<div class="col-md-3 mb-3">
+							<label class="form-label bg-warning text-white text-center py-3 h6">Submitted for Approval<br/><span class="h2">{{ $tempContentProducts->where('approval_status', 'pending')->count() }}</span></label>
+						</div>
+						<div class="col-md-3 mb-3">
+							<label class="form-label bg-success text-white text-center py-3 h6">Ready to Publish<br/><span class="h2">{{ $tempContentProducts->where('approval_status', 'approved')->count() }}</span></label>
+						</div>
+						<div class="col-md-3 mb-3">
+							<label class="form-label bg-danger text-white text-center py-3 h6">Rejected for Corrections<br/><span class="h2">{{ $tempContentProducts->sum('rejection_count') }}</span></label>
+						</div>
 					</div>
-					<div class="col-md-3 mb-3">
-						<label class="form-label bg-warning text-white text-center py-3 h6">Submitted for Approval<br/><span class="h2">{{ $tempContentProducts->where('approval_status', 'pending')->count() }}</span></label>
+					<div class="table-responsive">
+						<table class="table table-striped">
+							<thead>
+								<tr>
+									<th>Product ID</th>
+									<th>Product Name</th>
+									{{-- <th>Changed Description</th> --}}
+									<th>Created By</th>
+									<th>Created At</th>
+									<th>Approval Status</th>
+									<th>Edit</th>
+								</tr>
+							</thead>
+							<tbody>
+								@foreach ($tempContentProducts as $tempContentProduct)
+									@if($tempContentProduct->approval_status == 'pending')
+										<tr>
+											<td>{{ $tempContentProduct->product_id }}</td>
+											<td class="product-name">{{ $tempContentProduct->name }}</td>
+											{{-- <td class="product-description">{{ $tempContentProduct->description }}</td> --}}
+											<td class="product-description">{{ $tempContentProduct->createdBy ? $tempContentProduct->createdBy->name:'' }}</td>
+											<td class="product-description">{{ $tempContentProduct->created_at->format('Y-m-d H:i:s') }}</td>
+											<td class="product-description">{{ $approvalStatuses[$tempContentProduct->approval_status] ?? '' }}</td>
+											<td>
+												<a class="btn btn-default" href="{{ route('product_approval.edit_content', ['id' => $tempContentProduct->id]) }}" role="button">
+													<i class="fas fa-pencil-alt"></i>
+												</a>
+											</td>
+										</tr>
+									@endif
+								@endforeach
+							</tbody>
+						</table>
 					</div>
-					<div class="col-md-3 mb-3">
-						<label class="form-label bg-success text-white text-center py-3 h6">Ready to Publish<br/><span class="h2">{{ $tempContentProducts->where('approval_status', 'approved')->count() }}</span></label>
-					</div>
-					<div class="col-md-3 mb-3">
-						<label class="form-label bg-danger text-white text-center py-3 h6">Rejected for Corrections<br/><span class="h2">{{ $tempContentProducts->sum('rejection_count') }}</span></label>
-					</div>
-				</div>
-				<div class="table-responsive">
-					<table class="table table-striped">
-						<thead>
-							<tr>
-								<th>Product ID</th>
-								<th>Product Name</th>
-								{{-- <th>Changed Description</th> --}}
-								<th>Created By</th>
-								<th>Created At</th>
-								<th>Approval Status</th>
-								<th>Edit</th>
-							</tr>
-						</thead>
-						<tbody>
-							@foreach ($tempContentProducts as $tempContentProduct)
-								@if($tempContentProduct->approval_status == 'pending')
-									<tr>
-										<td>{{ $tempContentProduct->product_id }}</td>
-										<td class="product-name">{{ $tempContentProduct->name }}</td>
-										{{-- <td class="product-description">{{ $tempContentProduct->description }}</td> --}}
-										<td class="product-description">{{ $tempContentProduct->createdBy->name }}</td>
-										<td class="product-description">{{ $tempContentProduct->created_at->format('Y-m-d H:i:s') }}</td>
-										<td class="product-description">{{ $approvalStatuses[$tempContentProduct->approval_status] ?? '' }}</td>
-										<td>
-											<a class="btn btn-default" href="{{ route('product_approval.edit_content', ['id' => $tempContentProduct->id]) }}" role="button">
-												<i class="fas fa-pencil-alt"></i>
-											</a>
-										</td>
-									</tr>
-								@endif
-							@endforeach
-						</tbody>
-					</table>
 				</div>
 			</div>
-		</div>
+		@endif
 
-		<div class="tab-pane fade" id="graphics" role="tabpanel" aria-labelledby="graphics_tab">
-			<div class="container mt-2">
-				<div class="row">
-					<div class="col-md-3 mb-3">
-						<label class="form-label bg-info text-white text-center py-3 h6">Content In Progress<br/><span class="h2">{{ $tempGraphicsProducts->where('approval_status', 'in-process')->count() }}</span></label>
+		<!-- Graphics Content -->
+		@if(in_array('admin', $userRoles) || $user->isSuperUser() || in_array('Graphics Manager', $userRoles)) <!-- Admin or Graphics Manager -->
+			<div class="tab-pane fade {{ in_array('Graphics Manager', $userRoles) ? 'show active' : '' }}" id="graphics" role="tabpanel" aria-labelledby="graphics_tab">
+				<div class="container mt-2">
+					<div class="row">
+						<div class="col-md-3 mb-3">
+							<label class="form-label bg-info text-white text-center py-3 h6">Content In Progress<br/><span class="h2">{{ $tempGraphicsProducts->where('approval_status', 'in-process')->count() }}</span></label>
+						</div>
+						<div class="col-md-3 mb-3">
+							<label class="form-label bg-warning text-white text-center py-3 h6">Submitted for Approval<br/><span class="h2">{{ $tempGraphicsProducts->where('approval_status', 'pending')->count() }}</span></label>
+						</div>
+						<div class="col-md-3 mb-3">
+							<label class="form-label bg-success text-white text-center py-3 h6">Ready to Publish<br/><span class="h2">{{ $tempGraphicsProducts->where('approval_status', 'approved')->count() }}</span></label>
+						</div>
+						<div class="col-md-3 mb-3">
+							<label class="form-label bg-danger text-white text-center py-3 h6">Rejected for Corrections<br/><span class="h2">{{ $tempGraphicsProducts->sum('rejection_count') }}</span></label>
+						</div>
 					</div>
-					<div class="col-md-3 mb-3">
-						<label class="form-label bg-warning text-white text-center py-3 h6">Submitted for Approval<br/><span class="h2">{{ $tempGraphicsProducts->where('approval_status', 'pending')->count() }}</span></label>
-					</div>
-					<div class="col-md-3 mb-3">
-						<label class="form-label bg-success text-white text-center py-3 h6">Ready to Publish<br/><span class="h2">{{ $tempGraphicsProducts->where('approval_status', 'approved')->count() }}</span></label>
-					</div>
-					<div class="col-md-3 mb-3">
-						<label class="form-label bg-danger text-white text-center py-3 h6">Rejected for Corrections<br/><span class="h2">{{ $tempGraphicsProducts->sum('rejection_count') }}</span></label>
-					</div>
-				</div>
 
-				<div class="table-responsive">
-					<table class="table table-striped">
-						<thead>
-							<tr>
-								<th>Product ID</th>
-								<th>Product Name</th>
-								<th>SKU</th>
-								<th>Created At</th>
-								<th>Approval Status</th>
-								<th>Edit</th>
-							</tr>
-						</thead>
-						<tbody>
-							@foreach ($tempGraphicsProducts as $tempGraphicsProduct)
-								@if($tempGraphicsProduct->approval_status == 'pending')
-									<tr>
-										<td>{{ $tempGraphicsProduct->product_id }}</td>
-										<td class="product-name">{{ $tempGraphicsProduct->name }}</td>
-										<td class="product-description">{{ $tempGraphicsProduct->sku }}</td>
-										<td class="product-description">{{ $tempGraphicsProduct->created_at->format('Y-m-d H:i:s') }}</td>
-										<td class="product-description">{{ $approvalStatuses[$tempGraphicsProduct->approval_status] ?? '' }}</td>
-										<td>
-											<button type="button" id="edit_graphics_modal" data-toggle="modal" data-target="#editGraphicsModal" data-product="{{ htmlspecialchars(json_encode($tempGraphicsProduct->toArray(), JSON_HEX_APOS | JSON_HEX_QUOT), ENT_QUOTES, 'UTF-8') }}">
-												<i class="fas fa-pencil-alt"></i>
-											</button>
-										</td>
-									</tr>
-								@endif
-							@endforeach
-						</tbody>
-					</table>
+					<div class="table-responsive">
+						<table class="table table-striped">
+							<thead>
+								<tr>
+									<th>Product ID</th>
+									<th>Product Name</th>
+									<th>SKU</th>
+									<th>Created By</th>
+									<th>Created At</th>
+									<th>Approval Status</th>
+									<th>Edit</th>
+								</tr>
+							</thead>
+							<tbody>
+								@foreach ($tempGraphicsProducts as $tempGraphicsProduct)
+									@if($tempGraphicsProduct->approval_status == 'pending')
+										<tr>
+											<td>{{ $tempGraphicsProduct->product_id }}</td>
+											<td class="product-name">{{ $tempGraphicsProduct->name }}</td>
+											<td class="product-description">{{ $tempGraphicsProduct->sku }}</td>
+											<td class="product-description">{{ $tempGraphicsProduct->createdBy ? $tempGraphicsProduct->createdBy->name:'' }}</td>
+											<td class="product-description">{{ $tempGraphicsProduct->created_at->format('Y-m-d H:i:s') }}</td>
+											<td class="product-description">{{ $approvalStatuses[$tempGraphicsProduct->approval_status] ?? '' }}</td>
+											<td>
+												<button type="button" id="edit_graphics_modal" data-toggle="modal" data-target="#editGraphicsModal" data-product="{{ htmlspecialchars(json_encode($tempGraphicsProduct->toArray(), JSON_HEX_APOS | JSON_HEX_QUOT), ENT_QUOTES, 'UTF-8') }}">
+													<i class="fas fa-pencil-alt"></i>
+												</button>
+											</td>
+										</tr>
+									@endif
+								@endforeach
+							</tbody>
+						</table>
+					</div>
 				</div>
 			</div>
-		</div>
+		@endif
 	</div>
 
 	<!-- Pricing Modal -->

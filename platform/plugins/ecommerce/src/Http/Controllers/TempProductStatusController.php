@@ -2,7 +2,9 @@
 
 namespace Botble\Ecommerce\Http\Controllers;
 use Carbon\Carbon; // Make sure to import Carbon at the top
-use Botble\Ecommerce\Models\TempProduct; // Make sure this is the correct model namespace
+use Botble\Ecommerce\Models\TempProduct;
+use Botble\Ecommerce\Models\ProductCategory;
+use Botble\Ecommerce\Models\ProductTypes;
 use Botble\Ecommerce\Models\Discount; // Make sure this is the correct model namespace
 use Botble\Ecommerce\Models\DiscountProduct; // Make sure this is the correct model namespace
 use Botble\Ecommerce\Models\UnitOfMeasurement;
@@ -17,7 +19,7 @@ class TempProductStatusController extends BaseController
 		$userRoleId = auth()->user()->roles->value('id');
 		if ($userRoleId == 22) {
 			// Fetch all temporary product changes
-			$tempPricingProducts = TempProduct::where('role_id', $userRoleId)->where('created_by_id', auth()->id())->orderBy('created_at', 'desc')->get()->map(function ($product) {
+			$tempPricingProducts = TempProduct::where('role_id', $userRoleId)->where('created_by', auth()->id())->orderBy('created_at', 'desc')->get()->map(function ($product) {
 				$product->discount = $product->discount ? json_decode($product->discount) : [];
 				return $product;
 			});
@@ -33,7 +35,7 @@ class TempProductStatusController extends BaseController
 			return view('plugins/ecommerce::temp-products.pricing', compact('tempPricingProducts', 'unitOfMeasurements', 'stores', 'approvalStatuses'));
 		} else if ($userRoleId == 19) {
 			// Fetch all temporary product changes
-			$tempGraphicsProducts = TempProduct::where('role_id', $userRoleId)->where('created_by_id', auth()->id())->orderBy('created_at', 'desc')->get();
+			$tempGraphicsProducts = TempProduct::where('role_id', $userRoleId)->where('created_by', auth()->id())->orderBy('created_at', 'desc')->get();
 			$approvalStatuses = [
 				'in-process' => 'Content In Progress',
 				'pending' => 'Submitted for Approval',
@@ -43,14 +45,17 @@ class TempProductStatusController extends BaseController
 			return view('plugins/ecommerce::temp-products.graphics', compact('tempGraphicsProducts', 'approvalStatuses'));
 		} else if ($userRoleId == 18) {
 			// Fetch all temporary product changes
-			$tempContentProducts = TempProduct::where('role_id', $userRoleId)->where('created_by_id', auth()->id())->orderBy('created_at', 'desc')->get();
+			$tempContentProducts = TempProduct::where('role_id', $userRoleId)->where('created_by', auth()->id())->orderBy('created_at', 'desc')->get();
+			$productCategories = ProductCategory::with(['childrens'])->whereNull('parent_id')->orWhere('parent_id', 0)->select(['id', 'name', 'parent_id'])->get()->toArray();
+			$productTypes = ProductTypes::pluck('name', 'id')->toArray();
+
 			$approvalStatuses = [
 				'in-process' => 'Content In Progress',
 				'pending' => 'Submitted for Approval',
 				'approved' => 'Ready to Publish',
 				'rejected' => 'Rejected for Corrections',
 			];
-			return view('plugins/ecommerce::temp-products.content', compact('tempContentProducts', 'approvalStatuses'));
+			return view('plugins/ecommerce::temp-products.content', compact('tempContentProducts', 'approvalStatuses', 'productCategories', 'productTypes'));
 		} else {
 			return back()->with('error', 'You dont have permission');
 		}
@@ -96,10 +101,20 @@ class TempProductStatusController extends BaseController
 		logger()->info('Request Data: ', $request->all());
 
 		$tempProduct = TempProduct::find($request->id);
-		$input = $request->all();
+		$input = [];
 		if($tempProduct->approval_status=='in-process' || $tempProduct->approval_status=='rejected') {
+			$input['category_ids'] = isset($request->category_ids) && $request->category_ids ? json_encode($request->category_ids):null;
+			$input['google_shopping_category'] = $request->google_shopping_category;
+			$input['product_type_ids'] = isset($request->product_type_ids) && $request->product_type_ids ? json_encode($request->product_type_ids):null;
+			$input['name'] = $request->name;
+			$input['slug'] = $request->slug;
+			$input['sku'] = $request->sku;
+			$input['description'] = $request->description;
+			$input['content'] = $request->content;
+			$input['warranty_information'] = $request->warranty_information;
+			$input['seo_title'] = $request->seo_title;
+			$input['seo_description'] = $request->seo_description;
 			$input['approval_status'] = isset($request->in_process) && $request->in_process==1 ? 'in-process' : 'pending';
-			unset($input['_token'], $input['id'], $input['remarks'], $input['in_process']);
 
 			$tempProduct->update($input);
 		}

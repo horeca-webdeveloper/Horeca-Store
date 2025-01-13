@@ -32,10 +32,54 @@
 					<div class="row mt-3">
 						<div class="col-md-12">
 							<div class="d-flex justify-content-between align-items-center mb-2">
+								<label for="categories">Categories</label>
+								<button type="button" class="btn btn-primary btn-sm add-comment-btn" data-toggle="modal" data-target="#comment-modal" data-type="categories" disabled>Add Comment</button>
+							</div>
+							<div class="border rounded p-3 annotatable-text">{!! $tempContentProduct->categories !!}</div>
+						</div>
+					</div>
+
+					<div class="row mt-3">
+						<div class="col-md-12">
+							<label for="google_shopping_category">Google Shopping Category</label>
+							<input class="form-control" type="text" name="google_shopping_category" value="{!! $tempContentProduct->google_shopping_category !!}">
+						</div>
+					</div>
+
+					<div class="row mt-3">
+						<div class="col-md-12">
+							<div class="d-flex justify-content-between align-items-center mb-2">
+								<label for="product_types">Product Types</label>
+								<button type="button" class="btn btn-primary btn-sm add-comment-btn" data-toggle="modal" data-target="#comment-modal" data-type="product_types" disabled>Add Comment</button>
+							</div>
+							<div class="border rounded p-3 annotatable-text">{!! $tempContentProduct->productTypes !!}</div>
+						</div>
+					</div>
+
+					<div class="row mt-3">
+						<div class="col-md-12">
+							<div class="d-flex justify-content-between align-items-center mb-2">
 								<label for="name">Name</label>
 								<button type="button" class="btn btn-primary btn-sm add-comment-btn" data-toggle="modal" data-target="#comment-modal" data-type="name" disabled>Add Comment</button>
 							</div>
 							<div class="border rounded p-3 annotatable-text">{!! $tempContentProduct->name !!}</div>
+						</div>
+					</div>
+
+					<div class="row mt-3">
+						<div class="col-md-12">
+							<div class="d-flex justify-content-between align-items-center mb-2">
+								<label for="slug">Slug</label>
+								<button type="button" class="btn btn-primary btn-sm add-comment-btn" data-toggle="modal" data-target="#comment-modal" data-type="slug" disabled>Add Comment</button>
+							</div>
+							<div class="border rounded p-3 annotatable-text">{!! $tempContentProduct->slug !!}</div>
+						</div>
+					</div>
+
+					<div class="row mt-3">
+						<div class="col-md-12">
+							<label for="sku">SKU</label>
+							<input class="form-control" type="text" name="sku" value="{!! $tempContentProduct->sku !!}">
 						</div>
 					</div>
 
@@ -59,6 +103,69 @@
 						</div>
 					</div>
 
+					<div class="row mt-3">
+						<div class="col-md-12">
+							<div class="d-flex justify-content-between align-items-center mb-2">
+								<label for="warranty_information">Warranty Information</label>
+								<button type="button" class="btn btn-primary btn-sm add-comment-btn" data-toggle="modal" data-target="#comment-modal" data-type="warranty_information" disabled>Add Comment</button>
+							</div>
+							<div class="border rounded p-3 annotatable-text">{!! $tempContentProduct->warranty_information !!}</div>
+						</div>
+					</div>
+
+					<div class="row mt-3">
+						<div class="col-md-12">
+							<div class="d-flex justify-content-between align-items-center mb-2">
+								<label for="seo_title">SEO Title</label>
+								<button type="button" class="btn btn-primary btn-sm add-comment-btn" data-toggle="modal" data-target="#comment-modal" data-type="seo_title" disabled>Add Comment</button>
+							</div>
+							<div class="border rounded p-3 annotatable-text">{!! $tempContentProduct->seo_title !!}</div>
+						</div>
+					</div>
+
+					<div class="row mt-3">
+						<div class="col-md-12">
+							<div class="d-flex justify-content-between align-items-center mb-2">
+								<label for="seo_description">SEO Description</label>
+								<button type="button" class="btn btn-primary btn-sm add-comment-btn" data-toggle="modal" data-target="#comment-modal" data-type="seo_description" disabled>Add Comment</button>
+							</div>
+							<div class="border rounded p-3 annotatable-text">{!! $tempContentProduct->seo_description !!}</div>
+						</div>
+					</div>
+
+					{{-- @php
+					$specifications = json_decode($tempContentProduct->specification_details, true) ?? [];
+					@endphp
+
+					<div class="row mt-3 {{ count($specifications) ? '' : 'd-none' }}">
+						<div class="col-md-12">
+							<div class="d-flex justify-content-between align-items-center mb-2">
+								<label for="specification_details">Specifications</label>
+								<button type="button" class="btn btn-primary btn-sm spec-comment-btn" data-toggle="modal" data-target="#comment-modal" data-type="specification_details">Add Comment</button>
+							</div>
+							<div class="border rounded p-3">
+								<table class="table table-striped table-bordered">
+									<thead>
+										<tr>
+											<th scope="col">#</th>
+											<th scope="col">Name</th>
+											<th scope="col">Value</th>
+										</tr>
+									</thead>
+									<tbody>
+										@foreach($specifications as $index => $specification)
+										<tr>
+											<td>{{ $index + 1 }}</td>
+											<td>{{ $specification['name'] }}</td>
+											<td>{{ $specification['value'] }}</td>
+										</tr>
+										@endforeach
+									</tbody>
+								</table>
+							</div>
+						</div>
+					</div> --}}
+
 					<div class="row mt-3 {{ $tempContentProduct->comments->count() ? '' : 'd-none' }}" id="comments">
 						<div class="col-md-12">
 							<label>Issues</label>
@@ -76,7 +183,7 @@
 								<tbody>
 									@foreach ($tempContentProduct->comments as $comment)
 									<tr>
-										<td>{{ ucfirst($comment->comment_type) }}</td>
+										<td>{{ ucwords(str_replace('_', ' ', $comment->comment_type)) }}</td>
 										<td>{!! $comment->highlighted_text !!}</td>
 										<td>{!! $comment->comment !!}</td>
 										{{-- <td>{{ ucfirst($comment->status) }}</td> --}}
@@ -138,7 +245,7 @@
 					</form>
 				</div>
 				<div class="modal-footer">
-					<button type="submit" form="comment-form" class="btn btn-primary">Save Comment</button>
+					<button type="submit" id="save-comment-btn"  form="comment-form" class="btn btn-primary">Save Comment</button>
 					<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
 				</div>
 			</div>
@@ -167,11 +274,17 @@
 			// Initialize Select2
 			$('.select2').select2();
 
-			// Enable add comment buttons when text is selected
+			// Handle mouseup event for selecting text in each block
 			$('.annotatable-text').on('mouseup', function () {
+				// Disable the buttons for other blocks
+				$('.annotatable-text').each(function () {
+					$(this).closest('.row').find('.add-comment-btn').prop('disabled', true);
+				});
+
 				const selectedText = window.getSelection().toString().trim();
 				const addCommentBtn = $(this).closest('.row').find('.add-comment-btn');
 
+				// Enable the button if text is selected, otherwise disable it
 				if (selectedText.length > 0) {
 					addCommentBtn.prop('disabled', false);
 				} else {
@@ -185,6 +298,7 @@
 				const selection = window.getSelection();
 
 				// Get the selected range
+				let selectedHtml = '';
 				if (selection.rangeCount > 0) {
 					const range = selection.getRangeAt(0);
 
@@ -193,13 +307,27 @@
 					tempDiv.appendChild(range.cloneContents());
 
 					// Get the HTML content of the selected text
-					const selectedHtml = tempDiv.innerHTML;
-
-					// Set the highlighted text and comment type in the modal
-					$('#highlighted-text').val(selectedHtml); // Save the HTML markup
-					$('#comment-type').val(textType);
+					selectedHtml = tempDiv.innerHTML;
 				}
+				// Set the highlighted text and comment type in the modal
+				$('#highlighted-text').val(selectedHtml); // Save the HTML markup
+				$('#comment-type').val(textType);
 			});
+
+			// Set highlighted text and comment type when the "Add Comment" button is clicked
+			// $('.spec-comment-btn').on('click', function () {
+			// 	const textType = $(this).data('type'); // "description" or "content"
+			// 	const selection = window.getSelection();
+
+			// 	// Get the selected range
+			// 	let selectedHtml = '';
+			// 	if (textType == 'specification_details') {
+			// 		selectedHtml = 'Not allowed';
+			// 	}
+			// 	// Set the highlighted text and comment type in the modal
+			// 	$('#highlighted-text').val(selectedHtml); // Save the HTML markup
+			// 	$('#comment-type').val(textType);
+			// });
 
 			$('#content_approval_status').on('change', updateContentRemarksRequirement);
 
@@ -207,7 +335,12 @@
 
 		// Handle form submission for adding comments
 		document.getElementById('comment-form').addEventListener('submit', function (e) {
-			let tempContentProductId = '{{ $tempContentProduct->id}}'
+			const saveCommentBtn = document.getElementById('save-comment-btn');
+			const tempContentProductId = '{{ $tempContentProduct->id }}';
+
+			// Disable the "Save Comment" button
+			saveCommentBtn.disabled = true;
+
 			e.preventDefault();
 			const formData = new FormData(this);
 			fetch(`/admin/product-approval/${tempContentProductId}/comments`, {
@@ -219,7 +352,11 @@
 			})
 			.then(response => response.json())
 			.then(data => {
+				saveCommentBtn.disabled = false;
 				if (data.success) {
+					// Close the modal
+					$('#comment-modal').modal('hide');
+
 					alert('Comment saved successfully');
 					location.reload();
 				} else {
@@ -228,11 +365,13 @@
 				}
 			})
 			.catch(error => {
+				// Re-enable the "Save Comment" button
+				saveCommentBtn.disabled = false;
+
 				alert('An error occurred while saving the comment, please open the console for details.');
 				console.error('Fetch error:', error);
 			});
 		});
 	</script>
-
 </body>
 @endsection

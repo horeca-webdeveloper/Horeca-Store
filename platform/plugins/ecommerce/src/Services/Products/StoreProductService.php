@@ -90,6 +90,7 @@ class StoreProductService
 
         $product->save();
 
+        /* For update metadata */
         if (! $exists) {
             event(new CreatedContentEvent(PRODUCT_MODULE_SCREEN_NAME, $request, $product));
         } else {

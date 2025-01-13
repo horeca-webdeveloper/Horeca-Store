@@ -46,7 +46,7 @@ class CreateTempProductsTable extends Migration
             $table->integer('views')->default(0);
 
             // User and timestamp fields
-            $table->unsignedBigInteger('created_by_id')->nullable();
+            $table->unsignedBigInteger('created_by')->nullable();
             $table->string('created_by_type')->nullable();
             $table->timestamps();
 

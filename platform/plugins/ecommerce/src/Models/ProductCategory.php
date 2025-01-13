@@ -85,6 +85,13 @@ class ProductCategory extends BaseModel implements HasTreeCategoryContract
             ->whereNot('id', $this->getKey());
     }
 
+    public function childrens(): HasMany
+    {
+        return $this->hasMany(ProductCategory::class, 'parent_id')
+            ->select(['id', 'name', 'parent_id'])
+            ->with('childrens'); // Recursive loading
+    }
+
     public function activeChildren(): HasMany
     {
         return $this

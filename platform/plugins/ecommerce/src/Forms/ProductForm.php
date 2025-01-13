@@ -58,54 +58,35 @@ class ProductForm extends FormAbstract
 	{
 		$this->addAssets();
 
-		$user = Auth::user(); // Get the logged-in user
+		$user = auth()->user(); // Get the logged-in user
+		$userRoles = $user->roles->pluck('name')->all() ?? [];
 
-		// Check if the user's role ID is 18
-		$hasContentWritingRole = DB::table('role_users')
-		->where('user_id', $user->id)
-		->where('role_id', 18)
-		->exists();
+		// Check if the user's role ID is 18 (Copywriter)
+		$hasContentWritingRole = in_array('Copywriter', $userRoles);
 
-		// Check if the user's role ID is 19
-		$hasGraphicsRole = DB::table('role_users')
-		->where('user_id', $user->id)
-		->where('role_id', 19)
-		->exists();
+		// Check if the user's role ID is 19 (Graphic Designer)
+		$hasGraphicsRole = in_array('Graphic Designer', $userRoles);
 
-		$productspec = DB::table('role_users')
-		->where('user_id', $user->id)
-		->where('role_id', 6)
-		->exists();
+		// Check if the user's role ID is 22 (Pricing)
+		$hasPricingRole = in_array('Pricing', $userRoles);
 
-		$ecomerceRole = DB::table('role_users')
-		->where('user_id', $user->id)
-		->where('role_id', 10)
-		->exists();
+		// Check if the user's role ID is 6 (Product Specialist)
+		$productspec = in_array('Product Specialist', $userRoles);
+
+		// Check if the user's role ID is 10 (Ecommerce Specialist)
+		$ecomerceRole = in_array('Ecommerce Specialist', $userRoles);
 
 		if ($hasContentWritingRole) {
-			$brands = Brand::query()->pluck('name', 'id')->all();
 
-			$productCollections = ProductCollection::query()->pluck('name', 'id')->all();
 			$productTypeOptions = ProductTypes::pluck('name', 'id')->all();
-			// dd($productTypeOptions);
-
 
 			$productId = null;
 			$selectedCategories = [];
-			$tags = null;
 			$producttypes = null;
-			$frequently_bought_together= null;
-
-			$totalProductVariations = 0;
 
 			if ($this->getModel()) {
 				$productId = $this->getModel()->id;
-
 				$selectedCategories = $this->getModel()->categories()->pluck('category_id')->all();
-
-				$totalProductVariations = ProductVariation::query()->where('configurable_product_id', $productId)->count();
-
-				$tags = $this->getModel()->tags()->pluck('name')->implode(',');
 				$producttypes = $this->getModel()->producttypes()->pluck('name')->implode(',');
 			}
 
@@ -114,6 +95,11 @@ class ProductForm extends FormAbstract
 			->setValidatorClass(ProductRequest::class)
 			->setFormOption('files', true)
 			->add('name', TextField::class, NameFieldOption::make()->required()->toArray())
+			->add('sku', TextField::class, array_merge(TextFieldOption::make()->label(trans('plugins/ecommerce::products.sku'))->toArray(), [
+				'attr' => [
+					// 'readonly' => true, // Disable the field
+				],
+			]))
 			->add(
 				'description',
 				EditorField::class,
@@ -129,8 +115,8 @@ class ProductForm extends FormAbstract
 				->label(trans('warranty information'))
 				->placeholder(trans('core/base::forms.description_placeholder'))->toArray()
 			);
-		
-			
+
+
 			if ($productId) {
 				$this->addMetaBoxes([
 					'specs' => [
@@ -145,19 +131,11 @@ class ProductForm extends FormAbstract
 			}
 
 			$this
-			->add('product_type', 'hidden', [
-				'value' => request()->input('product_type') ?: ProductTypeEnum::PHYSICAL,
-			])
-			->add('status', SelectField::class, StatusFieldOption::make()->toArray())
-
-			->add(
-				'is_featured',
-				OnOffField::class,
-				OnOffFieldOption::make()
-				->label(trans('core/base::forms.is_featured'))
-				->defaultValue(false)
-				->toArray()
-			)
+			->add('status', SelectField::class, array_merge(StatusFieldOption::make()->toArray(), [
+				'attr' => [
+					'disabled' => true, // Disable the field
+				],
+			]))
 			->add(
 				'categories[]',
 				TreeCategoryField::class,
@@ -168,11 +146,6 @@ class ProductForm extends FormAbstract
 				->addAttribute('card-body-class', 'p-0')
 				->toArray()
 			)
-			
-
-		
-			
-			
 			->add(
 				'producttypes',
 				SelectField::class,
@@ -183,48 +156,9 @@ class ProductForm extends FormAbstract
 				->multiple(true)
 				->toArray()
 			)
-	
-		
-
 			->add('google_shopping_category', 'text', ['label' => 'Google Shopping / Google Product Category'])
-
-
-			
-			->setBreakFieldPoint('status');
-
-			// if (EcommerceHelper::isEnabledProductOptions()) {
-			// 	$this
-			// 	->addMetaBoxes([
-			// 		'product_options_box' => [
-			// 			'title' => trans('plugins/ecommerce::product-option.name'),
-			// 			'content' => view('plugins/ecommerce::products.partials.product-option-form', [
-			// 				'options' => GlobalOptionEnum::options(),
-			// 				'globalOptions' => GlobalOption::query()->pluck('name', 'id')->all(),
-			// 				'product' => $this->getModel(),
-			// 				'routes' => [
-			// 					'ajax_option_info' => route('global-option.ajaxInfo'),
-			// 				],
-			// 			]),
-			// 			'priority' => 4,
-			// 		],
-			// 	]);
-			// }
-
-		
-
-			
-
-			if (! $totalProductVariations) {
-			
-			} 
-			
-		
-
-			// $this
-
-			// ->addAfter('brand_id', 'sku', TextField::class, TextFieldOption::make()->label(trans('plugins/ecommerce::products.sku')));
-
-			$this->add(
+			->setBreakFieldPoint('status')
+			->add(
 				'in_process', OnOffField::class, OnOffFieldOption::make()->label('Is Draft')->defaultValue(true)->toArray()
 			);
 		}
@@ -542,7 +476,7 @@ class ProductForm extends FormAbstract
 				});
 			}
 		}
-		else if($user && DB::table('role_users')->where('user_id', $user->id)->where('role_id', 22)->exists() )
+		else if($hasPricingRole)
 		{
 			$brands = Brand::query()->pluck('name', 'id')->all();
 

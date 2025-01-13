@@ -44,7 +44,10 @@ use App\Http\Controllers\API\CountryController;
  use App\Http\Controllers\API\OrderTrackingController;
  use App\Http\Controllers\API\AddressController;
  use App\Http\Controllers\API\PopularPostsController;
+ use App\Http\Controllers\API\SquarePaymentController;
 
+ Route::post('/payment-square', [SquarePaymentController::class, 'processPayment']);
+ 
 
 
  Route::get('/popular-posts', [PopularPostsController::class, 'index']);
@@ -105,6 +108,8 @@ Route::get('categories/{id}/products', [CategoryController::class, 'getProductsB
 Route::get('categories/filters', [CategoryController::class, 'getSpecificationFilters']);
 Route::post('categories/specification-filters', [CategoryController::class, 'getSpecificationFilters']);
 Route::post('categories/filtered-products', [CategoryController::class, 'getFilteredProducts']);
+Route::get('/categories/{slug}', [CategoryController::class, 'categoryslug']);
+
 Route::prefix('categories')->group(function () {
     
     Route::get('/', [CategoryController::class, 'index']);

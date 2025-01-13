@@ -50,7 +50,9 @@ class ProductExporter extends Exporter
 
     public function columns(): array
     {
-        if(auth()->user() && \DB::table('role_users')->where('user_id', auth()->user()->id)->where('role_id', 22)->exists() )
+        $user = auth()->user(); // Get the logged-in user
+        $userRoles = $user->roles->pluck('name')->all() ?? [];
+        if($user && in_array('Pricing', $userRoles))
         {
             $columns = [
                 ExportColumn::make('id'),
@@ -201,7 +203,7 @@ class ProductExporter extends Exporter
             $columns[] = ExportColumn::make('vendor');
         }
 
-        if(auth()->user() && \DB::table('role_users')->where('user_id', auth()->user()->id)->where('role_id', 22)->exists() )
+        if($user && in_array('Pricing', $userRoles))
         {} else {
             foreach ($this->supportedLocales as $locale) {
                 if ($locale['lang_code'] !== $this->defaultLanguage) {

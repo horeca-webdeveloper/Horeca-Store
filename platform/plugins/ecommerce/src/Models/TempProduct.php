@@ -9,12 +9,32 @@ class TempProduct extends BaseModel
 	protected $table = 'temp_products';
 
 	protected $fillable = [
+		/***** Content role *****/
+		'product_id',
 		'name',
+		'slug_id',
+		'slug_model',
+		'slug',
+		'sku',
 		'description',
 		'content',
+		'warranty_information',
+		'specification_details',
+		'seo_title',
+		'seo_description',
+		'category_ids',
+		'product_type_ids',
+		'google_shopping_category',
+		'created_by',
+		'role_id',
+		'approved_by',
+		'approval_status',
+		'remarks',
+		'rejection_count',
+		/***** Content role *****/
+
 		'image', // Featured image
 		'images',
-		'sku',
 		'order',
 		'quantity' => 'required|integer|min:10', // or any other rules that apply
 		'allow_checkout_when_out_of_stock',
@@ -41,13 +61,9 @@ class TempProduct extends BaseModel
 		'maximum_order_quantity',
 		'specs_sheet_heading',
 		'specs_sheet',
-		'product_id',
-		'approval_status',
 		'box_quantity',
 		'discount',
 		'margin',
-		'remarks',
-		'rejection_count'
 	];
 
 	public function product()
@@ -59,8 +75,9 @@ class TempProduct extends BaseModel
 	{
 		return $this->hasMany(TempProductComment::class, 'temp_product_id')->orderBy('created_at', 'desc');
 	}
+
 	public function createdBy()
 	{
-		return $this->belongsTo(User::class);
+		return $this->belongsTo(User::class, 'created_by');
 	}
 }

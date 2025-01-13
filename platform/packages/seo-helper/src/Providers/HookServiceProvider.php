@@ -38,7 +38,8 @@ class HookServiceProvider extends ServiceProvider
 
             Assets::addScriptsDirectly('vendor/core/packages/seo-helper/js/seo-helper.js')
                 ->addStylesDirectly('vendor/core/packages/seo-helper/css/seo-helper.css');
-            if(auth()->user() && \DB::table('role_users')->where('user_id', auth()->user()->id)->whereIn('role_id', [19,22])->exists() ) {} else {
+            if(auth()->user() && \DB::table('role_users')->where('user_id', auth()->user()->id)->whereIn('role_id', [19, 22])->exists() ) {} else {
+
                 MetaBox::addMetaBox(
                     'seo_wrap',
                     trans('packages/seo-helper::seo-helper.meta_box_header'),

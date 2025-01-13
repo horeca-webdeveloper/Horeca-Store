@@ -1,14 +1,13 @@
 {!! apply_filters('ecommerce_product_variation_form_start', null, $product) !!}
 @php
-  $user = Auth::user(); // Get the logged-in user
-    $productspec = DB::table('role_users')
-        ->where('user_id', $user->id)
-        ->where('role_id', 6)
-        ->exists();
-    $pricingUser = DB::table('role_users')
-        ->where('user_id', $user->id)
-        ->where('role_id', 22)
-        ->exists();
+    $user = Auth::user(); // Get the logged-in user
+    $userRoles = $user->roles->pluck('name')->all() ?? [];
+
+    // Check if the user's role ID is 6 (Product Specialist)
+    $productspec = in_array('Product Specialist', $userRoles);
+
+    // Check if the user's role ID is 22 (Pricing)
+    $pricingUser = in_array('Pricing', $userRoles);
 @endphp
 @if($pricingUser)
 

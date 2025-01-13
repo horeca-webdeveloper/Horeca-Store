@@ -38,15 +38,6 @@ Route::group(['namespace' => 'Botble\Base\Http\Controllers'], function () {
             });
         });
 
-        /* Temp Product Routes*/
-        Route::get('product-approval', [ProductApprovalController::class, 'index'])->name('product_approval.index');
-        Route::post('product-approval/pricing-approve', [ProductApprovalController::class, 'approvePricingChanges'])->name('product_approval.admin_pricing_approve');
-        Route::post('product-approval/graphics-approve', [ProductApprovalController::class, 'approveGraphicsChanges'])->name('product_approval.admin_graphics_approve');
-        Route::get('product-approval/{id}/edit-content-approval', [ProductApprovalController::class, 'editContentApproval'])->name('product_approval.edit_content');
-        Route::post('product-approval/{id}/comments', [ProductApprovalController::class, 'storeComment']);
-        Route::put('product-approval/{id}', [ProductApprovalController::class, 'approveContentChanges'])->name('product_approval.admin_content_approve');
-        /*************************************/
-
         Route::get('system/check-update', [
             'as' => 'system.check-update',
             'uses' => 'SystemController@getCheckUpdate',

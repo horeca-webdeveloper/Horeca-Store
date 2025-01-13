@@ -1,4 +1,4 @@
-{{-- 
+{{--
 @if (!empty($data))
     <div
         id="{{ $context }}-sortables"
@@ -11,16 +11,14 @@
 
 @php
     $user = Auth::user(); // Get the logged-in user
+    $userRoles = $user->roles->pluck('name')->all() ?? [];
 
-    // Check if the user has the role with ID 19 (Graphics Role)
-    $hasGraphicsRole = DB::table('role_users')
-        ->where('user_id', $user->id)
-        ->where('role_id', 19)
-        ->exists();
+    // Check if the user's role ID is 19 (Graphic Designer)
+    $hasGraphicsRole = in_array('Graphic Designer', $userRoles);
 
 @endphp
 
-@if (!empty($data) && !$hasGraphicsRole) 
+@if (!empty($data) && !$hasGraphicsRole)
     <div
         id="{{ $context }}-sortables"
         class="meta-box-sortables"

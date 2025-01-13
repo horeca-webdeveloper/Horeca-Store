@@ -5,10 +5,13 @@ namespace Botble\Ecommerce\Http\Controllers;
 use Illuminate\Http\Request;
 
 use Botble\Ecommerce\Models\TempProduct;
+use Botble\Ecommerce\Models\Product;
 use Botble\Ecommerce\Models\UnitOfMeasurement;
 use Botble\Ecommerce\Models\Discount;
 use Botble\Ecommerce\Models\DiscountProduct;
 use Botble\Ecommerce\Models\TempProductComment;
+use Botble\Ecommerce\Models\ProductCategory;
+use Botble\Ecommerce\Models\ProductTypes;
 use Botble\Marketplace\Models\Store;
 
 use DB, Carbon\Carbon;
@@ -17,16 +20,31 @@ class ProductApprovalController extends BaseController
 {
 	public function index()
 	{
-		// Fetch all temporary product changes
-		$tempPricingProducts = TempProduct::where('role_id', 22)->orderBy('created_at', 'desc')->get()->map(function ($product) {
-			$product->discount = $product->discount ? json_decode($product->discount) : [];
-			return $product;
-		});
+		$user = auth()->user();
+		$userRoles = $user->roles->pluck('name')->all() ?? [];
 
-		// dd($tempPricingProducts->toArray());
+		$tempPricingProducts = collect();
+		$tempContentProducts = collect();
+		$tempGraphicsProducts = collect();
 
-		$tempContentProducts = TempProduct::where('role_id', 18)->orderBy('created_at', 'desc')->get();
-		$tempGraphicsProducts = TempProduct::where('role_id', 19)->orderBy('created_at', 'desc')->get();
+		/* Admin can see all products */
+		if (in_array('admin', $userRoles) || $user->isSuperUser()) {
+			$tempPricingProducts = TempProduct::where('role_id', 22)->orderBy('created_at', 'desc')->get();
+			$tempContentProducts = TempProduct::where('role_id', 18)->orderBy('created_at', 'desc')->get();
+			$tempGraphicsProducts = TempProduct::where('role_id', 19)->orderBy('created_at', 'desc')->get();
+		}
+		/* Pricing Manager can see products of Pricing User */
+		else if (in_array('Pricing Manager', $userRoles)) {
+			$tempPricingProducts = TempProduct::where('role_id', 22)->orderBy('created_at', 'desc')->get();
+		}
+		/* Content Manager can see products of Content User */
+		else if (in_array('Content Manager', $userRoles)) {
+			$tempContentProducts = TempProduct::where('role_id', 18)->orderBy('created_at', 'desc')->get();
+		}
+		/* Graphics Manager can see products of Graphics User */
+		else if (in_array('Graphics Manager', $userRoles)) {
+			$tempGraphicsProducts = TempProduct::where('role_id', 19)->orderBy('created_at', 'desc')->get();
+		}
 
 		$unitOfMeasurements = UnitOfMeasurement::pluck('name', 'id')->toArray();
 		$stores = Store::pluck('name', 'id')->toArray();
@@ -37,8 +55,14 @@ class ProductApprovalController extends BaseController
 			'approved' => 'Ready to Publish',
 			'rejected' => 'Rejected for Corrections',
 		];
-
-		return view('plugins/ecommerce::product-approval.index', compact('tempPricingProducts', 'tempContentProducts', 'tempGraphicsProducts', 'unitOfMeasurements', 'stores', 'approvalStatuses'));
+		return view('plugins/ecommerce::product-approval.index', compact(
+			'tempPricingProducts',
+			'tempContentProducts',
+			'tempGraphicsProducts',
+			'unitOfMeasurements',
+			'stores',
+			'approvalStatuses'
+		));
 	}
 
 	public function approvePricingChanges(Request $request)
@@ -197,6 +221,21 @@ class ProductApprovalController extends BaseController
 		logger()->info('Fetch product data with temp content product id: '.$tempContentProductID);
 		$tempContentProduct = TempProduct::find($tempContentProductID);
 
+		if ($tempContentProduct) {
+			// Decode JSON values once
+			$categoryIds = $tempContentProduct->category_ids ? json_decode($tempContentProduct->category_ids, true) : [];
+			$productTypeIds = $tempContentProduct->product_type_ids ? json_decode($tempContentProduct->product_type_ids, true) : [];
+
+			// Fetch categories and product types if IDs exist
+			$categories = !empty($categoryIds) ? ProductCategory::whereIn('id', $categoryIds)->pluck('name')->toArray() : [];
+			$productTypes = !empty($productTypeIds) ? ProductTypes::whereIn('id', $productTypeIds)->pluck('name')->toArray() : [];
+
+			// Assign concatenated names back to the model
+			$tempContentProduct->categories = implode(', ', $categories);
+			$tempContentProduct->productTypes = implode(', ', $productTypes);
+		}
+
+
 		$approvalStatuses = [
 			'in-process' => 'Content In Progress',
 			'pending' => 'Submitted for Approval',
@@ -232,7 +271,6 @@ class ProductApprovalController extends BaseController
 
 	public function approveContentChanges(Request $request, $tempContentProductID)
 	{
-		// dd($request->all(), $tempContentProductID);
 		logger()->info('approveContentChanges method called.');
 		logger()->info('Request Data: ', $request->all());
 
@@ -243,28 +281,146 @@ class ProductApprovalController extends BaseController
 			]
 		]);
 
-		$tempProduct = TempProduct::find($tempContentProductID);
-		$input = $request->all();
+		$tempProduct = TempProduct::findOrFail($tempContentProductID);
+		if ($tempProduct->approval_status == 'pending' && $request->approval_status == 'approved') {
+			DB::beginTransaction();
+			try {
+				/* Create or update the product */
+				$product = $this->createOrUpdateProduct($tempProduct);
 
-		if($tempProduct->approval_status=='pending' && $request->approval_status=='approved') {
-			unset($input['_token'], $input['id'], $input['initial_approval_status'], $input['approval_status']);
-			$tempProduct->product->update([
-				'name' => $tempProduct->name,
-				'description' => $tempProduct->description,
-				'content' => $tempProduct->content,
-			]);
+				/* Create or update related data */
+				$this->updateProductCategory($tempProduct->product, $tempProduct->category_ids);
+				$this->updateProductTypes($tempProduct->product, $tempProduct->product_type_ids);
+				$this->updateSeoMetaData($tempProduct, $product);
+				$this->updateSlugData($tempProduct, $product);
+
+				/* Update tempProduct approval status */
+				$tempProduct->update([
+					'approval_status' => $request->approval_status,
+					'approved_by' => auth()->id()
+				]);
+
+				DB::commit();
+
+				return redirect()->route('product_approval.index', ['tab' => 'content_tab'])->with('success', 'Product changes approved and updated successfully.');
+			} catch (\Exception $e) {
+				DB::rollBack();
+				logger()->error('Error in approveContentChanges: ', ['error' => $e->getMessage()]);
+				return redirect()->back()->with('error', 'An error occurred while approving product changes.');
+			}
+		} else if ($tempProduct->approval_status == 'pending' && $request->approval_status == 'rejected') {
 			$tempProduct->update([
 				'approval_status' => $request->approval_status,
-				'approved_by' => auth()->id()
-			]);
-		} else if($tempProduct->approval_status=='pending' && $request->approval_status=='rejected') {
-			$tempProduct->update([
-				'approval_status' => $request->approval_status,
-				'rejection_count' => \DB::raw('rejection_count + 1'),
+				'rejection_count' => DB::raw('rejection_count + 1'),
 				'approved_by' => auth()->id(),
 				'remarks' => $request->remarks
 			]);
 		}
 		return redirect()->route('product_approval.index', ['tab' => 'content_tab'])->with('success', 'Product changes approved and updated successfully.');
+	}
+
+	private function createOrUpdateProduct($tempProduct)
+	{
+		/* If `product_id` exists, update the existing product; otherwise, create a new product */
+		$product = $tempProduct->product_id
+		? Product::findOrFail($tempProduct->product_id)
+		: new Product();
+
+		$product->fill([
+			'name' => $tempProduct->name,
+			'sku' => $tempProduct->sku,
+			'description' => $tempProduct->description,
+			'content' => $tempProduct->content,
+			'warranty_information' => $tempProduct->warranty_information,
+			'google_shopping_category' => $tempProduct->google_shopping_category,
+			'created_by_id' => $tempProduct->product_id ? $tempProduct->product->created_by_id : auth()->id(),
+		]);
+
+		$product->save();
+
+		return $product;
+	}
+
+	private function updateProductCategory($product, $categoryIds)
+	{
+		/* Step 1: Fetch selected category IDs from the request */
+		$selectedCategories = json_decode($categoryIds, true) ?? [];
+
+		/* Step 2: Fetch existing pivot data for the product */
+		$existingCategories = $product->categories()->pluck('category_id')->toArray();
+
+		if (array_diff($selectedCategories, $existingCategories)) {
+			/* Clear existing specs */
+			$product->specifications()->delete();
+		}
+
+		/* Step 3: Prepare categories for syncing */
+		$categoriesWithTimestamps = collect($selectedCategories)->mapWithKeys(function ($categoryId) use ($existingCategories) {
+			if (in_array($categoryId, $existingCategories)) {
+				/* Existing category, do not modify created_at */
+				return [$categoryId => []];
+			} else {
+				/* New category, set created_at */
+				return [$categoryId => ['created_at' => now()]];
+			}
+		})->toArray();
+
+		/* Step 4: Sync categories */
+		$product->categories()->sync($categoriesWithTimestamps);
+		return true;
+	}
+
+	private function updateProductTypes($product, $productTypeIds)
+	{
+		$productTypeIds = json_decode($productTypeIds, true) ?? [];
+		$product->producttypes()->sync($productTypeIds);
+		return true;
+	}
+
+	private function updateSeoMetaData($tempProduct, $product)
+	{
+		/* Retrieve or create the SEO metadata */
+		$seoMetaData = $product->seoMetaData ?: new MetaBox([
+			'meta_key' => 'seo_meta',
+			'reference_id' => $product->id,
+			'reference_type' => Product::class,
+		]);
+
+		/* Decode existing meta_value if present */
+		$existingMetaValue = is_array($seoMetaData->meta_value)
+			? $seoMetaData->meta_value
+			: (json_decode($seoMetaData->meta_value, true) ?? []);
+
+		/* Ensure $existingMetaValue is an array */
+		if (!is_array($existingMetaValue)) {
+			$existingMetaValue = [];
+		}
+
+		/* Merge existing index with new data */
+		$updatedMetaValue = [
+			'seo_title' => $tempProduct->seo_title,
+			'seo_description' => $tempProduct->seo_description,
+			'index' => $existingMetaValue['index'] ?? 'index', // Retain existing index if not provided
+		];
+
+		/* Store the updated meta value as an array */
+		$seoMetaData->meta_value = [$updatedMetaValue];
+
+		/* Save the updated meta data */
+		$seoMetaData->save();
+	}
+
+	private function updateSlugData($tempProduct, $product)
+	{
+		/* Retrieve or create the slug data */
+		$slugData = $product->slugData ?: new Slug([
+			'prefix' => 'products',
+			'reference_id' => $product->id,
+			'reference_type' => Product::class,
+		]);
+
+		$slugData->key = $tempProduct->slug;
+
+		$slugData->save();
 	}
 }

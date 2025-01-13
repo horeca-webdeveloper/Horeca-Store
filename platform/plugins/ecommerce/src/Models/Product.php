@@ -6,6 +6,8 @@ use Botble\ACL\Models\User;
 use Botble\Base\Casts\SafeContent;
 use Botble\Base\Enums\BaseStatusEnum;
 use Botble\Base\Models\BaseModel;
+use Botble\Base\Models\MetaBox;
+use Botble\Slug\Models\Slug;
 use Botble\Ecommerce\Enums\DiscountTargetEnum;
 use Botble\Ecommerce\Enums\DiscountTypeEnum;
 use Botble\Ecommerce\Enums\ProductTypeEnum;
@@ -123,6 +125,7 @@ class Product extends BaseModel
         'variant_3_title' => 'nullable|string|max:255',
         'variant_3_value' => 'nullable|string|max:255',
         'variant_3_products' => 'nullable|string',
+        'google_shopping_category',
 
     ];
 
@@ -209,6 +212,28 @@ class Product extends BaseModel
             'product_id',
             'category_id'
         );
+    }
+
+    public function producttypes(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            ProductTypes::class,
+            'ec_products_product_types_product',
+            'product_id',
+            'producttypes_id'
+        );
+    }
+
+    // In the Product model (e.g., app/Models/Product.php)
+    public function seoMetaData()
+    {
+        return $this->morphOne(MetaBox::class, 'reference')->where('meta_key', 'seo_meta');
+    }
+
+    // In the Product model (e.g., app/Models/Product.php)
+    public function slugData()
+    {
+        return $this->morphOne(Slug::class, 'reference')->where('prefix', 'products');
     }
 
     public function latestCategorySpecifications()
@@ -308,16 +333,6 @@ class Product extends BaseModel
             'tag_id'
         );
     }
-    public function producttypes(): BelongsToMany
-{
-    return $this->belongsToMany(
-        ProductTypes::class,
-        'ec_products_product_types_product',
-        'product_id',
-        'producttypes_id'
-    );
-}
-
 
     public function brand(): BelongsTo
     {
@@ -844,11 +859,10 @@ class Product extends BaseModel
         return false; // Or return null if you want to differentiate between guest and no wishlist
     }
 
-
-            // In the Product model (e.g., app/Models/Product.php)
-        public function recentlyViewed()
-        {
-            return $this->hasMany(RecentlyViewedProduct::class, 'product_id');
-        }
+    // In the Product model (e.g., app/Models/Product.php)
+    public function recentlyViewed()
+    {
+        return $this->hasMany(RecentlyViewedProduct::class, 'product_id');
+    }
 
 }

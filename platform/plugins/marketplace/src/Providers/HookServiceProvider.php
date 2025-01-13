@@ -495,20 +495,22 @@ class HookServiceProvider extends ServiceProvider
 
             $form
                 ->when($stores, function (FormAbstract $form) use ($stores) {
-                    $form
-                        ->addAfter(
-                            'status',
-                            'store_id',
-                            SelectField::class,
-                            SelectFieldOption::make()
-                              //  ->label(trans('plugins/marketplace::store.forms.store'))
-                              ->label("Vendor")
-                                ->choices($stores)
-                                ->searchable()
-                                ->emptyValue(trans('plugins/marketplace::store.forms.select_store'))
-                                ->allowClear()
-                                ->toArray()
-                        );
+                    if(auth()->user() && \DB::table('role_users')->where('user_id', auth()->user()->id)->whereIn('role_id', [18])->exists() ) {} else {
+                        $form
+                            ->addAfter(
+                                'status',
+                                'store_id',
+                                SelectField::class,
+                                SelectFieldOption::make()
+                                  //  ->label(trans('plugins/marketplace::store.forms.store'))
+                                  ->label("Vendor")
+                                    ->choices($stores)
+                                    ->searchable()
+                                    ->emptyValue(trans('plugins/marketplace::store.forms.select_store'))
+                                    ->allowClear()
+                                    ->toArray()
+                            );
+                    }
                 });
         } elseif ($form instanceof CustomerForm) {
             if ($data->is_vendor && $form->has('status')) {

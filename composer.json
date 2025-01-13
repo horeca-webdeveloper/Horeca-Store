@@ -33,10 +33,11 @@
         "laravel/sanctum": "^3.3",
         "laravel/tinker": "^2.9",
         "predis/predis": "^2.2",
+        "square/square": "^39.1",
         "wikimedia/composer-merge-plugin": "^2.1"
     },
     "require-dev": {
-        "barryvdh/laravel-debugbar": "*",
+        "barryvdh/laravel-debugbar": "^3.8",
         "botble/dev-tool": "^1.0.2",
         "botble/git-commit-checker": "^2.1",
         "fakerphp/faker": "^1.23",
