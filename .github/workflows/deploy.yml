@@ -32,81 +32,85 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
       
-      # Step 5: Debug SSH setup
-      - name: Debug SSH setup
+      # Step 5: Debug and deployment
+      - name: Add SSH key and deploy to EC2
         run: |
-          echo "Setting up SSH configuration..."
+          # Setup SSH
           mkdir -p ~/.ssh
           echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           
-          echo "Configuring SSH..."
+          # Disable strict host key checking
           echo "Host *" > ~/.ssh/config
           echo "  StrictHostKeyChecking no" >> ~/.ssh/config
           echo "  UserKnownHostsFile=/dev/null" >> ~/.ssh/config
           
-          echo "Testing SSH key..."
-          ssh-keygen -l -f ~/.ssh/id_ed25519 || echo "Invalid SSH key format"
-          
-          echo "Testing connection..."
-          ssh -v -i ~/.ssh/id_ed25519 ubuntu@${{ secrets.AWS_INSTANCE_IP }} "echo 'Connection successful'"
-
-      # Step 6: Main deployment (only runs if SSH test succeeds)
-      - name: Deploy to EC2
-        if: success()
-        run: |
+          # Deploy to EC2
           ssh -i ~/.ssh/id_ed25519 ubuntu@${{ secrets.AWS_INSTANCE_IP }} << 'EOF'
-            # Rest of your deployment script remains the same
+            # Navigate to project directory
             cd /var/www/html/Horeca-Store
             
+            # Fix Git ownership issue
             sudo git config --global --add safe.directory /var/www/html/Horeca-Store
             sudo git config --global --add safe.directory '*'
             
+            # Debug information
             echo "Current directory: $(pwd)"
             echo "Git status before pull:"
             sudo git status
             
+            # Fix permissions before git operations
             sudo chown -R ubuntu:ubuntu .
             sudo find . -type f -exec chmod 644 {} \;
             sudo find . -type d -exec chmod 755 {} \;
             
+            # Fetch and reset to origin/main
             git fetch origin main
             git reset --hard origin/main
             
+            # Show git status after pull
             echo "Git status after pull:"
             git status
             
+            # Fix permissions for web server
             sudo chown -R www-data:www-data .
             
+            # Ensure storage directories exist and are writable
             sudo mkdir -p storage/framework/cache
             sudo mkdir -p storage/framework/sessions
             sudo mkdir -p storage/framework/views
             sudo mkdir -p storage/logs
             sudo mkdir -p bootstrap/cache
             
+            # Set proper permissions for storage and bootstrap/cache
             sudo chown -R www-data:www-data storage bootstrap/cache
             sudo chmod -R 775 storage bootstrap/cache
             
+            # Install dependencies and optimize
             sudo -u www-data composer install --no-dev --optimize-autoloader
             
+            # Clear all caches
             sudo php artisan cache:clear
             sudo php artisan config:clear
             sudo php artisan view:clear
             sudo php artisan route:clear
             
+            # Run migrations
             sudo php artisan migrate --force
             
+            # Optimize
             sudo php artisan optimize
             
+            # Show deployment completion message
             echo "Deployment completed successfully!"
             
+            # Show latest commits
             echo "Latest commits:"
             git log -3 --oneline
           EOF
 
-      # Step 7: Verify deployment
+      # Step 6: Verify deployment
       - name: Verify deployment
-        if: success()
         run: |
           ssh -i ~/.ssh/id_ed25519 ubuntu@${{ secrets.AWS_INSTANCE_IP }} << 'EOF'
             cd /var/www/html/Horeca-Store
