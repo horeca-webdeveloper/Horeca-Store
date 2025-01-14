@@ -231,6 +231,7 @@ public function createReview(Request $request)
         $review->update($dataToUpdate);
 
         return response()->json([
+            'success' => true,
             'message' => 'Review updated successfully.',
             'review' => $review,
         ]);
