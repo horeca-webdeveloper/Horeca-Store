@@ -32,27 +32,35 @@
 		<!-- Specifications -->
 		<div id="specification-container">
 			<div class="row">
-				<div class="col-md-1">
-					<label for="specifications">Checked</label>
+				<div class="col-md-2">
+					<label for="specifications">Specification Type</label>
 				</div>
 				<div class="col-md-3">
 					<label for="specifications">Specification Name</label>
 				</div>
-				<div class="col-md-8">
+				<div class="col-md-7">
 					<label for="specifications">Specification Values</label>
 				</div>
 			</div>
 			@foreach ($category->specifications as $index => $specification)
 				<div class="specification-group mt-3">
 					<div class="row">
-						<div class="col-md-1 justify-content-end text-end">
-							<input
+						{{-- <div class="col-md-1 justify-content-end text-end"> --}}
+						<div class="col-md-2">
+							{{-- <input
 								class="mt-2"
 								type="checkbox"
 								name="specifications[{{$index}}][is_checked]"
 								value="1"
 								{{ $specification->is_checked ? 'checked' : '' }}
-							/>
+							/> --}}
+							<select id="" name="specifications[{{$index}}][specification_type]" class="form-control select2">
+								@foreach ($specificationTypes as $type)
+									<option value="{{ $type }}" {{ $type == $specification->specification_type ? 'selected' : '' }}>
+										{{ $type }}
+									</option>
+								@endforeach
+							</select>
 						</div>
 
 						<div class="col-md-3">
@@ -64,7 +72,7 @@
 								placeholder="Specification {{ $index + 1 }}"
 							/>
 						</div>
-						<div class="col-md-8">
+						<div class="col-md-7">
 							<div class="row specification-values" id="specification_value_{{$index}}">
 								@php($specVals = $specification->specification_values ? explode("|", $specification->specification_values) : [])
 								@foreach ($specVals as $index2 => $specVal)
@@ -133,13 +141,22 @@
 			@for ($i = $category->specifications->count(); $i < 3; $i++)
 				<div class="specification-group mt-3">
 					<div class="row">
-						<div class="col-md-1 justify-content-end text-end">
-							<input
+						<div class="col-md-2">
+						{{-- <div class="col-md-1 justify-content-end text-end"> --}}
+							{{-- <input
 								class="mt-2"
 								type="checkbox"
 								name="specifications[{{$i}}][is_checked]"
 								value="1"
-							/>
+							/> --}}
+
+							<select name="specifications[{{$i}}][specification_type]" class="form-control select2">
+								@foreach ($specificationTypes as $type)
+									<option value="{{ $type }}">
+										{{ $type }}
+									</option>
+								@endforeach
+							</select>
 						</div>
 						<div class="col-md-3">
 							<input
@@ -149,7 +166,7 @@
 								placeholder="Specification {{ $i + 1 }}"
 							/>
 						</div>
-						<div class="col-md-8">
+						<div class="col-md-7">
 							<div class="row specification-values" id="specification_value_{{$i}}">
 								@for ($j = 0; $j < 5; $j++)
 									<div class="col-md-2 mb-2">
@@ -209,15 +226,20 @@
 
 			const newSpecification = document.createElement('div');
 			newSpecification.classList.add('specification-group', 'mt-3');
+
+			// Assuming `specificationTypes` is passed to JavaScript as a global variable or fetched via an API
+			const specificationTypes = {!! json_encode($specificationTypes) !!}; // Replace with appropriate method if not inline
+
+			// Create the options for the specification_type dropdown
+			const specificationTypeOptions = specificationTypes.map((type) => {
+				return `<option value="${type}">${type}</option>`;
+			}).join('');
 			newSpecification.innerHTML = `
 				<div class="row">
-					<div class="col-md-1 justify-content-end text-end">
-						<input
-							class="mt-2"
-							type="checkbox"
-							name="specifications[${index}][is_checked]"
-							value="1"
-						/>
+					<div class="col-md-2">
+						<select id="" name="specifications[${index}][specification_type]" class="form-control select2">
+							${specificationTypeOptions}
+						</select>
 					</div>
 					<div class="col-md-3">
 						<input
@@ -227,7 +249,7 @@
 							placeholder="Specification ${index + 1}"
 						/>
 					</div>
-					<div class="col-md-8">
+					<div class="col-md-7">
 						<div class="row specification-values" id="specification_value_${index}">
 							${Array.from({ length: 5 })
 								.map((_, j) => `

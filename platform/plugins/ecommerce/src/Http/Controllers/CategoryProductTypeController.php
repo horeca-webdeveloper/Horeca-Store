@@ -52,10 +52,11 @@ class CategoryProductTypeController extends BaseController
 
 		// Fetch all available product types for the multi-select
 		// $productTypes = ProductTypes::all(['id', 'name']);
+		$specificationTypes = ['At a Glance', 'Comparision', 'Filters'];
 
 		// Pass the data to the edit view
 		// return view('plugins/ecommerce::category-product-type.edit', compact('category', 'productTypes'));
-		return view('plugins/ecommerce::category-product-type.edit', compact('category'));
+		return view('plugins/ecommerce::category-product-type.edit', compact('category', 'specificationTypes'));
 	}
 
 	/**
@@ -72,12 +73,14 @@ class CategoryProductTypeController extends BaseController
 		$category->specifications()->delete();
 		foreach ($request->input('specifications', []) as $specification) {
 			if (!empty($specification['name'])) {
-				$category->specifications()->create([
-					'is_checked' => isset($specification['is_checked']) && $specification['is_checked'] ? 1 : 0,
-					'specification_name' => $specification['name'],
-					'specification_values' => implode('|', array_filter($specification['vals'], fn($val) => !is_null($val))),
-
-				]);
+				$exists = $category->specifications()->where('specification_name', $specification['name'])->exists();
+				if (!$exists) {
+					$category->specifications()->create([
+						'specification_type' => $specification['specification_type'],
+						'specification_name' => $specification['name'],
+						'specification_values' => implode('|', array_unique(array_filter($specification['vals'], fn($val) => !is_null($val))))
+					]);
+				}
 			}
 		}
 
@@ -87,6 +90,6 @@ class CategoryProductTypeController extends BaseController
 
 		// Redirect back to the index with the search and page parameters
 		return redirect()->route('categoryFilter.index', ['search' => $search, 'page' => $page])
-			->with('success', 'Category updated successfully.');
+		->with('success', 'Category updated successfully.');
 	}
 }

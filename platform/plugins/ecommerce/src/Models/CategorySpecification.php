@@ -8,9 +8,9 @@ class CategorySpecification extends Model
 {
 	protected $fillable = [
 		'category_id',
+		'specification_type',
 		'specification_name',
 		'specification_values',
-		'is_checked',
 		'created_by',
 		'updated_by'
 	];
