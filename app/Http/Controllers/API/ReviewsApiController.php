@@ -45,10 +45,12 @@ class ReviewsApiController extends Controller
         }
 
         // Filter for lowest ratings
-        if ($request->has('sort') && $request->input('sort') === 'lowest') {
+        elseif  ($request->has('sort') && $request->input('sort') === 'lowest') {
             $query->orderBy('star', 'asc');
         }
-
+        else {
+        $query->orderBy('created_at', 'desc'); // Default to latest first
+    }
         // Get reviews with pagination after applying filters
         $reviews = $query->paginate($request->input('per_page', 15));
 
