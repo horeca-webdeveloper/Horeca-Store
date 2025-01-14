@@ -63,7 +63,7 @@ class PaymentApiController extends Controller
             'operation' => 'purchase',
             // 'success_url' => route('payment.success'),
             'success_url' => 'https://thehorecastore.co/payment/success',
-            'success_url' => 'https://thehorecastore.co/payment/cancel',
+            'cancel_url' => 'https://thehorecastore.co/payment/cancel',
             // 'cancel_url' => route('payment.cancel'),
             'hash' => $hash,
             'order' => $order_json,
