@@ -286,19 +286,42 @@ public function viewCart(Request $request)
 
 
        
+    // public function clearCart(Request $request)
+    // {
+    //     if (Auth::check()) {
+    //         Cart::where('user_id', Auth::id())->delete();
+    //     } else {
+    //         Cart::where('session_id', $request->session()->getId())->delete();
+    //     }
+
+    //     return response()->json([
+    //         'success' => true,
+    //           'messege' => 'Clear Cart Successfully',
+    //     ]);
+    // }
     public function clearCart(Request $request)
     {
+        $deleted = 0; // Track rows deleted
+        
         if (Auth::check()) {
-            Cart::where('user_id', Auth::id())->delete();
+            $deleted = Cart::where('user_id', Auth::id())->delete();
         } else {
-            Cart::where('session_id', $request->session()->getId())->delete();
+            $deleted = Cart::where('session_id', $request->session()->getId())->delete();
         }
-
-        return response()->json([
-            'success' => true,
-              'messege' => 'Clear Cart Successfully',
-        ]);
+    
+        if ($deleted > 0) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Cart cleared successfully.',
+            ]);
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cart was already empty or could not be cleared.',
+            ]);
+        }
     }
+    
     public function clearProductFromCart(Request $request, $productId)
     {
     // Determine if the user is logged in and get the user ID
