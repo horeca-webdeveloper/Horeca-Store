@@ -14,8 +14,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema; // Import Schema facade
 class TempProductStatusController extends BaseController
 {
-	public function index()
+	public function index(Request $request)
 	{
+		$type = $request->type ?? null;
 		$userRoleId = auth()->user()->roles->value('id');
 		if ($userRoleId == 22) {
 			// Fetch all temporary product changes
@@ -32,7 +33,7 @@ class TempProductStatusController extends BaseController
 				'approved' => 'Ready to Publish',
 				'rejected' => 'Rejected for Corrections',
 			];
-			return view('plugins/ecommerce::temp-products.pricing', compact('tempPricingProducts', 'unitOfMeasurements', 'stores', 'approvalStatuses'));
+			return view('plugins/ecommerce::temp-products.pricing.index', compact('tempPricingProducts', 'unitOfMeasurements', 'stores', 'approvalStatuses', 'type'));
 		} else if ($userRoleId == 19) {
 			// Fetch all temporary product changes
 			$tempGraphicsProducts = TempProduct::where('role_id', $userRoleId)->where('created_by', auth()->id())->orderBy('created_at', 'desc')->get();
@@ -42,7 +43,7 @@ class TempProductStatusController extends BaseController
 				'approved' => 'Ready to Publish',
 				'rejected' => 'Rejected for Corrections',
 			];
-			return view('plugins/ecommerce::temp-products.graphics', compact('tempGraphicsProducts', 'approvalStatuses'));
+			return view('plugins/ecommerce::temp-products.graphics', compact('tempGraphicsProducts', 'approvalStatuses', 'type'));
 		} else if ($userRoleId == 18) {
 			// Fetch all temporary product changes
 			$tempContentProducts = TempProduct::where('role_id', $userRoleId)->where('created_by', auth()->id())->orderBy('created_at', 'desc')->get();
@@ -55,7 +56,7 @@ class TempProductStatusController extends BaseController
 				'approved' => 'Ready to Publish',
 				'rejected' => 'Rejected for Corrections',
 			];
-			return view('plugins/ecommerce::temp-products.content', compact('tempContentProducts', 'approvalStatuses', 'productCategories', 'productTypes'));
+			return view('plugins/ecommerce::temp-products.content.index', compact('tempContentProducts', 'approvalStatuses', 'productCategories', 'productTypes', 'type'));
 		} else {
 			return back()->with('error', 'You dont have permission');
 		}

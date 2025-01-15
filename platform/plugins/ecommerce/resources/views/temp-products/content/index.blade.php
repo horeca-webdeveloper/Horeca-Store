@@ -15,28 +15,36 @@
 <body>
 	<div class="row text-center">
 		<div class="col-md-3 mb-3">
-			<div class="bg-info text-white py-3 h-100 d-flex flex-column justify-content-center">
-				<h6>Content In Progress</h6>
-				<h2>{{ $tempContentProducts->where('approval_status', 'in-process')->count() }}</h2>
-			</div>
+			<a href="{{ route(Route::currentRouteName(), ['type' => 'in-process']) }}" class="text-decoration-none">
+				<label class="form-label bg-info text-white text-center py-3 h6">
+					Content In Progress<br/>
+					<span class="h2">{{ $tempContentProducts->where('approval_status', 'in-process')->count() }}</span>
+				</label>
+			</a>
 		</div>
 		<div class="col-md-3 mb-3">
-			<div class="bg-warning text-white py-3 h-100 d-flex flex-column justify-content-center">
-				<h6>Submitted for Approval</h6>
-				<h2>{{ $tempContentProducts->where('approval_status', 'pending')->count() }}</h2>
-			</div>
+			<a href="{{ route(Route::currentRouteName(), ['type' => 'pending']) }}" class="text-decoration-none">
+				<label class="form-label bg-warning text-white text-center py-3 h6">
+					Submitted for Approval<br/>
+					<span class="h2">{{ $tempContentProducts->where('approval_status', 'pending')->count() }}</span>
+				</label>
+			</a>
 		</div>
 		<div class="col-md-3 mb-3">
-			<div class="bg-success text-white py-3 h-100 d-flex flex-column justify-content-center">
-				<h6>Ready to Publish</h6>
-				<h2>{{ $tempContentProducts->where('approval_status', 'approved')->count() }}</h2>
-			</div>
+			<a href="{{ route(Route::currentRouteName(), ['type' => 'approved']) }}" class="text-decoration-none">
+				<label class="form-label bg-success text-white text-center py-3 h6">
+					Ready to Publish<br/>
+					<span class="h2">{{ $tempContentProducts->where('approval_status', 'approved')->count() }}</span>
+				</label>
+			</a>
 		</div>
 		<div class="col-md-3 mb-3">
-			<div class="bg-danger text-white py-3 h-100 d-flex flex-column justify-content-center">
-				<h6>Rejected for Corrections</h6>
-				<h2>{{ $tempContentProducts->sum('rejection_count') }}</h2>
-			</div>
+			<a href="{{ route(Route::currentRouteName(), ['type' => 'rejected']) }}" class="text-decoration-none">
+				<label class="form-label bg-danger text-white text-center py-3 h6">
+					Rejected for Corrections<br/>
+					<span class="h2">{{ $tempContentProducts->sum('rejection_count') }}</span>
+				</label>
+			</a>
 		</div>
 	</div>
 
@@ -52,6 +60,11 @@
 				</tr>
 			</thead>
 			<tbody>
+				@php
+					if(!empty($type)) {
+						$tempContentProducts = $tempContentProducts->where('approval_status', $type);
+					}
+				@endphp
 				@foreach ($tempContentProducts as $tempContentProduct)
 				<tr>
 					<td>{{ $tempContentProduct->product_id }}</td>
@@ -60,9 +73,13 @@
 					<td>{{ $approvalStatuses[$tempContentProduct->approval_status] ?? '' }}</td>
 					<td>
 						@if($tempContentProduct->approval_status == 'in-process' || $tempContentProduct->approval_status == 'rejected')
-						<button type="button" class="btn btn-sm btn-outline-primary" data-toggle="modal" data-target="#editContentModal" data-product="{{ htmlspecialchars(json_encode($tempContentProduct->toArray(), JSON_HEX_APOS | JSON_HEX_QUOT), ENT_QUOTES, 'UTF-8') }}" data-comments="{{json_encode($tempContentProduct->comments->toArray())}}">
-							<i class="fas fa-pencil-alt"></i> Edit
-						</button>
+							<button type="button" class="btn btn-sm btn-outline-success" data-toggle="modal" data-target="#editContentModal" data-product="{{ htmlspecialchars(json_encode($tempContentProduct->toArray(), JSON_HEX_APOS | JSON_HEX_QUOT), ENT_QUOTES, 'UTF-8') }}" data-comments="{{json_encode($tempContentProduct->comments->toArray())}}">
+								<i class="fas fa-pencil-alt"></i> Edit
+							</button>
+						@else
+							<button type="button" class="btn btn-sm btn-outline-info" data-toggle="modal" data-target="#viewContentModal" data-product="{{ htmlspecialchars(json_encode($tempContentProduct->toArray(), JSON_HEX_APOS | JSON_HEX_QUOT), ENT_QUOTES, 'UTF-8') }}" data-comments="{{json_encode($tempContentProduct->comments->toArray()) }}">
+								<i class="fas fa-eye"></i> View
+							</button>
 						@endif
 					</td>
 				</tr>
@@ -71,114 +88,8 @@
 		</table>
 	</div>
 
-	<!-- Content Modal -->
-	<div class="modal fade" id="editContentModal" tabindex="-1" aria-labelledby="editContentModalLabel" aria-hidden="true">
-		<div class="modal-dialog modal-lg">
-			<div class="modal-content">
-				<div class="modal-header">
-					<h5 class="modal-title">Edit Product</h5>
-					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
-						<span aria-hidden="true">&times;</span>
-					</button>
-				</div>
-				<div class="modal-body">
-					<form action="{{ route('temp-products.content_update') }}" method="POST">
-						@csrf
-						<div class="mb-3">
-							<h6>Product ID: <span id="content_product_id"></span></h6>
-							<input type="hidden" id="content_id" name="id">
-						</div>
-
-						<div class="form-group">
-							<label for="content_category_ids">Categories</label>
-							<select class="form-control select2" multiple="multiple" id="content_category_ids" name="category_ids[]"></select>
-						</div>
-
-						<div class="form-group">
-							<label for="content_google_shopping_category">Google Shopping Category</label>
-							<textarea class="form-control" id="content_google_shopping_category" name="google_shopping_category"></textarea>
-						</div>
-
-						<div class="form-group">
-							<label for="content_product_type_ids">Product Types</label>
-							<select class="form-control select2" multiple="multiple" id="content_product_type_ids" name="product_type_ids[]"></select>
-						</div>
-
-						<div class="form-group">
-							<label for="content_name">Name</label>
-							<textarea class="form-control" id="content_name" name="name"></textarea>
-						</div>
-
-						<div class="form-group">
-							<label for="content_slug">Slug</label>
-							<textarea class="form-control" id="content_slug" name="slug"></textarea>
-						</div>
-
-						<div class="form-group">
-							<label for="content_sku">SKU</label>
-							<input class="form-control" type="text" id="content_sku" name="sku">
-						</div>
-
-						<div class="form-group">
-							<label for="content_description">Description</label>
-							<textarea class="form-control" id="content_description" name="description"></textarea>
-						</div>
-
-						<div class="form-group">
-							<label for="content_content">Content</label>
-							<textarea class="form-control" id="content_content" name="content"></textarea>
-						</div>
-
-						<div class="form-group">
-							<label for="content_warranty_information">Warranty Information</label>
-							<textarea class="form-control" id="content_warranty_information" name="warranty_information"></textarea>
-						</div>
-
-						<div class="form-group">
-							<label for="content_seo_title">SEO Title</label>
-							<textarea class="form-control" id="content_seo_title" name="seo_title"></textarea>
-						</div>
-
-						<div class="form-group">
-							<label for="content_seo_description">SEO Description</label>
-							<textarea class="form-control" id="content_seo_description" name="seo_description"></textarea>
-						</div>
-
-						{{-- Comments Section --}}
-						<div class="row mt-3 d-none" id="comments">
-							<div class="col-md-12">
-								<label>Issues</label>
-								<table class="table table-striped table-bordered">
-									<thead>
-										<tr>
-											<th>Field Name</th>
-											<th>Highlighted Text</th>
-											<th>Comment</th>
-											<th>Created At</th>
-										</tr>
-									</thead>
-									<tbody>
-										{{-- Data populated dynamically by jQuery --}}
-									</tbody>
-								</table>
-							</div>
-						</div>
-
-						<div class="form-check ms-3">
-							<input type="checkbox" class="form-check-input" id="pricing_in_process" name="in_process" value="1">
-							<label class="form-check-label" for="pricing_in_process">Is Draft</label>
-						</div>
-
-						<div class="form-group mt-3">
-							<label for="content_remarks">Remarks</label>
-							<textarea class="form-control" id="content_remarks" name="remarks" readonly></textarea>
-						</div>
-						<button type="submit" class="btn btn-primary">Submit</button>
-					</form>
-				</div>
-			</div>
-		</div>
-	</div>
+	@include('plugins/ecommerce::temp-products.content.edit')
+	@include('plugins/ecommerce::temp-products.content.view')
 
 	<!-- JS Dependencies -->
 	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -347,6 +258,90 @@
 				});
 			}
 		});
+
+
+		// Initialize modal content dynamically
+		$(document).on('click', '[data-target="#viewContentModal"]', function () {
+			const productData = $(this).attr('data-product');
+			const decodedData = $('<textarea/>').html(productData).text();
+
+			// Parse the JSON string into a JavaScript object
+			const product = JSON.parse(decodedData);
+
+			// Populate modal fields
+			$('#content_view_product_id').text(product.product_id);
+			$('#content_view_id').text(product.id);
+			$('#content_view_google_shopping_category').text(product.google_shopping_category);
+			$('#content_view_name').text(product.name);
+			$('#content_view_slug').text(product.slug);
+			$('#content_view_sku').text(product.sku);
+			$('#content_view_description').html(product.description);
+			$('#content_view_content').html(product.content);
+			$('#content_view_warranty_information').html(product.warranty_information);
+			$('#content_view_seo_title').html(product.seo_title);
+			$('#content_view_seo_description').html(product.seo_description);
+			$('#content_view_remarks').html(product.remarks);
+
+			// Function to get category names based on IDs
+			const productCategories = @json($productCategories);
+			let selectedCategoryIds = JSON.parse(product.category_ids);
+			const categoryNames = getCategoryNamesFromIds(selectedCategoryIds, productCategories);
+			$('#content_view_categories').text(categoryNames);
+
+			const productTypes = @json($productTypes);
+			let selectedProductTypeIds = JSON.parse(product.product_type_ids);
+			const productTypeNames = getProductTypeNamesFromIds(selectedProductTypeIds, productTypes);
+			$('#content_view_product_types').text(productTypeNames);
+
+
+			// var comments = $(this).data('comments'); // Get comments string from the button
+
+			// var tbody = $("#comments tbody");
+			// // Clear previous rows
+			// tbody.empty();
+
+			// // Populate comments table
+			// if (comments && comments.length > 0) {
+			// 	$("#comments").removeClass("d-none"); // Show comments section
+			// 	comments.forEach(function (comment) {
+			// 		var row = `
+			// 			<tr>
+			// 				<td>${comment.comment_type}</td>
+			// 				<td>${comment.highlighted_text}</td>
+			// 				<td>${comment.comment}</td>
+			// 				<td>${new Date(comment.created_at).toLocaleString()}</td>
+			// 			</tr>
+			// 		`;
+			// 		tbody.append(row);
+			// 	});
+			// } else {
+			// 	$("#comments").addClass("d-none"); // Hide comments section if no comments
+			// }
+		});
+
+		function getProductTypeNamesFromIds(typeIds, allTypes) {
+			return typeIds
+				.map(id => allTypes[id]) // Map each ID to its name
+				.filter(Boolean) // Remove any undefined/null values
+				.join(', '); // Join the names with a comma
+		}
+		function getCategoryNamesFromIds(categoryIds, allCategories) {
+			// Helper function to recursively find categories by ID
+			function findCategoryNameById(id, categories) {
+				for (let category of categories) {
+					if (category.id == id) {
+						return category.name;
+					}
+					if (category.childrens && category.childrens.length) {
+						const name = findCategoryNameById(id, category.childrens);
+						if (name) return name;
+					}
+				}
+				return null; // Return null if not found
+			}
+			// Map each ID to its corresponding name
+			return categoryIds.map(id => findCategoryNameById(id, allCategories)).filter(Boolean).join(', ');
+		}
 	</script>
 </body>
 @endsection
