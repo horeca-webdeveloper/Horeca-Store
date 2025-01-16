@@ -228,7 +228,14 @@
         "e2df835384821fa5036252a0581ba12b@ecommerce_categories_for_widgets_4cc9f5cc65c8842f98d3cae0142194e8",
         "e2df835384821fa5036252a0581ba12b@ecommerce_categories_for_widgets_7df47d5caf808b0b9cc4948b6b82f829",
         "e2df835384821fa5036252a0581ba12b@ecommerce_categories_for_widgets_6975e06414af48f83e93a3698f7b2af2",
-        "e2df835384821fa5036252a0581ba12b@ecommerce_categories_for_widgets_1e1d534889948e9023b73023652cae62"
+        "e2df835384821fa5036252a0581ba12b@ecommerce_categories_for_widgets_1e1d534889948e9023b73023652cae62",
+        "e2df835384821fa5036252a0581ba12b@ecommerce_categories_for_widgets_11b6ea20d408ce6a2f7f44a9625f574e",
+        "e2df835384821fa5036252a0581ba12b@ecommerce_categories_for_rendering_select11b6ea20d408ce6a2f7f44a9625f574e",
+        "e2df835384821fa5036252a0581ba12b@ecommerce_categories_for_widgets_d2edd823d61ac5cd9535501ac4f67dbd",
+        "e2df835384821fa5036252a0581ba12b@ecommerce_categories_for_widgets_293c99362cd0dcb15c9e009b52462164",
+        "e2df835384821fa5036252a0581ba12b@ecommerce_categories_for_widgets_647ec97223980eeab95449656eda594c",
+        "e2df835384821fa5036252a0581ba12b@ecommerce_categories_for_widgets_3dd6ea6a4ee41f827bb31d05cb111cdf",
+        "e2df835384821fa5036252a0581ba12b@ecommerce_categories_for_widgets_b018cdd2369f9c30f7449b9830fd99b6"
     ],
     "Botble\\Menu\\Models\\Menu": [
         "876a095a247b966461c4079f23f9e7ae@menu_location_272cf986977e8e51255ef860cd4101f6",
@@ -294,6 +301,8 @@
         "876a095a247b966461c4079f23f9e7ae@menu_location_995e1faf959c88d02f0379efdeab8752",
         "876a095a247b966461c4079f23f9e7ae@menu_location_905acab2e545880346714c8b89c9469a",
         "876a095a247b966461c4079f23f9e7ae@menu_location_81a3585fd53c68416e923cf00b324706",
-        "876a095a247b966461c4079f23f9e7ae@menu_location_b4bcaaa4afd797b7271a0e4f693b6a64"
+        "876a095a247b966461c4079f23f9e7ae@menu_location_b4bcaaa4afd797b7271a0e4f693b6a64",
+        "876a095a247b966461c4079f23f9e7ae@menu_location_0e986584e331bb80936f87a9b959c668",
+        "876a095a247b966461c4079f23f9e7ae@menu_location_91f400bb9366e3cf66558345541c0cff"
     ]
 }

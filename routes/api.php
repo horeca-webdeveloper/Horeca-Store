@@ -46,7 +46,7 @@ use App\Http\Controllers\API\CountryController;
  use App\Http\Controllers\API\PopularPostsController;
  use App\Http\Controllers\API\SquarePaymentController;
 
- Route::post('/payment-square', [SquarePaymentController::class, 'processPayment']);
+ Route::post('/payment-square', [SquarePaymentController::class, 'createPayment']);
  
 
 
