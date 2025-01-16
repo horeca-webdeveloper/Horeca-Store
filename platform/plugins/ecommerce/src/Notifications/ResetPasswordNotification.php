@@ -26,7 +26,7 @@ class ResetPasswordNotification extends Notification implements ShouldQueue
     public function toMail($notifiable): MailMessage
     {
         // Manually construct the reset link with localhost:300
-        $resetLink = 'http://localhost:300/password/reset/' . $this->token . '?email=' . urlencode($notifiable->email);
+        $resetLink = 'https://thehorecastore.co/password/reset/' . $this->token . '?email=' . urlencode($notifiable->email);
 
         // Configure the email handler with the reset link
         $emailHandler = EmailHandler::setModule(ECOMMERCE_MODULE_SCREEN_NAME)

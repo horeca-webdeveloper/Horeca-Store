@@ -46,7 +46,7 @@ use App\Http\Controllers\API\CountryController;
  use App\Http\Controllers\API\PopularPostsController;
  use App\Http\Controllers\API\SquarePaymentController;
 
- Route::post('/payment-square', [SquarePaymentController::class, 'processPayment']);
+ Route::post('/payment-square', [SquarePaymentController::class, 'createPayment']);
  
 
 
@@ -202,6 +202,7 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::post('/cart/update', [CartApiController::class, 'updateCartQuantity']);
   Route::get('/cart/total', [CartTotalApiController::class, 'totalProductsInCart']);
    // Route::post('/cart/multiple-add', [CartMultipleProductsApiController::class, 'addMultipleToCart']);
+   Route::delete('/cart/clear', [CartApiController::class, 'clearCart']); // For logged-in users
 
 Route::post('/cart/multiple', [CartMultipleProductsApiController::class, 'addMultipleToCart']);
 

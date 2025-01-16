@@ -24,7 +24,10 @@ use Botble\Ecommerce\Http\Controllers\ImportProductDescriptionController;
 use Botble\Ecommerce\Http\Controllers\EliteShipmentController;
 use Botble\Ecommerce\Http\Controllers\ProductDocumentController;
 use Botble\Ecommerce\Http\Controllers\ProductApprovalController;
+use App\Http\Controllers\API\SquarePaymentController;
 
+
+ Route::get('/payment-form', [SquarePaymentController::class, 'paymentForm'])->name('payment.form');
 // Route::middleware(['guest'])->group(function () {
 	/* Temp Product Routes*/
 	Route::get('admin/product-approval', [ProductApprovalController::class, 'index'])->name('product_approval.index');
