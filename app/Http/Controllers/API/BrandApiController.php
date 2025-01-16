@@ -192,43 +192,31 @@ public function getAllBrandProducts(Request $request)
         $brands = Cache::remember('guest_brands', 60, function () use ($request) {
             return Brand::with([
                 'products' => function ($query) use ($request) {
-                    if ($request->has('search')) {
-                        $query->where('name', 'like', '%' . $request->input('search') . '%');
-                    }
-
-                    if ($request->has('price_min')) {
-                        $query->where('price', '>=', $request->input('price_min'));
-                    }
-
-                    if ($request->has('price_max')) {
-                        $query->where('price', '<=', $request->input('price_max'));
-                    }
-
-                    if ($request->has('rating')) {
-                        $query->whereHas('reviews', function ($q) use ($request) {
-                            $q->selectRaw('AVG(star) as avg_rating')
-                              ->groupBy('product_id')
-                              ->havingRaw('AVG(star) >= ?', [$request->input('rating')]);
-                        });
-                    }
-                        // Order products by a column in descending order, e.g., created_at
-    $query  ->where('status', 'published')
-    ->orderBy('created_at', 'desc'); // Added this line to order the products
+                    // Remove filter conditions temporarily to debug
+                    // if ($request->has('search')) { ... }
+                    // if ($request->has('price_min')) { ... }
+                    // if ($request->has('price_max')) { ... }
+                    // if ($request->has('rating')) { ... }
+                    
+                    $query->where('status', 'published')
+                          ->orderBy('created_at', 'desc')
+                          ->limit(10); // Limit the number of products per brand
                 }
             ])
-            ->limit(20) // Limit number of brands/products fetched
+            ->limit(5) // Limit number of brands fetched
             ->get();
         });
+        
 
-        return response()->json([
-            'success' => true,
-            'data' => $brands->map(function ($brand) {
-                return [
-                    'brand_name' => $brand->name,
-                    'products' => $brand->products->map(function ($product) {
-                          // Function to get the full image URL
-                    $getImageUrl = function ($imageName) {
-                        $imagePaths = [
+                return response()->json([
+                    'success' => true,
+                    'data' => $brands->map(function ($brand) {
+                        return [
+                            'brand_name' => $brand->name,
+                            'products' => $brand->products->map(function ($product) {
+                                // Function to get the full image URL
+                            $getImageUrl = function ($imageName) {
+                                $imagePaths = [
                             public_path("storage/products/{$imageName}"),
                             public_path("storage/{$imageName}")
                         ];
