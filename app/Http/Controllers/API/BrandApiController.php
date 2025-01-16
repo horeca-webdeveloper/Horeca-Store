@@ -32,7 +32,87 @@ class BrandApiController extends Controller
     /**
      * Optimized query logic for logged-in users.
      */
- public function getAllBrandProducts(Request $request)
+//  public function getAllBrandProducts(Request $request)
+// {
+//     $wishlistIds = $this->getWishlistProductIds();
+
+//     // Cache brands with product filtering
+//     $brands = Cache::remember('logged_in_brands', 60, function () use ($request) {
+//         return Brand::with([
+//             'products' => function ($query) use ($request) {
+//                 if ($request->has('search')) {
+//                     $query->where('name', 'like', '%' . $request->input('search') . '%');
+//                 }
+
+//                 if ($request->has('price_min')) {
+//                     $query->where('price', '>=', $request->input('price_min'));
+//                 }
+
+//                 if ($request->has('price_max')) {
+//                     $query->where('price', '<=', $request->input('price_max'));
+//                 }
+
+//                 if ($request->has('rating')) {
+//                     $query->whereHas('reviews', function ($q) use ($request) {
+//                         $q->selectRaw('AVG(star) as avg_rating')
+//                           ->groupBy('product_id')
+//                           ->havingRaw('AVG(star) >= ?', [$request->input('rating')]);
+//                     });
+//                 }
+                
+//                     // Order products by a column in descending order, e.g., created_at
+//     $query->where('status', 'published')
+//     ->orderBy('created_at', 'desc'); // Added this line to order the products
+//             }
+//         ])
+//         ->limit(20) // Limit number of brands/products fetched
+//         ->get();
+//     });
+
+//     return response()->json([
+//         'success' => true,
+//         'data' => $brands->map(function ($brand) use ($wishlistIds) {
+//             return [
+//                 'brand_name' => $brand->name,
+//                 'products' => $brand->products->map(function ($product) use ($wishlistIds) {
+                    
+//                     // Function to get the full image URL
+//                     $getImageUrl = function ($imageName) {
+//                         $imagePaths = [
+//                             public_path("storage/products/{$imageName}"),
+//                             public_path("storage/{$imageName}")
+//                         ];
+
+//                         foreach ($imagePaths as $path) {
+//                             if (file_exists($path)) {
+//                                 return asset('storage/' . str_replace(public_path('storage/'), '', $path));
+//                             }
+//                         }
+
+//                         return null; // Return null if image doesn't exist
+//                     };
+
+//                     // Check if 'images' is an array or a collection
+//                     $productImages = is_array($product->images) ? $product->images : ($product->images ? $product->images->toArray() : []);
+
+//                     return [
+//                         "id" => $product->id,
+//                         "name" => $product->name,
+//                         "images" => array_map(function ($image) use ($getImageUrl) {
+//                             return $getImageUrl($image); // Get full URL for each image
+//                         }, $productImages),
+//                         "sku" => $product->sku ?? '',
+//                         "price" => $product->price,
+//                         "sale_price" => $product->sale_price ?? null,
+//                         "rating" => $product->reviews()->avg('star') ?? null,
+//                         "in_wishlist" => in_array($product->id, $wishlistIds),
+//                     ];
+//                 }),
+//             ];
+//         }),
+//     ]);
+// }
+public function getAllBrandProducts(Request $request)
 {
     $wishlistIds = $this->getWishlistProductIds();
 
@@ -55,17 +135,18 @@ class BrandApiController extends Controller
                 if ($request->has('rating')) {
                     $query->whereHas('reviews', function ($q) use ($request) {
                         $q->selectRaw('AVG(star) as avg_rating')
-                          ->groupBy('product_id')
-                          ->havingRaw('AVG(star) >= ?', [$request->input('rating')]);
+                            ->groupBy('product_id')
+                            ->havingRaw('AVG(star) >= ?', [$request->input('rating')]);
                     });
                 }
-                
-                    // Order products by a column in descending order, e.g., created_at
-    $query->orderBy('created_at', 'desc'); // Added this line to order the products
+
+                $query->where('status', 'published')
+                    ->orderBy('created_at', 'desc')
+                    ->limit(10); // Limit to 10 products per brand
             }
         ])
-        ->limit(20) // Limit number of brands/products fetched
-        ->get();
+            ->limit(20) // Limit number of brands fetched
+            ->get();
     });
 
     return response()->json([
@@ -74,22 +155,6 @@ class BrandApiController extends Controller
             return [
                 'brand_name' => $brand->name,
                 'products' => $brand->products->map(function ($product) use ($wishlistIds) {
-                    
-                    // Function to get the full image URL
-                    $getImageUrl = function ($imageName) {
-                        $imagePaths = [
-                            public_path("storage/products/{$imageName}"),
-                            public_path("storage/{$imageName}")
-                        ];
-
-                        foreach ($imagePaths as $path) {
-                            if (file_exists($path)) {
-                                return asset('storage/' . str_replace(public_path('storage/'), '', $path));
-                            }
-                        }
-
-                        return null; // Return null if image doesn't exist
-                    };
 
                     // Check if 'images' is an array or a collection
                     $productImages = is_array($product->images) ? $product->images : ($product->images ? $product->images->toArray() : []);
@@ -97,8 +162,14 @@ class BrandApiController extends Controller
                     return [
                         "id" => $product->id,
                         "name" => $product->name,
-                        "images" => array_map(function ($image) use ($getImageUrl) {
-                            return $getImageUrl($image); // Get full URL for each image
+                        "images" => array_map(function ($image) {
+                            // If the image URL starts with "http", use it directly; otherwise, generate the URL
+                            if (str_starts_with($image, 'http')) {
+                                return $image;
+                            }
+
+                            $imagePath = public_path("storage/products/{$image}");
+                            return file_exists($imagePath) ? asset("storage/products/{$image}") : null;
                         }, $productImages),
                         "sku" => $product->sku ?? '',
                         "price" => $product->price,
@@ -111,6 +182,7 @@ class BrandApiController extends Controller
         }),
     ]);
 }
+
 
     /**
      * Optimized query logic for guest users.
@@ -140,7 +212,8 @@ class BrandApiController extends Controller
                         });
                     }
                         // Order products by a column in descending order, e.g., created_at
-    $query->orderBy('created_at', 'desc'); // Added this line to order the products
+    $query  ->where('status', 'published')
+    ->orderBy('created_at', 'desc'); // Added this line to order the products
                 }
             ])
             ->limit(20) // Limit number of brands/products fetched
