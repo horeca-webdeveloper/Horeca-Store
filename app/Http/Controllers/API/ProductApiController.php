@@ -1202,7 +1202,7 @@ class ProductApiController extends Controller
                         'video_url' => $product->video_url,
                         'video_path' => $product->video_path,
                         'sku' => $product->sku,
-                        'price' => $product->price,
+                        'original_price' => $product->price,
                         'sale_price' => $product->sale_price,
                         'start_date' => $product->start_date,
                         'end_date' => $product->end_date,
