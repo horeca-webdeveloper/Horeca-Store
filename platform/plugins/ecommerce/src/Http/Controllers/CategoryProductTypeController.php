@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 
 use Botble\Ecommerce\Models\ProductTypes;
 use Botble\Ecommerce\Models\ProductCategory;
+use Botble\Ecommerce\Models\Specification;
 
 class CategoryProductTypeController extends BaseController
 {
@@ -53,10 +54,11 @@ class CategoryProductTypeController extends BaseController
 		// Fetch all available product types for the multi-select
 		// $productTypes = ProductTypes::all(['id', 'name']);
 		$specificationTypes = ['At a Glance', 'Comparision', 'Filters'];
+		$specificationNames = Specification::pluck('spec_name')->all();
 
 		// Pass the data to the edit view
 		// return view('plugins/ecommerce::category-product-type.edit', compact('category', 'productTypes'));
-		return view('plugins/ecommerce::category-product-type.edit', compact('category', 'specificationTypes'));
+		return view('plugins/ecommerce::category-product-type.edit', compact('category', 'specificationTypes', 'specificationNames'));
 	}
 
 	/**
@@ -76,7 +78,7 @@ class CategoryProductTypeController extends BaseController
 				$exists = $category->specifications()->where('specification_name', $specification['name'])->exists();
 				if (!$exists) {
 					$category->specifications()->create([
-						'specification_type' => $specification['specification_type'],
+						'specification_type' => implode(',',$specification['specification_type']),
 						'specification_name' => $specification['name'],
 						'specification_values' => implode('|', array_unique(array_filter($specification['vals'], fn($val) => !is_null($val))))
 					]);
