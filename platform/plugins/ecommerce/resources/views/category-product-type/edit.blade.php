@@ -54,9 +54,12 @@
 								value="1"
 								{{ $specification->is_checked ? 'checked' : '' }}
 							/> --}}
-							<select id="" name="specifications[{{$index}}][specification_type]" class="form-control select2">
+							@php
+								$selectedSpecificationTypes = explode(",", $specification->specification_type);
+							@endphp
+							<select name="specifications[{{$index}}][specification_type][]" class="form-control select2 specTypes" multiple>
 								@foreach ($specificationTypes as $type)
-									<option value="{{ $type }}" {{ $type == $specification->specification_type ? 'selected' : '' }}>
+									<option value="{{ $type }}" {{ in_array($type, $selectedSpecificationTypes) ? 'selected' : '' }}>
 										{{ $type }}
 									</option>
 								@endforeach
@@ -64,13 +67,14 @@
 						</div>
 
 						<div class="col-md-3">
-							<input
-								type="text"
-								name="specifications[{{$index}}][name]"
-								value="{{ $specification->specification_name }}"
-								class="form-control"
-								placeholder="Specification {{ $index + 1 }}"
-							/>
+							<select name="specifications[{{$index}}][name]" class="form-control select2 specNames">
+								@foreach ($specificationNames as $name)
+									<option value="">Select</option>
+									<option value="{{ $name }}" {{ $name==$specification->specification_name ? 'selected' : '' }}>
+										{{ $name }}
+									</option>
+								@endforeach
+							</select>
 						</div>
 						<div class="col-md-7">
 							<div class="row specification-values" id="specification_value_{{$index}}">
@@ -149,8 +153,7 @@
 								name="specifications[{{$i}}][is_checked]"
 								value="1"
 							/> --}}
-
-							<select name="specifications[{{$i}}][specification_type]" class="form-control select2">
+							<select id="specification_type" name="specifications[{{$i}}][specification_type][]" class="form-control select2 specTypes" multiple>
 								@foreach ($specificationTypes as $type)
 									<option value="{{ $type }}">
 										{{ $type }}
@@ -159,12 +162,21 @@
 							</select>
 						</div>
 						<div class="col-md-3">
-							<input
+							{{-- <input
 								type="text"
 								name="specifications[{{$i}}][name]"
 								class="form-control"
 								placeholder="Specification {{ $i + 1 }}"
-							/>
+							/> --}}
+
+							<select name="specifications[{{$i}}][name]" class="form-control select2 specNames">
+								@foreach ($specificationNames as $name)
+									<option value="">Select</option>
+									<option value="{{ $name }}">
+										{{ $name }}
+									</option>
+								@endforeach
+							</select>
 						</div>
 						<div class="col-md-7">
 							<div class="row specification-values" id="specification_value_{{$i}}">
@@ -209,10 +221,28 @@
 
 <script>
 	document.addEventListener('DOMContentLoaded', function () {
-		// Initialize Select2
-		$('#product_types').select2({
-			placeholder: "Select Product Types",
-			allowClear: true
+		// Initialize Select2 for all elements with the `specTypeClass` class
+		$('.specTypes').select2({
+			placeholder: "Select Specification Types",
+			allowClear: true,
+			width: '100%'
+		});
+		$('.specNames').select2({
+			placeholder: "Select Specification Name",
+			allowClear: true,
+			width: '100%',
+			tags: true,
+			createTag: function(params) {
+				var term = $.trim(params.term);
+				if (term === '') {
+					return null;
+				}
+				return {
+					id: term,
+					text: term,
+					newOption: true
+				};
+			}
 		});
 
 		const specificationContainer = document.getElementById('specification-container');
@@ -228,26 +258,29 @@
 			newSpecification.classList.add('specification-group', 'mt-3');
 
 			// Assuming `specificationTypes` is passed to JavaScript as a global variable or fetched via an API
-			const specificationTypes = {!! json_encode($specificationTypes) !!}; // Replace with appropriate method if not inline
+			const specificationTypes = {!! json_encode($specificationTypes) !!};
+			const specNames = {!! json_encode($specificationNames) !!};
 
 			// Create the options for the specification_type dropdown
 			const specificationTypeOptions = specificationTypes.map((type) => {
 				return `<option value="${type}">${type}</option>`;
 			}).join('');
+
+			const specNameOptions = specNames.map((name) => {
+				return `<option value="${name}">${name}</option>`;
+			}).join('');
 			newSpecification.innerHTML = `
 				<div class="row">
 					<div class="col-md-2">
-						<select id="" name="specifications[${index}][specification_type]" class="form-control select2">
+						<select name="specifications[${index}][specification_type][]" class="form-control select2" id="specification_type_${index}" multiple>
 							${specificationTypeOptions}
 						</select>
 					</div>
 					<div class="col-md-3">
-						<input
-							type="text"
-							name="specifications[${index}][name]"
-							class="form-control"
-							placeholder="Specification ${index + 1}"
-						/>
+						<select name="specifications[${index}][name]" class="form-control select2 specNames" id="specification_name_${index}">
+							<option value="" selected>Select</option>
+							${specNameOptions}
+						</select>
 					</div>
 					<div class="col-md-7">
 						<div class="row specification-values" id="specification_value_${index}">
@@ -286,6 +319,30 @@
 			`;
 
 			specificationContainer.appendChild(newSpecification);
+
+			// Initialize Select2 for the newly added select element based on the index
+			$('#specification_type_' + index).select2({
+				placeholder: "Select",
+				allowClear: true,
+				width: '100%'
+			});
+			$('#specification_name_' + index).select2({
+				placeholder: "Select Specification Name",
+				allowClear: true,
+				width: '100%',
+				tags: true,
+				createTag: function(params) {
+					var term = $.trim(params.term);
+					if (term === '') {
+						return null;
+					}
+					return {
+						id: term,
+						text: term,
+						newOption: true
+					};
+				}
+			});
 
 			// Attach event listeners to new buttons
 			attachSpecificationEvents(newSpecification);
