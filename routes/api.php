@@ -47,7 +47,11 @@ use App\Http\Controllers\API\CountryController;
  use App\Http\Controllers\API\SquarePaymentController;
  use App\Http\Controllers\API\CategoryMenuController;
  use App\Http\Controllers\API\CategoriesHomeLimitController;
- 
+ use App\Http\Controllers\API\CategoryWithSlugController;
+
+// For slug-based category fetching with children
+Route::get('category-with-slug/{slug}', [CategoryWithSlugController::class, 'showCategoryBySlug']);
+
 
 Route::get('/home-categories', [CategoriesHomeLimitController::class, 'fetchCategories']);
 
