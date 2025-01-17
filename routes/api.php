@@ -45,6 +45,13 @@ use App\Http\Controllers\API\CountryController;
  use App\Http\Controllers\API\AddressController;
  use App\Http\Controllers\API\PopularPostsController;
  use App\Http\Controllers\API\SquarePaymentController;
+ use App\Http\Controllers\API\CategoryMenuController;
+ use App\Http\Controllers\API\CategoriesHomeLimitController;
+ 
+
+Route::get('/home-categories', [CategoriesHomeLimitController::class, 'fetchCategories']);
+
+Route::get('/categories-menu', [CategoryMenuController::class, 'getCategoriesWithChildren']);
 
  Route::post('/payment-square', [SquarePaymentController::class, 'createPayment']);
  
