@@ -40,9 +40,9 @@
 								<label class="form-label">Unit of Measurement</label>
 								<select id="pricing_unit_of_measurement_id" name="unit_of_measurement_id" class="form-control">
 									<option value="">Select a unit</option>
-									@foreach($unitOfMeasurements as $id => $name)
-									<option value="{{ $id }}">{{ $name }}</option>
-									@endforeach
+										@foreach($unitOfMeasurements as $id => $name)
+											<option value="{{ $id }}">{{ $name }}</option>
+										@endforeach
 								</select>
 							</div>
 						</div>
@@ -121,9 +121,9 @@
 								<label for="storeSelect" class="form-label">Vendor</label>
 								<select class="form-select" id="pricing_store_id" name="store_id">
 									<option value="">Select a store</option>
-									@foreach ($stores as $id => $name)
-									<option value="{{ $id }}">{{ $name }}</option>
-									@endforeach
+										@foreach ($stores as $id => $name)
+											<option value="{{ $id }}">{{ $name }}</option>
+										@endforeach
 								</select>
 							</div>
 

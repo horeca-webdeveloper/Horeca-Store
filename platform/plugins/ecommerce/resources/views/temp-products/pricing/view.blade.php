@@ -1,8 +1,8 @@
-<div class="modal fade" id="viewContentModal" tabindex="-1" role="dialog" aria-labelledby="viewContentModalLabel" aria-hidden="true">
+<div class="modal fade" id="viewPricingModal" tabindex="-1" role="dialog" aria-labelledby="viewPricingModalLabel" aria-hidden="true">
 	<div class="modal-dialog modal-lg" role="document">
 		<div class="modal-content">
 			<div class="modal-header">
-				<h5 class="modal-title" id="viewContentModalLabel">View Product Details</h5>
+				<h5 class="modal-title">View Product Details</h5>
 				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
 					<span aria-hidden="true">&times;</span>
 				</button>
@@ -37,24 +37,24 @@
 					<dd class="col-md-9" id="pricing_view_sale_price"></dd>
 				</dl>
 
-				<dl class="row mt-1 pb-1 border-bottom">
+				<dl class="row mt-1 pb-1 border-bottom d-none">
 					<dt class="col-md-3">From Date</dt>
 					<dd class="col-md-9" id="pricing_view_from_date"></dd>
 				</dl>
 
-				<dl class="row mt-1 pb-1 border-bottom">
+				<dl class="row mt-1 pb-1 border-bottom d-none">
 					<dt class="col-md-3">To Date</dt>
 					<dd class="col-md-9" id="pricing_view_to_date"></dd>
 				</dl>
 
 				<dl class="row mt-1 pb-1 border-bottom">
-					<dt class="col-md-3">Cost Per Item</dt>
-					<dd class="col-md-9" id="pricing_view_cost_per_item"></dd>
+					<dt class="col-md-3">Unit Of Measurement</dt>
+					<dd class="col-md-9" id="pricing_view_unit_of_measurement"></dd>
 				</dl>
 
 				<dl class="row mt-1 pb-1 border-bottom">
-					<dt class="col-md-3">Unit Of Measurement</dt>
-					<dd class="col-md-9" id="pricing_view_unit_of_measurement"></dd>
+					<dt class="col-md-3">Cost Per Item</dt>
+					<dd class="col-md-9" id="pricing_view_cost_per_item"></dd>
 				</dl>
 
 				<dl class="row mt-1 pb-1 border-bottom">

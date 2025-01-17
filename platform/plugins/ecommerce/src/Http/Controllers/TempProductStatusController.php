@@ -70,9 +70,9 @@ class TempProductStatusController extends BaseController
 		$tempProduct = TempProduct::find($request->id);
 		$input = $request->all();
 		if($tempProduct->approval_status=='in-process' || $tempProduct->approval_status=='rejected') {
-			unset($input['_token'], $input['id'], $input['initial_approval_status'], $input['approval_status']);
 			$input['discount'] = json_encode($input['discount']);
 			$input['approval_status'] = isset($request->in_process) && $request->in_process==1 ? 'in-process' : 'pending';
+			unset($input['_token'], $input['id'], $input['initial_approval_status'], $input['in_process']);
 
 			$tempProduct->update($input);
 		}

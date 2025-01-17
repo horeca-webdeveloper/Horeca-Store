@@ -9,19 +9,11 @@
 
 	<!-- Bootstrap CSS -->
 	<link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet">
-
-	<!-- Custom CSS (Optional) -->
-	<style>
-		.edit-icon {
-			cursor: pointer;
-			font-size: 18px;
-		}
-	</style>
 </head>
 <body>
 	<div class="row text-center">
 		<div class="col-md-3 mb-3">
-			<a href="{{ route(Route::currentRouteName(), ['type' => 'in-process']) }}" class="text-decoration-none">
+			<a href="{{ route(Route::currentRouteName(), ['type' => 'in-process']) }}" class="text-decoration-none custom-link">
 				<label class="form-label bg-info text-white text-center py-3 h6">
 					Content In Progress<br/>
 					<span class="h2">{{ $tempPricingProducts->where('approval_status', 'in-process')->count() }}</span>
@@ -29,7 +21,7 @@
 			</a>
 		</div>
 		<div class="col-md-3 mb-3">
-			<a href="{{ route(Route::currentRouteName(), ['type' => 'pending']) }}" class="text-decoration-none">
+			<a href="{{ route(Route::currentRouteName(), ['type' => 'pending']) }}" class="text-decoration-none custom-link">
 				<label class="form-label bg-warning text-white text-center py-3 h6">
 					Submitted for Approval<br/>
 					<span class="h2">{{ $tempPricingProducts->where('approval_status', 'pending')->count() }}</span>
@@ -37,7 +29,7 @@
 			</a>
 		</div>
 		<div class="col-md-3 mb-3">
-			<a href="{{ route(Route::currentRouteName(), ['type' => 'approved']) }}" class="text-decoration-none">
+			<a href="{{ route(Route::currentRouteName(), ['type' => 'approved']) }}" class="text-decoration-none custom-link">
 				<label class="form-label bg-success text-white text-center py-3 h6">
 					Ready to Publish<br/>
 					<span class="h2">{{ $tempPricingProducts->where('approval_status', 'approved')->count() }}</span>
@@ -45,7 +37,7 @@
 			</a>
 		</div>
 		<div class="col-md-3 mb-3">
-			<a href="{{ route(Route::currentRouteName(), ['type' => 'rejected']) }}" class="text-decoration-none">
+			<a href="{{ route(Route::currentRouteName(), ['type' => 'rejected']) }}" class="text-decoration-none custom-link">
 				<label class="form-label bg-danger text-white text-center py-3 h6">
 					Rejected for Corrections<br/>
 					<span class="h2">{{ $tempPricingProducts->sum('rejection_count') }}</span>
@@ -71,7 +63,7 @@
 			<tbody>
 				@php
 					if(!empty($type)) {
-						$tempContentProducts = $tempContentProducts->where('approval_status', $type);
+						$tempPricingProduct = $tempPricingProduct->where('approval_status', $type);
 					}
 				@endphp
 				@foreach ($tempPricingProducts as $tempPricingProduct)
@@ -85,8 +77,12 @@
 					<td class="product-description">{{ $approvalStatuses[$tempPricingProduct->approval_status] ?? '' }}</td>
 					<td>
 						@if($tempPricingProduct->approval_status == 'in-process' || $tempPricingProduct->approval_status == 'rejected')
-							<button type="button" id="edit_pricing_modal" data-toggle="modal" data-target="#editPricingModal" data-product="{{ htmlspecialchars(json_encode($tempPricingProduct->toArray(), JSON_HEX_APOS | JSON_HEX_QUOT), ENT_QUOTES, 'UTF-8') }}">
-								<i class="fas fa-pencil-alt"></i>
+							<button type="button" class="btn btn-sm btn-outline-success" data-toggle="modal" data-target="#editPricingModal" data-product="{{ htmlspecialchars(json_encode($tempPricingProduct->toArray(), JSON_HEX_APOS | JSON_HEX_QUOT), ENT_QUOTES, 'UTF-8') }}">
+								<i class="fas fa-pencil-alt"></i> Edit
+							</button>
+						@else
+							<button type="button" class="btn btn-sm btn-outline-info" data-toggle="modal" data-target="#viewPricingModal" data-product="{{ htmlspecialchars(json_encode($tempPricingProduct->toArray(), JSON_HEX_APOS | JSON_HEX_QUOT), ENT_QUOTES, 'UTF-8') }}">
+								<i class="fas fa-eye"></i> View
 							</button>
 						@endif
 					</td>
@@ -104,40 +100,16 @@
 
 	<!-- Bootstrap JS -->
 	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
-
 	<style>
+		.custom-link {
+			cursor: pointer;
+			display: block; /* Ensures the entire area of the link is clickable */
+		}
 
-		.product-card {
-			border: 1px solid #ddd;
-			border-radius: 8px;
-			padding: 15px;
-			background-color: #f9f9f9;
-			box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-			display: flex;
-			flex-direction: column;
-			justify-content: space-between;
-		}
-		.product-header {
-			margin-bottom: 10px;
-		}
-		.product-status {
-			margin: 10px 0;
-			font-weight: bold;
-		}
-		.product-description ,   .product-content {
-			margin-bottom: 10px;
-		}
-		.approval-status-container, .edit-button-container {
-			display: flex;
-			align-items: center;
-			gap: 10px;
-		}
-		.editor {
-			width: 100%;
-			height: 150px; /* Set the height of the editor */
+		.custom-link label {
+			cursor: pointer; /* Ensures the label inside the link also shows the pointer */
 		}
 	</style>
-
 	<script>
 		// Function to toggle the "To Date" field for each discount group
 		function toggleToDateField(checkbox) {
@@ -218,15 +190,13 @@
 			});
 		}
 
-		$(document).on('click', '#edit_pricing_modal', function () {
+		$(document).on('click', '[data-target="#editPricingModal"]', function () {
 			// Get the product data from the button's data-product attribute
 			const productData = $(this).attr('data-product');
 			const decodedData = $('<textarea/>').html(productData).text();
 
 			// Parse the JSON string into a JavaScript object
 			const product = JSON.parse(decodedData);
-
-			// console.log('Parsed Product:', product.discount);
 
 			// Populate the modal fields
 			$('#pricing_temp_header_id').text(product.product_id);
@@ -498,27 +468,68 @@
 		// Trigger label updates when the UoM dropdown changes
 		unitOfMeasurementDropdown.addEventListener('change', updateAllQuantityLabels);
 
-		$(document).on('click', '[data-target="#viewContentModal"]', function () {
+		$(document).on('click', '[data-target="#viewPricingModal"]', function () {
+			// Retrieve product data from the clicked element
 			const productData = $(this).attr('data-product');
 			const decodedData = $('<textarea/>').html(productData).text();
 
 			// Parse the JSON string into a JavaScript object
 			const product = JSON.parse(decodedData);
+			var unitOfMeasurements = @json($unitOfMeasurements);
 
 			// Populate modal fields
-			$('#content_view_product_id').text(product.product_id);
-			$('#content_view_id').text(product.id);
-			$('#content_view_google_shopping_category').text(product.google_shopping_category);
-			$('#content_view_name').text(product.name);
-			$('#content_view_slug').text(product.slug);
-			$('#content_view_sku').text(product.sku);
-			$('#content_view_description').html(product.description);
-			$('#content_view_content').html(product.content);
-			$('#content_view_warranty_information').html(product.warranty_information);
-			$('#content_view_seo_title').html(product.seo_title);
-			$('#content_view_seo_description').html(product.seo_description);
-			$('#content_view_remarks').html(product.remarks);
+			$('#pricing_view_product_id').text(product.product_id || '');
+			$('#pricing_view_name').text(product.name || '');
+			$('#pricing_view_id').text(product.id || '');
+			$('#pricing_view_sku').text(product.sku || '');
+			$('#pricing_view_price').text(product.price || '');
+			$('#pricing_view_sale_price').text(product.sale_price || '');
+
+			// Handle date fields
+			if (product.start_date && product.end_date) {
+				$('#pricing_view_from_date').removeClass('d-none').text(product.start_date);
+				$('#pricing_view_to_date').removeClass('d-none').text(product.end_date);
+			} else {
+				$('#pricing_view_from_date').addClass('d-none').text('');
+				$('#pricing_view_to_date').addClass('d-none').text('');
+			}
+
+			// Handle unit of measurement
+			if (product.unit_of_measurement_id) {
+				const unitOfMeasurement = unitOfMeasurements[product.unit_of_measurement_id] || '';
+				$('#pricing_view_unit_of_measurement').text(unitOfMeasurement);
+			} else {
+				$('#pricing_view_unit_of_measurement').text('');
+			}
+
+			// Populate additional fields
+			$('#pricing_view_cost_per_item').text(product.cost_per_item || '');
+			$('#pricing_view_with_storehouse_management').text(
+				product.storehouse_management ? 'Yes' : 'No'
+			);
+			$('#pricing_view_margin').text(
+				calculateMyMargin(product.price, product.sale_price, product.cost_per_item)
+			);
 		});
+
+		/**
+		 * Calculate the margin based on price, sale price, and cost per item.
+		 * @param {number} price - The product price.
+		 * @param {number} salePrice - The product sale price.
+		 * @param {number} costPerItem - The cost per item.
+		 * @returns {string} The calculated margin as a percentage or 0.
+		 */
+		function calculateMyMargin(price, salePrice, costPerItem) {
+			const finalPrice = salePrice || price || 0;
+			const cost = costPerItem || 0;
+
+			if (finalPrice > 0 && cost > 0) {
+				const margin = ((finalPrice - cost) / finalPrice) * 100;
+				return `${margin.toFixed(2)}%`;
+			}
+			return '0%';
+		}
+
 	</script>
 </body>
 

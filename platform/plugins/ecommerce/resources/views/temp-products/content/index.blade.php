@@ -15,7 +15,7 @@
 <body>
 	<div class="row text-center">
 		<div class="col-md-3 mb-3">
-			<a href="{{ route(Route::currentRouteName(), ['type' => 'in-process']) }}" class="text-decoration-none">
+			<a href="{{ route(Route::currentRouteName(), ['type' => 'in-process']) }}" class="text-decoration-none custom-link">
 				<label class="form-label bg-info text-white text-center py-3 h6">
 					Content In Progress<br/>
 					<span class="h2">{{ $tempContentProducts->where('approval_status', 'in-process')->count() }}</span>
@@ -23,7 +23,7 @@
 			</a>
 		</div>
 		<div class="col-md-3 mb-3">
-			<a href="{{ route(Route::currentRouteName(), ['type' => 'pending']) }}" class="text-decoration-none">
+			<a href="{{ route(Route::currentRouteName(), ['type' => 'pending']) }}" class="text-decoration-none custom-link">
 				<label class="form-label bg-warning text-white text-center py-3 h6">
 					Submitted for Approval<br/>
 					<span class="h2">{{ $tempContentProducts->where('approval_status', 'pending')->count() }}</span>
@@ -31,7 +31,7 @@
 			</a>
 		</div>
 		<div class="col-md-3 mb-3">
-			<a href="{{ route(Route::currentRouteName(), ['type' => 'approved']) }}" class="text-decoration-none">
+			<a href="{{ route(Route::currentRouteName(), ['type' => 'approved']) }}" class="text-decoration-none custom-link">
 				<label class="form-label bg-success text-white text-center py-3 h6">
 					Ready to Publish<br/>
 					<span class="h2">{{ $tempContentProducts->where('approval_status', 'approved')->count() }}</span>
@@ -39,7 +39,7 @@
 			</a>
 		</div>
 		<div class="col-md-3 mb-3">
-			<a href="{{ route(Route::currentRouteName(), ['type' => 'rejected']) }}" class="text-decoration-none">
+			<a href="{{ route(Route::currentRouteName(), ['type' => 'rejected']) }}" class="text-decoration-none custom-link">
 				<label class="form-label bg-danger text-white text-center py-3 h6">
 					Rejected for Corrections<br/>
 					<span class="h2">{{ $tempContentProducts->sum('rejection_count') }}</span>
@@ -97,6 +97,16 @@
 	<script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
 	<!-- Select2 JS -->
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+	<style>
+		.custom-link {
+			cursor: pointer;
+			display: block; /* Ensures the entire area of the link is clickable */
+		}
+
+		.custom-link label {
+			cursor: pointer; /* Ensures the label inside the link also shows the pointer */
+		}
+	</style>
 
 	<script>
 		// References to CKEditor instances
