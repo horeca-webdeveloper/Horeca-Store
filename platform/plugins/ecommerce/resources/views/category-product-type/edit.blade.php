@@ -230,7 +230,19 @@
 		$('.specNames').select2({
 			placeholder: "Select Specification Name",
 			allowClear: true,
-			width: '100%'
+			width: '100%',
+			tags: true,
+			createTag: function(params) {
+				var term = $.trim(params.term);
+				if (term === '') {
+					return null;
+				}
+				return {
+					id: term,
+					text: term,
+					newOption: true
+				};
+			}
 		});
 
 		const specificationContainer = document.getElementById('specification-container');
@@ -315,9 +327,21 @@
 				width: '100%'
 			});
 			$('#specification_name_' + index).select2({
-				placeholder: "Select",
+				placeholder: "Select Specification Name",
 				allowClear: true,
-				width: '100%'
+				width: '100%',
+				tags: true,
+				createTag: function(params) {
+					var term = $.trim(params.term);
+					if (term === '') {
+						return null;
+					}
+					return {
+						id: term,
+						text: term,
+						newOption: true
+					};
+				}
 			});
 
 			// Attach event listeners to new buttons
