@@ -467,69 +467,6 @@
 
 		// Trigger label updates when the UoM dropdown changes
 		unitOfMeasurementDropdown.addEventListener('change', updateAllQuantityLabels);
-
-		$(document).on('click', '[data-target="#viewPricingModal"]', function () {
-			// Retrieve product data from the clicked element
-			const productData = $(this).attr('data-product');
-			const decodedData = $('<textarea/>').html(productData).text();
-
-			// Parse the JSON string into a JavaScript object
-			const product = JSON.parse(decodedData);
-			var unitOfMeasurements = @json($unitOfMeasurements);
-
-			// Populate modal fields
-			$('#pricing_view_product_id').text(product.product_id || '');
-			$('#pricing_view_name').text(product.name || '');
-			$('#pricing_view_id').text(product.id || '');
-			$('#pricing_view_sku').text(product.sku || '');
-			$('#pricing_view_price').text(product.price || '');
-			$('#pricing_view_sale_price').text(product.sale_price || '');
-
-			// Handle date fields
-			if (product.start_date && product.end_date) {
-				$('#pricing_view_from_date').removeClass('d-none').text(product.start_date);
-				$('#pricing_view_to_date').removeClass('d-none').text(product.end_date);
-			} else {
-				$('#pricing_view_from_date').addClass('d-none').text('');
-				$('#pricing_view_to_date').addClass('d-none').text('');
-			}
-
-			// Handle unit of measurement
-			if (product.unit_of_measurement_id) {
-				const unitOfMeasurement = unitOfMeasurements[product.unit_of_measurement_id] || '';
-				$('#pricing_view_unit_of_measurement').text(unitOfMeasurement);
-			} else {
-				$('#pricing_view_unit_of_measurement').text('');
-			}
-
-			// Populate additional fields
-			$('#pricing_view_cost_per_item').text(product.cost_per_item || '');
-			$('#pricing_view_with_storehouse_management').text(
-				product.storehouse_management ? 'Yes' : 'No'
-			);
-			$('#pricing_view_margin').text(
-				calculateMyMargin(product.price, product.sale_price, product.cost_per_item)
-			);
-		});
-
-		/**
-		 * Calculate the margin based on price, sale price, and cost per item.
-		 * @param {number} price - The product price.
-		 * @param {number} salePrice - The product sale price.
-		 * @param {number} costPerItem - The cost per item.
-		 * @returns {string} The calculated margin as a percentage or 0.
-		 */
-		function calculateMyMargin(price, salePrice, costPerItem) {
-			const finalPrice = salePrice || price || 0;
-			const cost = costPerItem || 0;
-
-			if (finalPrice > 0 && cost > 0) {
-				const margin = ((finalPrice - cost) / finalPrice) * 100;
-				return `${margin.toFixed(2)}%`;
-			}
-			return '0%';
-		}
-
 	</script>
 </body>
 
