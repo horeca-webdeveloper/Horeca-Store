@@ -201,10 +201,13 @@ public function getAllFeaturedProductsByCategory(Request $request)
 
     // Fetch only the first five categories that have featured products
     $categories = ProductCategory::whereHas('products', function($query) {
-        $query->where('is_featured', 1); // Ensure there are featured products
+        $query->where('is_featured', 1)
+        ->where('status', 'published'); // Ensure there are featured products
     })
     ->with(['products' => function($query) {
-        $query->where('is_featured', 1); // Only get featured products
+        $query->where('is_featured', 1)
+        ->where('status', 'published')
+        ; // Only get featured products
     }])
     ->take(5) // Limit to 5 categories
     ->get();
@@ -480,10 +483,12 @@ public function getAllGuestFeaturedProductsByCategory(Request $request)
 {
     // Fetch only the first five categories that have featured products
     $categories = ProductCategory::whereHas('products', function ($query) {
-        $query->where('is_featured', 1); // Ensure there are featured products
+        $query->where('is_featured', 1)  
+         ->where('status', 'published'); // Ensure there are featured products
     })
     ->with(['products' => function ($query) {
-        $query->where('is_featured', 1); // Only get featured products
+        $query->where('is_featured', 1) 
+          ->where('status', 'published'); // Only get featured products
     }])
     ->take(5) // Limit to 5 categories
     ->get();
@@ -563,6 +568,6 @@ public function getAllGuestFeaturedProductsByCategory(Request $request)
     ]);
 }
 
-
+ 
 
 }
