@@ -18,8 +18,8 @@ return [
     'parent_flag' => 'plugins.ecommerce',
    ],
    [
-    'name' => 'Product Cateroy Filter',
-    'flag' => 'ecommerce::partials.category-product-filter',
+    'name' => 'Product Category Filter',
+    'flag' => 'category-product-filter.index',
     'parent_flag' => 'plugins.ecommerce',
    ],
    [

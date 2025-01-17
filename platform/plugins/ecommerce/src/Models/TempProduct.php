@@ -33,37 +33,46 @@ class TempProduct extends BaseModel
 		'rejection_count',
 		/***** Content role *****/
 
+		/***** pricing  role *****/
+		'price',
+		'sale_price',
+		'unit_of_measurement_id',
+		'start_date',
+		'end_date',
+		'cost_per_item',
+		'margin',
+		'with_storehouse_management',
+		'quantity',
+		'allow_checkout_when_out_of_stock',
+		'stock_status',
+		'discount',
+		'store_id',
+	   'variant_requires_shipping',
+		'minimum_order_quantity',
+		'refund',
+		'delivery_days',
+		'box_quantity',
+		/***** pricing  role *****/
+
+
 		'image', // Featured image
 		'images',
 		'order',
-		'quantity' => 'required|integer|min:10', // or any other rules that apply
-		'allow_checkout_when_out_of_stock',
-		'with_storehouse_management',
 		'is_featured',
 		'brand_id',
 		'is_variation',
 		'sale_type',
-		'price',
-		'sale_price',
-		'start_date',
-		'end_date',
 		'length',
 		'width',
 		'height',
 		'weight',
 		'tax_id',
 		'views',
-		'stock_status',
 		'barcode',
-		'cost_per_item',
 	   // 'generate_license_code',
-		'minimum_order_quantity',
 		'maximum_order_quantity',
 		'specs_sheet_heading',
 		'specs_sheet',
-		'box_quantity',
-		'discount',
-		'margin',
 	];
 
 	public function product()

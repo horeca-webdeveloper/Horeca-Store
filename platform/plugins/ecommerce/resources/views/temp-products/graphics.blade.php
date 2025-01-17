@@ -19,18 +19,38 @@
 	</style>
 </head>
 <body>
-	<div class="row">
+	<div class="row text-center">
 		<div class="col-md-3 mb-3">
-			<label class="form-label bg-info text-white text-center py-3 h6">Content In Progress<br/><span class="h2">{{ $tempGraphicsProducts->where('approval_status', 'in-process')->count() }}</span></label>
+			<a href="{{ route(Route::currentRouteName(), ['type' => 'in-process']) }}" class="text-decoration-none">
+				<label class="form-label bg-info text-white text-center py-3 h6">
+					Content In Progress<br/>
+					<span class="h2">{{ $tempGraphicsProducts->where('approval_status', 'in-process')->count() }}</span>
+				</label>
+			</a>
 		</div>
 		<div class="col-md-3 mb-3">
-			<label class="form-label bg-warning text-white text-center py-3 h6">Submitted for Approval<br/><span class="h2">{{ $tempGraphicsProducts->where('approval_status', 'pending')->count() }}</span></label>
+			<a href="{{ route(Route::currentRouteName(), ['type' => 'pending']) }}" class="text-decoration-none">
+				<label class="form-label bg-warning text-white text-center py-3 h6">
+					Submitted for Approval<br/>
+					<span class="h2">{{ $tempGraphicsProducts->where('approval_status', 'pending')->count() }}</span>
+				</label>
+			</a>
 		</div>
 		<div class="col-md-3 mb-3">
-			<label class="form-label bg-success text-white text-center py-3 h6">Ready to Publish<br/><span class="h2">{{ $tempGraphicsProducts->where('approval_status', 'approved')->count() }}</span></label>
+			<a href="{{ route(Route::currentRouteName(), ['type' => 'approved']) }}" class="text-decoration-none">
+				<label class="form-label bg-success text-white text-center py-3 h6">
+					Ready to Publish<br/>
+					<span class="h2">{{ $tempGraphicsProducts->where('approval_status', 'approved')->count() }}</span>
+				</label>
+			</a>
 		</div>
 		<div class="col-md-3 mb-3">
-			<label class="form-label bg-danger text-white text-center py-3 h6">Rejected for Corrections<br/><span class="h2">{{ $tempGraphicsProducts->sum('rejection_count') }}</span></label>
+			<a href="{{ route(Route::currentRouteName(), ['type' => 'rejected']) }}" class="text-decoration-none">
+				<label class="form-label bg-danger text-white text-center py-3 h6">
+					Rejected for Corrections<br/>
+					<span class="h2">{{ $tempGraphicsProducts->sum('rejection_count') }}</span>
+				</label>
+			</a>
 		</div>
 	</div>
 	<div class="table-responsive">
@@ -45,6 +65,11 @@
 				</tr>
 			</thead>
 			<tbody>
+				@php
+					if(!empty($type)) {
+						$tempContentProducts = $tempContentProducts->where('approval_status', $type);
+					}
+				@endphp
 				@foreach ($tempGraphicsProducts as $tempGraphicsProduct)
 					<tr id="product-row-{{ $tempGraphicsProduct->id }}">
 						<td>{{ $tempGraphicsProduct->product_id }}</td>

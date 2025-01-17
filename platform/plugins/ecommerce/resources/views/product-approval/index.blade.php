@@ -632,12 +632,7 @@
 		}
 
 		const unitOfMeasurementDropdown = document.getElementById('pricing_unit_of_measurement_id');
-		const unitLabels = {
-			1: 'Pieces',
-			2: 'Dozen',
-			3: 'Box',
-			4: 'Case'
-		};
+		const unitLabels = @json($unitOfMeasurements);
 
 		// Function to update all quantity labels
 		function updateAllQuantityLabels() {
@@ -657,8 +652,13 @@
 
 			// Parse the JSON string into a JavaScript object
 			const product = JSON.parse(decodedData);
-
-			// console.log('Parsed Product:', product.discount);
+			let productDiscount;
+			try {
+				productDiscount = Array.isArray(product.discount) ? product.discount : JSON.parse(product.discount);
+			} catch (error) {
+				console.error("Error parsing product.discount:", error);
+				productDiscount = [];
+			}
 
 			// Populate the modal fields
 			$('#pricing_temp_header_id').text(product.product_id);
@@ -696,8 +696,8 @@
 			discountGroup.empty();
 
 			// Populate discount items
-			if (product.discount && product.discount.length) {
-				product.discount.forEach((discount, index) => {
+			if (productDiscount && productDiscount.length) {
+				productDiscount.forEach((discount, index) => {
 					const discountItem = `
 						<div class="discount-item">
 							<div class="row g-3 mb-3">
@@ -772,7 +772,7 @@
 				});
 
 				// Add "Add" button if items are less than 3
-				if (product.discount.length < 3) {
+				if (productDiscount.length < 3) {
 					discountGroup.append(`
 						<div class="row g-3 mb-3">
 							<div class="col-md-12 text-end">
