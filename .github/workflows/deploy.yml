@@ -42,8 +42,9 @@ jobs:
             sudo git config --global --add safe.directory /var/www/html/Horeca-Store
             sudo git config --global --add safe.directory '*'
             
-            # Temporarily change ownership to ubuntu user
-            sudo chown -R ubuntu:ubuntu .
+            # Fix Git ownership issue
+            sudo git config --global --add safe.directory /var/www/html/Horeca-Store
+            sudo git config --global --add safe.directory '*'
             
             # Pull changes
             git fetch origin main
@@ -54,7 +55,18 @@ jobs:
             sudo find . -type f -exec chmod 644 {} \;
             sudo find . -type d -exec chmod 755 {} \;
             
-            # Set specific permissions for storage and cache
+           # Fix permissions for web server
+            sudo chown -R www-data:www-data .
+            
+            # Ensure storage directories exist and are writable
+            sudo mkdir -p storage/framework/cache
+            sudo mkdir -p storage/framework/sessions
+            sudo mkdir -p storage/framework/views
+            sudo mkdir -p storage/logs
+            sudo mkdir -p bootstrap/cache
+            
+            # Set proper permissions for storage and bootstrap/cache
+            sudo chown -R www-data:www-data storage bootstrap/cache
             sudo chmod -R 775 storage bootstrap/cache
             
             # Clear caches
