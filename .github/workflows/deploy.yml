@@ -13,7 +13,7 @@ jobs:
       # Step 1: Checkout the repository
       - name: Checkout repository
         uses: actions/checkout@v2
-      
+        
       # Step 2: Set up AWS CLI
       - name: Set up AWS CLI
         uses: aws-actions/configure-aws-credentials@v1
@@ -21,7 +21,7 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
-      
+        
       # Step 3: Deploy changes to EC2
       - name: Deploy to EC2
         run: |
@@ -36,50 +36,45 @@ jobs:
           
           # Deploy to EC2
           ssh -i ~/.ssh/id_ed25519 ubuntu@${{ secrets.AWS_INSTANCE_IP }} << 'EOF'
+            set -e  # Exit on error
+            
+            echo "Starting deployment..."
             cd /var/www/html/Horeca-Store
             
-            # Configure git
-            sudo git config --global --add safe.directory /var/www/html/Horeca-Store
-            sudo git config --global --add safe.directory '*'
+            # Configure git with sudo
+            sudo -u ubuntu git config --global --add safe.directory /var/www/html/Horeca-Store
+            sudo -u ubuntu git config --global --add safe.directory '*'
             
-            # Fix Git ownership issue
-            sudo git config --global --add safe.directory /var/www/html/Horeca-Store
-            sudo git config --global --add safe.directory '*'
+            # Pull changes as ubuntu user
+            sudo -u ubuntu git fetch origin main
+            sudo -u ubuntu git reset --hard origin/main
             
-            # Pull changes
-            git fetch origin main
-            git reset --hard origin/main
-            
-            # Fix permissions
+            # Set correct ownership and permissions
             sudo chown -R www-data:www-data .
             sudo find . -type f -exec chmod 644 {} \;
             sudo find . -type d -exec chmod 755 {} \;
             
-           # Fix permissions for web server
-            sudo chown -R www-data:www-data .
-            
-            # Ensure storage directories exist and are writable
-            sudo mkdir -p storage/framework/cache
-            sudo mkdir -p storage/framework/sessions
-            sudo mkdir -p storage/framework/views
-            sudo mkdir -p storage/logs
-            sudo mkdir -p bootstrap/cache
-            
-            # Set proper permissions for storage and bootstrap/cache
-            sudo chown -R www-data:www-data storage bootstrap/cache
+            # Set specific permissions for writable directories
             sudo chmod -R 775 storage bootstrap/cache
+            sudo chown -R www-data:www-data storage bootstrap/cache
             
-            # Clear caches
-            sudo php artisan cache:clear
-            sudo php artisan config:clear
-            sudo php artisan view:clear
-            sudo php artisan route:clear
+            # Create cache directories if they don't exist
+            sudo -u www-data mkdir -p storage/framework/cache
+            sudo -u www-data mkdir -p storage/framework/views
+            sudo -u www-data mkdir -p storage/framework/sessions
+            sudo -u www-data mkdir -p storage/framework/cache/data
             
-            # Run migrations
-            sudo php artisan migrate --force
+            # Clear caches as www-data user
+            sudo -u www-data php artisan cache:clear
+            sudo -u www-data php artisan config:clear
+            sudo -u www-data php artisan view:clear
+            sudo -u www-data php artisan route:clear
+            
+            # Run migrations as www-data user
+            sudo -u www-data php artisan migrate --force
             
             # Optimize
-            sudo php artisan optimize
+            sudo -u www-data php artisan optimize
             
             echo "Deployment completed successfully!"
             
@@ -87,14 +82,23 @@ jobs:
             echo "Latest commits:"
             git log -3 --oneline
           EOF
-
+        
       # Step 4: Verify deployment
       - name: Verify deployment
         run: |
           ssh -i ~/.ssh/id_ed25519 ubuntu@${{ secrets.AWS_INSTANCE_IP }} << 'EOF'
+            set -e  # Exit on error
             cd /var/www/html/Horeca-Store
+            
             echo "Application version:"
-            sudo php artisan --version
+            sudo -u www-data php artisan --version
+            
             echo "Current git commit:"
             git rev-parse HEAD
+            
+            # Verify permissions
+            echo "Checking storage directory permissions:"
+            ls -la storage/
+            echo "Checking cache directory permissions:"
+            ls -la storage/framework/cache/
           EOF
