@@ -10,6 +10,7 @@ use Botble\Ecommerce\Models\Product;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage; // Import the Storage facade
+use Illuminate\Support\Str;
 
 
 class CartApiController extends Controller
@@ -226,6 +227,62 @@ public function addToCart(Request $request)
 //     ]);
 // }
 
+// public function viewCart(Request $request)
+// {
+//     $userId = Auth::id();
+//     $isUserLoggedIn = $userId !== null;
+
+//     Log::info('User logged in:', ['user_id' => $userId]);
+
+//     // Get wishlist product IDs
+//     $wishlistProductIds = $isUserLoggedIn
+//         ? DB::table('ec_wish_lists')
+//             ->where('customer_id', $userId)
+//             ->pluck('product_id')
+//             ->map(function ($id) {
+//                 return (int) $id;
+//             })
+//             ->toArray()
+//         : session()->get('guest_wishlist', []); 
+
+//     // Fetch cart items with product and currency details
+//     $cartItems = Auth::check()
+//         ? Cart::where('user_id', $userId)->with('product.currency')->get()
+//         : Cart::where('session_id', $request->session()->getId())->with('product.currency')->get();
+
+//     // Add 'is_wishlist' flag and generate full URLs for product images
+//     $cartItems->each(function ($item) use ($wishlistProductIds) {
+//         $item->product->in_wishlist = in_array($item->product->id, $wishlistProductIds);
+
+//         // Generate full URLs for images
+//         $baseStorageUrl = url('storage/');
+//         $baseProductsUrl = url('storage/products/');
+        
+//         // Generate full URLs for product images
+//         $item->product->images = collect($item->product->images ?? [])->map(function ($image) use ($baseStorageUrl, $baseProductsUrl) {
+//             // Check if the image exists in 'products' directory, else use the general 'storage' directory
+//             $url = Storage::exists('products/' . $image) ? $baseProductsUrl : $baseStorageUrl;
+//             return $url . '/' . $image;  // Ensure there's a '/' between the base URL and image file
+//         });
+
+//         // Add full URL for the main product image
+//         if ($item->product->image) {
+//             $imagePath = 'products/' . $item->product->image;
+//             $url = Storage::exists($imagePath) ? $baseProductsUrl : $baseStorageUrl;
+//             $item->product->image = $url . '/' . $item->product->image;  // Ensure '/' is added here
+//         } else {
+//             $item->product->image = null;
+//         }
+//     });
+
+//     $currencyTitles = $cartItems->pluck('product.currency.title')->unique()->filter()->values();
+
+//     return response()->json([
+//         'success' => true,
+//         'currency_title' => $currencyTitles,
+//         'data' => $cartItems,
+//     ]);
+// }
 public function viewCart(Request $request)
 {
     $userId = Auth::id();
@@ -242,7 +299,7 @@ public function viewCart(Request $request)
                 return (int) $id;
             })
             ->toArray()
-        : session()->get('guest_wishlist', []); 
+        : session()->get('guest_wishlist', []);
 
     // Fetch cart items with product and currency details
     $cartItems = Auth::check()
@@ -253,22 +310,31 @@ public function viewCart(Request $request)
     $cartItems->each(function ($item) use ($wishlistProductIds) {
         $item->product->in_wishlist = in_array($item->product->id, $wishlistProductIds);
 
-        // Generate full URLs for images
+        // Base URLs for generating image links
         $baseStorageUrl = url('storage/');
         $baseProductsUrl = url('storage/products/');
-        
+
         // Generate full URLs for product images
         $item->product->images = collect($item->product->images ?? [])->map(function ($image) use ($baseStorageUrl, $baseProductsUrl) {
+            // If the image URL starts with http/https, return as-is
+            if (Str::startsWith($image, ['http://', 'https://'])) {
+                return $image;
+            }
+            
             // Check if the image exists in 'products' directory, else use the general 'storage' directory
             $url = Storage::exists('products/' . $image) ? $baseProductsUrl : $baseStorageUrl;
-            return $url . '/' . $image;  // Ensure there's a '/' between the base URL and image file
+            return $url . '/' . $image;
         });
 
         // Add full URL for the main product image
         if ($item->product->image) {
-            $imagePath = 'products/' . $item->product->image;
-            $url = Storage::exists($imagePath) ? $baseProductsUrl : $baseStorageUrl;
-            $item->product->image = $url . '/' . $item->product->image;  // Ensure '/' is added here
+            if (Str::startsWith($item->product->image, ['http://', 'https://'])) {
+                $item->product->image = $item->product->image;
+            } else {
+                $imagePath = 'products/' . $item->product->image;
+                $url = Storage::exists($imagePath) ? $baseProductsUrl : $baseStorageUrl;
+                $item->product->image = $url . '/' . $item->product->image;
+            }
         } else {
             $item->product->image = null;
         }
