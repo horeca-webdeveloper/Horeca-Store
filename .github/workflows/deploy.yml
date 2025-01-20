@@ -14,17 +14,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
       
-      # Step 2: Set up PHP environment
-      - name: Set up PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3'
-      
-      # Step 3: Install Composer dependencies
-      - name: Install dependencies
-        run: composer install --no-dev
-      
-      # Step 4: Set up AWS CLI
+      # Step 2: Set up AWS CLI
       - name: Set up AWS CLI
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -32,47 +22,34 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
       
-      # Step 5: Debug and deployment
-      - name: Add SSH key and deploy to EC2
+      # Step 3: Deploy changes to EC2
+      - name: Deploy to EC2
         run: |
           # Setup SSH
           mkdir -p ~/.ssh
           echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           
-          # Disable strict host key checking
           echo "Host *" > ~/.ssh/config
           echo "  StrictHostKeyChecking no" >> ~/.ssh/config
           echo "  UserKnownHostsFile=/dev/null" >> ~/.ssh/config
           
           # Deploy to EC2
           ssh -i ~/.ssh/id_ed25519 ubuntu@${{ secrets.AWS_INSTANCE_IP }} << 'EOF'
-            # Navigate to project directory
             cd /var/www/html/Horeca-Store
             
-            # Fix Git ownership issue
+            # Configure git
             sudo git config --global --add safe.directory /var/www/html/Horeca-Store
             sudo git config --global --add safe.directory '*'
             
-            # Debug information
-            echo "Current directory: $(pwd)"
-            echo "Git status before pull:"
-            sudo git status
-            
-            # Fix permissions before git operations
+            # Temporarily change ownership to ubuntu user
             sudo chown -R ubuntu:ubuntu .
-            sudo find . -type f -exec chmod 644 {} \;
-            sudo find . -type d -exec chmod 755 {} \;
             
-            # Fetch and reset to origin/main
+            # Pull changes
             git fetch origin main
             git reset --hard origin/main
             
-            # Show git status after pull
-            echo "Git status after pull:"
-            git status
-            
-            # Fix permissions for web server
+             # Fix permissions for web server
             sudo chown -R www-data:www-data .
             
             # Ensure storage directories exist and are writable
@@ -86,10 +63,7 @@ jobs:
             sudo chown -R www-data:www-data storage bootstrap/cache
             sudo chmod -R 775 storage bootstrap/cache
             
-            # Install dependencies and optimize
-            sudo -u www-data composer install --no-dev --optimize-autoloader
-            
-            # Clear all caches
+            # Clear caches
             sudo php artisan cache:clear
             sudo php artisan config:clear
             sudo php artisan view:clear
@@ -101,7 +75,6 @@ jobs:
             # Optimize
             sudo php artisan optimize
             
-            # Show deployment completion message
             echo "Deployment completed successfully!"
             
             # Show latest commits
@@ -109,7 +82,7 @@ jobs:
             git log -3 --oneline
           EOF
 
-      # Step 6: Verify deployment
+      # Step 4: Verify deployment
       - name: Verify deployment
         run: |
           ssh -i ~/.ssh/id_ed25519 ubuntu@${{ secrets.AWS_INSTANCE_IP }} << 'EOF'
