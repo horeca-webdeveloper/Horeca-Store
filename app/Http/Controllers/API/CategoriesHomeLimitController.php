@@ -1,16 +1,16 @@
 <?php
 
-
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Botble\Ecommerce\Models\ProductCategory;
+
 class CategoriesHomeLimitController extends Controller
 {
     /**
-     * Fetch 14 categories with their slug, id, parent_id, image, and product count.
+     * Fetch 14 categories (parents and children) with their details.
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
@@ -20,21 +20,28 @@ class CategoriesHomeLimitController extends Controller
         // Limit to 14 categories
         $limit = 14;
 
-        // Fetch the first 14 categories (parent categories)
-        $categories = ProductCategory::where('parent_id', 0)
-            ->take($limit)
+        // Fetch parent categories
+        $parentCategories = ProductCategory::where('parent_id', 0)
             ->get(['id', 'name', 'slug', 'parent_id', 'image']); // Select necessary fields
 
-        // Add product count by counting the related products in the ec_product_category_product table
-        foreach ($categories as $category) {
-            $category->productCount = $category->products()->count(); // Count related products via the relationship
-            
-            // Check the image location and generate the correct URL
-            $category->image = $this->getImageUrl($category->image);
+        // Fetch child categories
+        $childCategories = ProductCategory::whereIn('parent_id', $parentCategories->pluck('id'))
+            ->get(['id', 'name', 'slug', 'parent_id', 'image']); // Select necessary fields
+
+        // Merge parent and child categories
+        $allCategories = $parentCategories->merge($childCategories);
+
+        // Limit the combined result to 14 categories
+        $limitedCategories = $allCategories->take($limit);
+
+        // Add product count and adjust image URLs
+        foreach ($limitedCategories as $category) {
+            $category->productCount = $category->products()->count(); // Count related products
+            $category->image = $this->getImageUrl($category->image); // Adjust image URL
         }
 
         // Return categories with their details
-        return response()->json($categories);
+        return response()->json($limitedCategories);
     }
 
     /**
@@ -51,7 +58,7 @@ class CategoriesHomeLimitController extends Controller
         } elseif (strpos($imagePath, 'storage') === 0) {
             return asset('storage/' . $imagePath); // If inside any storage folder, use the asset helper
         }
-        
+
         // Return default if not found
         return asset('storage/' . $imagePath); 
     }
