@@ -165,6 +165,7 @@ Route::get('/customers', [CustomerController::class, 'index']);
  Route::get('/brandguestproducts', [BrandApiController::class, 'getAllBrandGuestProducts']);
 
 Route::middleware('auth:sanctum')->get('/brandproducts', [BrandApiController::class, 'getAllBrandProducts']);
+Route::middleware('auth:sanctum')->get('/homebrandproducts', [BrandApiController::class, 'getAllHomeBrandProducts']);
 
 Route::middleware('auth:sanctum')->get('/categoryproducts', [CategoryApiController::class, 'getAllFeaturedProductsByCategory']);
 
