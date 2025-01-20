@@ -48,6 +48,10 @@ use App\Http\Controllers\API\CountryController;
  use App\Http\Controllers\API\CategoryMenuController;
  use App\Http\Controllers\API\CategoriesHomeLimitController;
  use App\Http\Controllers\API\CategoryWithSlugController;
+ use App\Http\Controllers\Api\EmailNotificationController;
+
+Route::post('/send-confirmation-email', [EmailNotificationController::class, 'sendConfirmationEmail']);
+
 
 // For slug-based category fetching with children
 Route::get('category-with-slug/{slug}', [CategoryWithSlugController::class, 'showCategoryBySlug']);
