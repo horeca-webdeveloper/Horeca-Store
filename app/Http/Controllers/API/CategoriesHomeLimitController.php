@@ -18,7 +18,7 @@ class CategoriesHomeLimitController extends Controller
     public function fetchCategories(Request $request)
     {
         // Limit to 14 categories
-        $limit = 14;
+        $limit = 13;
 
         // Fetch parent categories
         $parentCategories = ProductCategory::where('parent_id', 0)
