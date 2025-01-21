@@ -275,9 +275,6 @@ public function getAllHomeBrandProducts(Request $request)
     ]);
 }
 
-
-
-
     /**
      * Optimized query logic for guest users.
      */
@@ -358,7 +355,7 @@ public function getAllHomeBrandProducts(Request $request)
     //             ];
     //         }),
     //     ]);
-    // }
+    //}
 
     public function getAllBrandGuestProducts(Request $request)
 {
