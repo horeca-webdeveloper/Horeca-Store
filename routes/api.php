@@ -269,7 +269,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 });
 
-// Routes for guest users
+// Routes for guest userss
 Route::middleware('web')->group(function () {
 
 });
