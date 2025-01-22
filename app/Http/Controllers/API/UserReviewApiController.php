@@ -78,72 +78,72 @@ class UserReviewApiController extends Controller
 
   
 
-public function createReview(Request $request)
-{
-    $userId = Auth::id();
-
-    if (!$userId) {
-        return response()->json(['message' => 'User not authenticated.', 'success' => false], 401);
-    }
-
-    // Validate request
-    $request->validate([
-        'product_id' => 'required|exists:ec_products,id',
-        'star' => 'required|integer|min:1|max:5',
-        'comment' => 'required|string',
-        'images' => 'nullable|array',
-        'images.*' => 'file|mimes:jpeg,png,jpg,gif|max:2048',
-    ]);
-
-    // Check if the user already submitted a review for this product
-    $existingReview = Review::where('customer_id', $userId)
-        ->where('product_id', $request->product_id)
-        ->first();
-
-    if ($existingReview) {
-        return response()->json([
-            'message' => 'You have already submitted a review for this product.',
-            'success' => true,
-            'review' => $existingReview
-        ], 200);
-    }
-
-    // Handle file uploads
-    $imageUrls = [];
-    try {
-        if ($request->has('images')) {
-            foreach ($request->file('images') as $image) {
-                $path = $image->storeAs('public/storage/products', $image->getClientOriginalName());
-                $imageUrls[] = asset("storage/products/{$image->getClientOriginalName()}");
-            }
+    public function createReview(Request $request)
+    {
+        $userId = Auth::id();
+    
+        if (!$userId) {
+            return response()->json(['message' => 'User not authenticated.', 'success' => false], 401);
         }
-
-        // Create the review
-        $review = Review::create([
-            'customer_id' => $userId,
-            'customer_name' => Auth::user()->name,
-            'product_id' => $request->product_id,
-            'star' => $request->star,
-            'comment' => $request->comment,
-            'status' => 'pending',
-            'images' => !empty($imageUrls) ? json_encode($imageUrls) : null,
+    
+        // Validate request
+        $request->validate([
+            'product_id' => 'required|exists:ec_products,id',
+            'star' => 'required|integer|min:1|max:5',
+            'comment' => 'required|string',
+            'images' => 'nullable|array',
+            'images.*' => 'file|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
-
-        if ($review) {
+    
+        // Check if the user already submitted a review for this product
+        $existingReview = Review::where('customer_id', $userId)
+            ->where('product_id', $request->product_id)
+            ->first();
+    
+        if ($existingReview) {
             return response()->json([
-                'message' => 'Review successfully added',
+                'message' => 'You have already submitted a review for this product.',
                 'success' => true,
-                'review' => $review,
-            ], 201);
+                'review' => $existingReview,
+            ], 200);
         }
-
-        return response()->json(['message' => 'Review failed', 'success' => false], 500);
-
-    } catch (\Exception $e) {
-        return response()->json(['message' => 'Error occurred: ' . $e->getMessage(), 'success' => false], 500);
+    
+        // Handle file uploads
+        $imageUrls = [];
+        try {
+            if ($request->has('images')) {
+                foreach ($request->file('images') as $image) {
+                    $path = $image->storeAs('public/storage/products', $image->getClientOriginalName());
+                    $imageUrls[] = asset("storage/products/{$image->getClientOriginalName()}");
+                }
+            }
+    
+            // Create the review with status set to "published"
+            $review = Review::create([
+                'customer_id' => $userId,
+                'customer_name' => Auth::user()->name,
+                'product_id' => $request->product_id,
+                'star' => $request->star,
+                'comment' => $request->comment,
+                'status' => 'published', // Automatically set to published
+                'images' => !empty($imageUrls) ? json_encode($imageUrls) : null,
+            ]);
+    
+            if ($review) {
+                return response()->json([
+                    'message' => 'Review successfully added',
+                    'success' => true,
+                    'review' => $review,
+                ], 201);
+            }
+    
+            return response()->json(['message' => 'Review failed', 'success' => false], 500);
+    
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Error occurred: ' . $e->getMessage(), 'success' => false], 500);
+        }
     }
-}
-
+    
 
     /**
      * Update a specific review
