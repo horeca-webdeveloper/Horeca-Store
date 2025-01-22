@@ -42,9 +42,6 @@ jobs:
             sudo git config --global --add safe.directory /var/www/html/Horeca-Store
             sudo git config --global --add safe.directory '*'
             
-            # Temporarily change ownership to ubuntu user
-            sudo chown -R ubuntu:ubuntu .
-            
             # Pull changes
             git fetch origin main
             git reset --hard origin/main
