@@ -10,7 +10,7 @@ AdminHelper::registerRoutes(function () {
         Route::group(['prefix' => 'products', 'as' => 'products.'], function () {
             Route::resource('', 'ProductController')
                 ->parameters(['' => 'product']);
-                
+
                 Route::post('/approve-product/{id}', [ProductController::class, 'approveProduct']);
 
             Route::post('{product}/duplicate', [
@@ -128,6 +128,17 @@ AdminHelper::registerRoutes(function () {
             ])->wherePrimaryKey();
             Route::post('/approve-product/{id}', [ProductController::class, 'approveProduct']);
 
+
+            Route::get('product-import', [
+                'as' => 'import',
+                'uses' => 'ProductImportController@index',
+                'permission' => 'products.index',
+            ]);
+            Route::post('product-import', [
+                'as' => 'upload',
+                'uses' => 'ProductImportController@store',
+                'permission' => 'products.index',
+            ]);
         });
     });
 
@@ -136,7 +147,7 @@ AdminHelper::registerRoutes(function () {
             Route::group(['prefix' => 'products', 'as' => 'products.', 'permission' => 'ecommerce.export.products.index'], function () {
                 Route::get('/', [ExportProductController::class, 'index'])->name('index');
                 Route::post('/', [ExportProductController::class, 'store'])->name('store');
-               
+
 
             });
         });

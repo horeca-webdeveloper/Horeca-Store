@@ -1754,37 +1754,37 @@ class ProductImporter extends Importer implements WithMapping
     }
 
     protected function setValue(array &$row, string $key, string $type = 'array', $default = null, $from = null): self
-{
-    $value = Arr::get($row, $from ?: $key, $default);
+    {
+        $value = Arr::get($row, $from ?: $key, $default);
 
-    switch ($type) {
-        case 'array':
-            $value = $value ? explode(',', $value) : [];
-            break;
-        case 'bool':
-            if (is_string($value) && (Str::lower($value) == 'false' || $value == '0' || Str::lower($value) == 'no')) {
-                $value = false;
-            }
-            $value = (bool) $value;
-            break;
-        case 'datetime':
-            if ($value) {
-                $value = $this->getDate($value);
-            }
-            break;
-        case 'number':
-            $value = is_numeric($value) ? $value : null;
-            break;
-        case 'string':
-        default:
-            $value = (string) $value;
-            break;
+        switch ($type) {
+            case 'array':
+                $value = $value ? explode(',', $value) : [];
+                break;
+            case 'bool':
+                if (is_string($value) && (Str::lower($value) == 'false' || $value == '0' || Str::lower($value) == 'no')) {
+                    $value = false;
+                }
+                $value = (bool) $value;
+                break;
+            case 'datetime':
+                if ($value) {
+                    $value = $this->getDate($value);
+                }
+                break;
+            case 'number':
+                $value = is_numeric($value) ? $value : null;
+                break;
+            case 'string':
+            default:
+                $value = (string) $value;
+                break;
+        }
+
+        Arr::set($row, $key, $value);
+
+        return $this;
     }
-
-    Arr::set($row, $key, $value);
-
-    return $this;
-}
 
 
     protected function getImageURLs(array $images): array
@@ -1801,217 +1801,6 @@ class ProductImporter extends Importer implements WithMapping
 
         return $images;
     }
-
-    // protected function uploadImageFromURL(?string $url): ?string
-    // {
-    //     $result = RvMedia::uploadFromUrl($url, 0, 'products');
-
-    //     if (! $result['error']) {
-    //         $url = $result['data']->url;
-    //     } else {
-    //         Log::error($result['message']);
-    //     }
-
-    //     return $url;
-    // }
-
-
-
-
-
-    //     protected function uploadImageFromURL(?string $url): ?string
-    // {
-    //     // Directory within public directory
-    //     $productsDirectory = 'storage/products';
-
-    //     // Ensure products directory exists only if it doesn't already
-    //     $publicProductsPath = public_path($productsDirectory);
-    //     if (!is_dir($publicProductsPath)) {
-    //         // Create the directory only if it doesn't exist
-    //         mkdir($publicProductsPath, 0755, true);
-    //     }
-
-    //     // Fetch the image content from the URL
-    //     $imageContents = file_get_contents($url);
-
-    //     if ($imageContents !== false) {
-    //         // Sanitize the file name
-    //         $fileNameWithQuery = basename(parse_url($url, PHP_URL_PATH));
-    //         $fileName = preg_replace('/\?.*/', '', $fileNameWithQuery); // Remove query parameters
-    //         $fileBaseName = pathinfo($fileName, PATHINFO_FILENAME); // Get base name without extension
-
-    //         // Save the original image
-    //         $filePath = $publicProductsPath . '/' . $fileName;
-    //         if (file_put_contents($filePath, $imageContents) === false) {
-    //             Log::error('Failed to write image to file: ' . $filePath);
-    //             return null;
-    //         }
-
-    //         // Resize the image
-    //         $sizes = [
-    //             'thumb' => [150, 150],
-    //             'medium' => [300, 300],
-    //             'large' => [790, 510],
-    //         ];
-
-    //         foreach ($sizes as $key => $dimensions) {
-    //             [$width, $height] = $dimensions;
-
-    //             // Load the original image
-    //             $src = imagecreatefromjpeg($filePath);
-    //             if (!$src) {
-    //                 Log::error('Failed to load image from path: ' . $filePath);
-    //                 continue;
-    //             }
-
-    //             // Create a new true color image with the new dimensions
-    //             $dst = imagecreatetruecolor($width, $height);
-    //             if (!$dst) {
-    //                 Log::error('Failed to create true color image for size: ' . $key);
-    //                 continue;
-    //             }
-
-    //             // Resample the original image into the new image
-    //             if (!imagecopyresampled($dst, $src, 0, 0, 0, 0, $width, $height, imagesx($src), imagesy($src))) {
-    //                 Log::error('Failed to resample image for size: ' . $key);
-    //             }
-
-    //             // Save the resized image
-    //             $resizedImagePath = $publicProductsPath . '/' . $fileBaseName . '-' . $width . 'x' . $height . '.webp';
-    //             if (!imagewebp($dst, $resizedImagePath)) {
-    //                 Log::error('Failed to save resized image at path: ' . $resizedImagePath);
-    //             } else {
-    //                 Log::info('Saved resized image at path: ' . $resizedImagePath);
-    //             }
-
-    //             // Free up memory
-    //             imagedestroy($src);
-    //             imagedestroy($dst);
-    //         }
-
-    //         // Generate the URL for the saved image
-    //         return url('storage/products/' . $fileName);
-    //     } else {
-    //         Log::error('Failed to download image from URL: ' . $url);
-    //         return null;
-    //     }
-    // }
-
-
-
-
-
-
-
-
-
-    // protected function uploadImageFromURL(?string $url): ?string
-    // {
-    //     // Directory within public directory
-    //     $productsDirectory = 'storage/products';
-
-    //     // Ensure products directory exists only if it doesn't already
-    //     $publicProductsPath = public_path($productsDirectory);
-    //     if (!is_dir($publicProductsPath)) {
-    //         // Create the directory only if it doesn't exist
-    //         mkdir($publicProductsPath, 0755, true);
-    //     }
-
-    //     // Fetch the image content from the URL
-    //     $imageContents = file_get_contents($url);
-
-    //     if ($imageContents !== false) {
-    //         // Sanitize the file name
-    //         $fileNameWithQuery = basename(parse_url($url, PHP_URL_PATH));
-    //         $fileName = preg_replace('/\?.*/', '', $fileNameWithQuery); // Remove query parameters
-    //         $fileBaseName = pathinfo($fileName, PATHINFO_FILENAME); // Get base name without extension
-
-    //         // Save the original image
-    //         $filePath = $publicProductsPath . '/' . $fileName;
-    //         if (file_put_contents($filePath, $imageContents) === false) {
-    //             Log::error('Failed to write image to file: ' . $filePath);
-    //             return null;
-    //         }
-
-    //         // Get the MIME type of the image
-    //         $imageInfo = getimagesize($filePath);
-    //         if (!$imageInfo) {
-    //             Log::error('Failed to get image size for path: ' . $filePath);
-    //             return null;
-    //         }
-    //         $mimeType = $imageInfo['mime'];
-
-    //         // Define the image creation function based on MIME type
-    //         $imageCreateFunction = null;
-    //         $imageSaveFunction = null;
-
-    //         switch ($mimeType) {
-    //             case 'image/jpeg':
-    //                 $imageCreateFunction = 'imagecreatefromjpeg';
-    //                 $imageSaveFunction = 'imagejpeg';
-    //                 break;
-    //             case 'image/png':
-    //                 $imageCreateFunction = 'imagecreatefrompng';
-    //                 $imageSaveFunction = 'imagepng';
-    //                 break;
-    //             case 'image/gif':
-    //                 $imageCreateFunction = 'imagecreatefromgif';
-    //                 $imageSaveFunction = 'imagegif';
-    //                 break;
-    //             default:
-    //                 Log::error('Unsupported image type: ' . $mimeType);
-    //                 return null;
-    //         }
-
-    //         foreach (['thumb' => [150, 150], 'medium' => [300, 300], 'large' => [790, 510]] as $key => $dimensions) {
-    //             [$width, $height] = $dimensions;
-
-    //             // Load the original image
-    //             $src = $imageCreateFunction($filePath);
-    //             if (!$src) {
-    //                 Log::error('Failed to load image from path: ' . $filePath);
-    //                 continue;
-    //             }
-
-    //             // Create a new true color image with the new dimensions
-    //             $dst = imagecreatetruecolor($width, $height);
-    //             if (!$dst) {
-    //                 Log::error('Failed to create true color image for size: ' . $key);
-    //                 continue;
-    //             }
-
-    //             // Resample the original image into the new image
-    //             if (!imagecopyresampled($dst, $src, 0, 0, 0, 0, $width, $height, imagesx($src), imagesy($src))) {
-    //                 Log::error('Failed to resample image for size: ' . $key);
-    //             }
-
-    //             // Save the resized image
-    //             $resizedImagePath = $publicProductsPath . '/' . $fileBaseName . '-' . $width . 'x' . $height . '.webp';
-    //             if (!$imageSaveFunction($dst, $resizedImagePath)) {
-    //                 Log::error('Failed to save resized image at path: ' . $resizedImagePath);
-    //             } else {
-    //                 Log::info('Saved resized image at path: ' . $resizedImagePath);
-    //             }
-
-    //             // Free up memory
-    //             imagedestroy($src);
-    //             imagedestroy($dst);
-    //         }
-
-    //         // Generate the URL for the saved image
-    //         return url('storage/products/' . $fileName);
-    //     } else {
-    //         Log::error('Failed to download image from URL: ' . $url);
-    //         return null;
-    //     }
-    // }
-
-
-
-
-
-
-
 
     protected function uploadImageFromURL(?string $url): ?string
     {
@@ -2120,114 +1909,5 @@ class ProductImporter extends Importer implements WithMapping
         // Generate the URL for the saved image
         return url('storage/products/' . $fileName);
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    // protected function uploadImageFromURL(?string $url): ?string
-    // {
-    //     // Directory within public directory
-    //     $productsDirectory = 'storage/products';
-
-    //     // Ensure products directory exists only if it doesn't already
-    //     $publicProductsPath = public_path($productsDirectory);
-    //     if (!is_dir($publicProductsPath)) {
-    //         // Create the directory only if it doesn't exist
-    //         mkdir($publicProductsPath, 0755, true);
-    //     }
-
-    //     // Fetch the image content from the URL
-    //     $imageContents = file_get_contents($url);
-
-    //     if ($imageContents !== false) {
-    //         // Sanitize the file name
-    //         $fileNameWithQuery = basename(parse_url($url, PHP_URL_PATH));
-    //         $fileName = preg_replace('/\?.*/', '', $fileNameWithQuery); // Remove query parameters
-    //         $filePath = $publicProductsPath . '/' . $fileName;
-
-    //         // Save the image content directly to the public/storage/products directory
-    //         if (file_put_contents($filePath, $imageContents) === false) {
-    //             Log::error('Failed to write image to file: ' . $filePath);
-    //             return null;
-    //         }
-
-    //         // Generate the URL for the saved image
-    //         return url('storage/products/' . $fileName);
-    //     } else {
-    //         Log::error('Failed to download image from URL: ' . $url);
-    //         return null;
-    //     }
-    // }
-    // protected function uploadImageFromURL(?string $url): ?string
-    // {
-    //     // Directory within public directory
-    //     $productsDirectory = 'storage/products';
-
-    //     // Ensure products directory exists only if it doesn't already
-    //     $publicProductsPath = public_path($productsDirectory);
-    //     if (!is_dir($publicProductsPath)) {
-    //         // Create the directory only if it doesn't exist
-    //         mkdir($publicProductsPath, 0755, true);
-    //     }
-
-    //     // Fetch the image content from the URL
-    //     $imageContents = file_get_contents($url);
-
-    //     if ($imageContents !== false) {
-    //         // Sanitize the file name
-    //         $fileNameWithQuery = basename(parse_url($url, PHP_URL_PATH));
-    //         $fileName = preg_replace('/\?.*/', '', $fileNameWithQuery); // Remove query parameters
-    //         $filePath = $publicProductsPath . '/' . $fileName;
-
-    //         // Save the image content directly to the public/storage/products directory
-    //         if (file_put_contents($filePath, $imageContents) === false) {
-    //             Log::error('Failed to write image to file: ' . $filePath);
-    //             return null;
-    //         }
-
-    //         // Generate the URL for the saved image
-    //         return url('storage/products/' . $fileName);
-    //     } else {
-    //         Log::error('Failed to download image from URL: ' . $url);
-    //         return null;
-    //     }
-    // }
-
-
-
-    // protected function uploadImageFromURL(?string $url): ?string
-    // {
-    //     // Check if the URL is valid
-    //     if (filter_var($url, FILTER_VALIDATE_URL)) {
-    //         // Upload the external URL using RvMedia
-    //         $result = RvMedia::uploadFromUrl($url, 0, 'products');
-
-    //         // Check if the upload was successful
-    //         if (!$result['error']) {
-    //             // Return the URL of the uploaded image
-    //             return $result['data']->url;
-    //         } else {
-    //             // Log the error message if the upload failed
-    //             Log::error('Failed to upload external image: ' . $result['message']);
-    //             return null;
-    //         }
-    //     } else {
-    //         // Log an error message if the URL is not valid
-    //         Log::error('Provided URL is not valid: ' . $url);
-    //         return null;
-    //     }
-    // }
-
 
 }
