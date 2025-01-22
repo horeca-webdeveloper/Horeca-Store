@@ -176,14 +176,21 @@ class OrderApiController extends Controller
 
     public function storeGuest(Request $request)
     {
-        // Validate the incoming request data
         $validator = Validator::make($request->all(), [
             'shipping_method' => 'required|string',
             'products' => 'required|array',
             'products.*.id' => 'required|exists:ec_products,id',
             'products.*.quantity' => 'required|integer|min:1',
-            // 'products.*.price' => 'required|numeric|min:0',
+            'customerAddressName' => 'required|string',
+            'customerAddressPhone' => 'required|string',
+            'customerAddressEmail' => 'required|email',
+            'customerAddressState' => 'required|string',
+            'customerAddressCity' => 'required|string',
+            'customerAddressZipCode' => 'required|string',
+            'customerAddressCountry' => 'required|string',
+            'customerAddressAddress' => 'required|string',
         ]);
+        
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
@@ -269,19 +276,18 @@ class OrderApiController extends Controller
                     }
                 }
 
-                if ($customerAddress) {
-                    $orderAddress = new OrderAddress();
-                    $orderAddress->name = $customerAddress->name;
-                    $orderAddress->phone = $customerAddress->phone;
-                    $orderAddress->email = $customerAddress->email;
-                    $orderAddress->state = $customerAddress->state;
-                    $orderAddress->city = $customerAddress->city;
-                    $orderAddress->zip_code = $customerAddress->zip_code;
-                    $orderAddress->country = $customerAddress->country;
-                    $orderAddress->address = $customerAddress->address;
-                    $orderAddress->order_id = $order->id;
-                    $orderAddress->save();
-                }
+                $orderAddress = new OrderAddress();
+                $orderAddress->order_id = $order->id; // Associate the address with the order
+                $orderAddress->name = $request->customerAddressName;
+                $orderAddress->phone = $request->customerAddressPhone;
+                $orderAddress->email = $request->customerAddressEmail;
+                $orderAddress->state = $request->customerAddressState;
+                $orderAddress->city = $request->customerAddressCity;
+                $orderAddress->zip_code = $request->customerAddressZipCode;
+                $orderAddress->country = $request->customerAddressCountry;
+                $orderAddress->address = $request->customerAddressAddress;
+                $orderAddress->save();
+             
 
                 foreach ($request->products as $product) {
                     $productDetail = Product::find($product['id']);
