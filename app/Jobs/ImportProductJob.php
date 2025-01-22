@@ -66,14 +66,12 @@ class ImportProductJob implements ShouldQueue
 
 			if (
 				empty(trim($rowData['Name'])) ||
-				empty(trim($rowData['Description'])) ||
-				empty(trim($rowData['Content'])) ||
-				empty(trim($rowData['Warranty Information'])) ||
 				empty(trim($rowData['URL'])) ||
 				empty(trim($rowData['SKU'])) ||
 				empty(trim($rowData['Categories'])) ||
 				empty(trim($rowData['Status'])) ||
-				empty(trim($rowData['Delivery Days'])) ||
+				empty(trim($rowData['Vendor'])) ||
+				empty(trim($rowData['Brand'])) ||
 				empty(trim($rowData['Producttypes']))
 			) {
 				$rowError[] = 'Required fields data not present';
@@ -107,12 +105,12 @@ class ImportProductJob implements ShouldQueue
 				$product = new Product();
 
 				$product->name = $rowData['Name'];
-				$product->description = $rowData['Description'];
-				$product->content = $rowData['Content'];
-				$product->warranty_information = $rowData['Warranty Information'];
+				$product->description = !empty($rowData['Description']) ? $rowData['Description'] : null;
+				$product->content = !empty($rowData['Content']) ? $rowData['Content'] : null;
+				$product->warranty_information = !empty($rowData['Warranty Information']) ? $rowData['Warranty Information'] : null;
 				$product->sku = $rowData['SKU'];
 				$product->status = $rowData['Status'];
-				$product->delivery_days = $rowData['Delivery Days'];
+				$product->delivery_days = !empty($rowData['Delivery Days']) ? $rowData['Delivery Days'] : null;
 				$product->is_featured = !empty($rowData['Is Featured']) ? $rowData['Is Featured'] : 0;
 				$product->brand_id = $brandId;
 				$product->images = json_encode($images);
@@ -143,7 +141,8 @@ class ImportProductJob implements ShouldQueue
 				$product->compare_type = !empty($rowData['Compare Type']) ? $rowData['Compare Type'] : null;
 				$product->compare_products = !empty($rowData['Compare Products']) ? $rowData['Compare Products'] : null;
 				$product->refund = !empty($rowData['Refund Policy']) ? $rowData['Refund Policy'] : null;
-				$product->currency_id = !empty($rowData['Currency ID']) ? $rowData['Currency ID'] : 1;
+				// $product->currency_id = !empty($rowData['Currency ID']) ? $rowData['Currency ID'] : 1;
+				$product->currency_id = 1;
 				$product->variant_1_title = !empty($rowData['Variant 1 Title']) ? $rowData['Variant 1 Title'] : null;
 				$product->variant_1_value = !empty($rowData['Variant 1 Value']) ? $rowData['Variant 1 Value'] : null;
 				$product->variant_1_products = !empty($rowData['Variant 1 Products']) ? $rowData['Variant 1 Products'] : null;
