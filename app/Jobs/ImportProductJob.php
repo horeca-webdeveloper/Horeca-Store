@@ -95,7 +95,6 @@ class ImportProductJob implements ShouldQueue
 
 				/* Process Images */
 				$images = $this->getImageURLs((array) $rowData['Images'] ?? []);
-				dd($images);
 
 				/* Get Sale Type */
 				$saleType = ($rowData['Start Date Sale Price'] || $rowData['End Date Sale Price']) ? 1 : 0;
@@ -116,7 +115,8 @@ class ImportProductJob implements ShouldQueue
 				$product->delivery_days = $rowData['Delivery Days'];
 				$product->is_featured = $rowData['Is Featured'] ?? 0;
 				$product->brand_id = $brandId;
-				// $product->images = $images;
+				$product->images = json_encode($images);
+				$product->image = $images[0] ?? null;
 				$product->video_path = $rowData['Upload Video'];
 				$product->stock_status = $rowData['Stock Status'] ?? 'in_stock';
 				$product->with_storehouse_management = $rowData['With Storehouse Management'] ?? 0;
@@ -163,13 +163,10 @@ class ImportProductJob implements ShouldQueue
 				$product->google_shopping_mpn = $rowData['Google Shopping Mpn'] ?? null;
 				$product->box_quantity = $rowData['Box Quantity'] ?? null;
 				$product->store_id = $storeId;
-
 				$product->created_at = now();
 				$product->updated_at = now();
 				$product->created_by_id = $this->userId;
 				$product->created_by_type = User::class;
-
-				dd($product->toArray());
 				$product->save();
 
 				$categoryIdArray = $this->changeCategoryNameToId($rowData['Categories']);
