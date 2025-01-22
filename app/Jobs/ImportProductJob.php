@@ -64,26 +64,26 @@ class ImportProductJob implements ShouldQueue
 			$rowData = array_combine($this->header, $row);
 			$rowError = [];
 
-			// if (
-			// 	empty(trim($rowData['Name'])) ||
-			// 	empty(trim($rowData['Description'])) ||
-			// 	empty(trim($rowData['Content'])) ||
-			// 	empty(trim($rowData['Warranty Information'])) ||
-			// 	empty(trim($rowData['URL'])) ||
-			// 	empty(trim($rowData['SKU'])) ||
-			// 	empty(trim($rowData['Categories'])) ||
-			// 	empty(trim($rowData['Status'])) ||
-			// 	empty(trim($rowData['Delivery Days'])) ||
-			// 	empty(trim($rowData['Producttypes']))
-			// ) {
-			// 	$rowError[] = 'Required fields data not present';
-			// 	$errorArray[] = [
-			// 		"Row Number" => $failed + $success + 2,
-			// 		"Error" => implode(' | ', $rowError),
-			// 	];
-			// 	$failed++;
-			// 	continue;
-			// }
+			if (
+				empty(trim($rowData['Name'])) ||
+				empty(trim($rowData['Description'])) ||
+				empty(trim($rowData['Content'])) ||
+				empty(trim($rowData['Warranty Information'])) ||
+				empty(trim($rowData['URL'])) ||
+				empty(trim($rowData['SKU'])) ||
+				empty(trim($rowData['Categories'])) ||
+				empty(trim($rowData['Status'])) ||
+				empty(trim($rowData['Delivery Days'])) ||
+				empty(trim($rowData['Producttypes']))
+			) {
+				$rowError[] = 'Required fields data not present';
+				$errorArray[] = [
+					"Row Number" => $failed + $success + 2,
+					"Error" => implode(' | ', $rowError),
+				];
+				$failed++;
+				continue;
+			}
 
 			// Wrap in a transaction
 			DB::beginTransaction();
@@ -113,55 +113,56 @@ class ImportProductJob implements ShouldQueue
 				$product->sku = $rowData['SKU'];
 				$product->status = $rowData['Status'];
 				$product->delivery_days = $rowData['Delivery Days'];
-				$product->is_featured = $rowData['Is Featured'] ?? 0;
+				$product->is_featured = !empty($rowData['Is Featured']) ? $rowData['Is Featured'] : 0;
 				$product->brand_id = $brandId;
 				$product->images = json_encode($images);
 				$product->image = $images[0] ?? null;
 				$product->video_path = $rowData['Upload Video'];
-				$product->stock_status = $rowData['Stock Status'] ?? 'in_stock';
-				$product->with_storehouse_management = $rowData['With Storehouse Management'] ?? 0;
-				$product->quantity = $rowData['Quantity'] ?? null;
-				$product->cost_per_item = $rowData['Cost Per Item'] ?? null;
-				$product->price = $rowData['Price'] ?? null;
-				$product->sale_price = $rowData['Sale Price'] ?? null;
-				$product->start_date = $rowData['Start Date Sale Price'] ? Carbon::parse($rowData['Start Date Sale Price']) : null;
-				$product->end_date = $rowData['End Date Sale Price'] ? Carbon::parse($rowData['End Date Sale Price']) : null;
+				$product->stock_status = !empty($rowData['Stock Status']) ? $rowData['Stock Status'] : 'in_stock';
+				$product->with_storehouse_management = !empty($rowData['With Storehouse Management']) ? $rowData['With Storehouse Management'] : 0;
+				$product->quantity = !empty($rowData['Quantity']) ? $rowData['Quantity'] : null;
+				$product->cost_per_item = !empty($rowData['Cost Per Item']) ? $rowData['Cost Per Item'] : null;
+				$product->price = !empty($rowData['Price']) ? $rowData['Price'] : null;
+				$product->sale_price = !empty($rowData['Sale Price']) ? $rowData['Sale Price'] : null;
+				$product->start_date = !empty($rowData['Start Date Sale Price']) ? Carbon::parse($rowData['Start Date Sale Price']) : null;
+				$product->end_date = !empty($rowData['End Date Sale Price']) ? Carbon::parse($rowData['End Date Sale Price']) : null;
 				$product->sale_type = $saleType;
-				$product->weight = $rowData['Weight'] ?? null;
-				$product->length = $rowData['Length'] ?? null;
-				$product->width = $rowData['Width'] ?? null;
-				$product->height = $rowData['Height'] ?? null;
-				$product->depth = $rowData['Depth'] ?? null;
-				$product->shipping_weight_option = $rowData['Shipping Weight Option'] ?? null;
-				$product->shipping_weight = $rowData['Shipping Weight'] ?? null;
-				$product->shipping_dimension_option = $rowData['Shipping Dimension Option'] ?? null;
-				$product->shipping_width = $rowData['Shipping Width'] ?? null;
-				$product->shipping_depth = $rowData['Shipping Depth'] ?? null;
-				$product->shipping_height = $rowData['Shipping Height'] ?? null;
-				$product->shipping_length = $rowData['Shipping Length'] ?? null;
-				$product->frequently_bought_together = $rowData['Frequently Bought Together'] ?? null;
-				$product->compare_type = $rowData['Compare Type'] ?? null;
-				$product->compare_products = $rowData['Compare Products'] ?? null;
-				$product->refund = $rowData['Refund Policy'] ?? null;
-				$product->currency_id = $rowData['Currency ID'] ?? 1;
-				$product->variant_1_title = $rowData['Variant 1 Title'] ?? null;
-				$product->variant_1_value = $rowData['Variant 1 Value'] ?? null;
-				$product->variant_1_products = $rowData['Variant 1 Products'] ?? null;
-				$product->variant_2_title = $rowData['Variant 2 Title'] ?? null;
-				$product->variant_2_value = $rowData['Variant 2 Value'] ?? null;
-				$product->variant_2_products = $rowData['Variant 2 Products'] ?? null;
-				$product->variant_3_title = $rowData['Variant 3 Title'] ?? null;
-				$product->variant_3_value = $rowData['Variant 3 Value'] ?? null;
-				$product->variant_3_products = $rowData['Variant 3 Products'] ?? null;
-				$product->variant_color_title = $rowData['Variant Color Title'] ?? null;
-				$product->variant_color_value = $rowData['Variant Color Value'] ?? null;
-				$product->variant_color_products = $rowData['Variant Color Products'] ?? null;
-				$product->barcode = $rowData['Barcode (ISBN,UPC,GTIN,etc.)'] ?? null;
-				$product->minimum_order_quantity = $rowData['Minimum Order Quantity'] ?? 0;
-				$product->variant_requires_shipping = $rowData['Variant Requires Shipping'] ?? null;
-				$product->google_shopping_category = $rowData['Google Shopping Category'] ?? null;
-				$product->google_shopping_mpn = $rowData['Google Shopping Mpn'] ?? null;
-				$product->box_quantity = $rowData['Box Quantity'] ?? null;
+				$product->weight = !empty($rowData['Weight']) ? $rowData['Weight'] : null;
+				$product->length = !empty($rowData['Length']) ? $rowData['Length'] : null;
+				$product->width = !empty($rowData['Width']) ? $rowData['Width'] : null;
+				$product->height = !empty($rowData['Height']) ? $rowData['Height'] : null;
+				$product->depth = !empty($rowData['Depth']) ? $rowData['Depth'] : null;
+				$product->shipping_weight_option = !empty($rowData['Shipping Weight Option']) ? $rowData['Shipping Weight Option'] : null;
+				$product->shipping_weight = !empty($rowData['Shipping Weight']) ? $rowData['Shipping Weight'] : null;
+				$product->shipping_dimension_option = !empty($rowData['Shipping Dimension Option']) ? $rowData['Shipping Dimension Option'] : null;
+				$product->shipping_width = !empty($rowData['Shipping Width']) ? $rowData['Shipping Width'] : null;
+				$product->shipping_depth = !empty($rowData['Shipping Depth']) ? $rowData['Shipping Depth'] : null;
+				$product->shipping_height = !empty($rowData['Shipping Height']) ? $rowData['Shipping Height'] : null;
+				$product->shipping_length = !empty($rowData['Shipping Length']) ? $rowData['Shipping Length'] : null;
+				$product->frequently_bought_together = !empty($rowData['Frequently Bought Together']) ? $rowData['Frequently Bought Together'] : null;
+				$product->compare_type = !empty($rowData['Compare Type']) ? $rowData['Compare Type'] : null;
+				$product->compare_products = !empty($rowData['Compare Products']) ? $rowData['Compare Products'] : null;
+				$product->refund = !empty($rowData['Refund Policy']) ? $rowData['Refund Policy'] : null;
+				$product->currency_id = !empty($rowData['Currency ID']) ? $rowData['Currency ID'] : 1;
+				$product->variant_1_title = !empty($rowData['Variant 1 Title']) ? $rowData['Variant 1 Title'] : null;
+				$product->variant_1_value = !empty($rowData['Variant 1 Value']) ? $rowData['Variant 1 Value'] : null;
+				$product->variant_1_products = !empty($rowData['Variant 1 Products']) ? $rowData['Variant 1 Products'] : null;
+				$product->variant_2_title = !empty($rowData['Variant 2 Title']) ? $rowData['Variant 2 Title'] : null;
+				$product->variant_2_value = !empty($rowData['Variant 2 Value']) ? $rowData['Variant 2 Value'] : null;
+				$product->variant_2_products = !empty($rowData['Variant 2 Products']) ? $rowData['Variant 2 Products'] : null;
+				$product->variant_3_title = !empty($rowData['Variant 3 Title']) ? $rowData['Variant 3 Title'] : null;
+				$product->variant_3_value = !empty($rowData['Variant 3 Value']) ? $rowData['Variant 3 Value'] : null;
+				$product->variant_3_products = !empty($rowData['Variant 3 Products']) ? $rowData['Variant 3 Products'] : null;
+				$product->variant_color_title = !empty($rowData['Variant Color Title']) ? $rowData['Variant Color Title'] : null;
+				$product->variant_color_value = !empty($rowData['Variant Color Value']) ? $rowData['Variant Color Value'] : null;
+				$product->variant_color_products = !empty($rowData['Variant Color Products']) ? $rowData['Variant Color Products'] : null;
+				$product->barcode = !empty($rowData['Barcode (ISBN,UPC,GTIN,etc.)']) ? $rowData['Barcode (ISBN,UPC,GTIN,etc.)'] : null;
+				$product->minimum_order_quantity = !empty($rowData['Minimum Order Quantity']) ? $rowData['Minimum Order Quantity'] : 0;
+				$product->variant_requires_shipping = !empty($rowData['Variant Requires Shipping']) ? $rowData['Variant Requires Shipping'] : null;
+				$product->google_shopping_category = !empty($rowData['Google Shopping Category']) ? $rowData['Google Shopping Category'] : null;
+				$product->google_shopping_mpn = !empty($rowData['Google Shopping Mpn']) ? $rowData['Google Shopping Mpn'] : null;
+				$product->box_quantity = !empty($rowData['Box Quantity']) ? $rowData['Box Quantity'] : null;
+
 				$product->store_id = $storeId;
 				$product->created_at = now();
 				$product->updated_at = now();
@@ -185,6 +186,8 @@ class ImportProductJob implements ShouldQueue
 				DB::rollBack();
 
 				$rowError[] = 'Error processing row: ' . $e->getMessage();
+				$rowError[] = 'File: ' . $e->getFile();
+				$rowError[] = 'Line: ' . $e->getLine();
 				$errorArray[] = [
 					"Row Number" => $failed + $success + 2,
 					"Error" => implode(' | ', $rowError),
@@ -205,58 +208,6 @@ class ImportProductJob implements ShouldQueue
 		]);
 	}
 
-
-	// public function handle()
-	// {
-	// 	$brandIdNames = Brand::pluck('name', 'id')->all();
-	// 	$this->categoryIdNames = ProductCategory::pluck('name', 'id')->all();
-	// 	$this->tagIdNames = ProductTag::pluck('name', 'id')->all();
-	// 	$this->productTypeIdNames = ProductTypes::pluck('name', 'id')->all();
-	// 	$storeIdNames = Store::pluck('name', 'id')->all();
-
-	// 	$errorArray = [];
-	// 	$success = 0;
-	// 	$failed = 0;
-
-	// 	foreach ($this->chunk as $row) {
-	// 		$rowData = array_combine($this->header, $row); // Combine header with row data
-	// 		$rowError = [];
-	// 		# Check Validations
-	// 		if (
-	// 			empty(trim($rowData['Name'])) ||
-	// 			empty(trim($rowData['Description'])) ||
-	// 			empty(trim($rowData['Content'])) ||
-	// 			empty(trim($rowData['Warranty Information'])) ||
-	// 			empty(trim($rowData['URL'])) ||
-	// 			empty(trim($rowData['SKU'])) ||
-	// 			empty(trim($rowData['Categories'])) ||
-	// 			empty(trim($rowData['Status'])) ||
-	// 			empty(trim($rowData['Delivery Days'])) ||
-	// 			empty(trim($rowData['Producttypes']))
-	// 		) {
-	// 			$rowError[] = 'Required fields data not present';
-	// 			$errorArray[] = [
-	// 				"Row Number" => $failed + $success + 2,
-	// 				"Error" => implode(' | ', $rowError)
-	// 			];
-	// 			$failed++;
-	// 			continue;
-	// 		} else {
-	// 			$success++;
-	// 		}
-	// 	}
-
-	// 	$log = TransactionLog::where('identifier', $this->batch()->id)->first();
-
-	// 	$descArray = json_decode($log->description, true) ?? ["Errors" => ''];
-	// 	$descArray["Success Count"] = $descArray["Success Count"] + $success;
-	// 	$descArray["Failed Count"] = $descArray["Failed Count"] + $failed;
-	// 	$descArray["Errors"] = array_merge($descArray["Errors"], $errorArray);
-	// 	TransactionLog::where('id', $log->id)->update([
-	// 		'description' => json_encode($descArray)
-	// 	]);
-	// }
-
 	private function changeCategoryNameToId(string $categories)
 	{
 		$categoryIds = [];
@@ -264,6 +215,9 @@ class ImportProductJob implements ShouldQueue
 
 		foreach ($categoryNames as $categoryName) {
 			$trimmedName = trim($categoryName);
+			if (empty($trimmedName)) {
+				continue;
+			}
 			$categoryId = array_search($trimmedName, $this->tagIdNames);
 			if ($categoryId !== false) {
 				$categoryIds[] = $categoryId;
@@ -296,7 +250,6 @@ class ImportProductJob implements ShouldQueue
 
 		/* Step 3: Sync categories */
 		$product->categories()->sync($categoriesWithTimestamps);
-		return true;
 	}
 
 	private function saveProductTag($product, string $tags)
@@ -306,6 +259,9 @@ class ImportProductJob implements ShouldQueue
 
 		foreach ($tagNames as $tagName) {
 			$trimmedName = trim($tagName);
+			if (empty($trimmedName)) {
+				continue;
+			}
 			$tagId = array_search($trimmedName, $this->tagIdNames);
 			if ($tagId !== false) {
 				$tagIds[] = $tagId;
@@ -315,8 +271,6 @@ class ImportProductJob implements ShouldQueue
 			}
 		}
 		$product->tags()->sync($tagIds);
-
-		return $true;
 	}
 
 	private function saveProductProductType($product, string $productTypes)
@@ -326,14 +280,15 @@ class ImportProductJob implements ShouldQueue
 
 		foreach ($productTypeNames as $productTypeName) {
 			$trimmedName = trim($productTypeName);
+			if (empty($trimmedName)) {
+				continue;
+			}
 			$productTypeId = array_search($trimmedName, $this->productTypeIdNames);
 			if ($productTypeId !== false) {
 				$productTypeIds[] = $productTypeId;
 			}
 		}
 		$product->producttypes()->sync($productTypeIds);
-
-		return $true;
 	}
 
 	private function saveSeoMetaData($product, $seoTitle, $seoDescription)
@@ -355,12 +310,15 @@ class ImportProductJob implements ShouldQueue
 			$existingMetaValue = [];
 		}
 
-		/* Merge existing index with new data */
-		$updatedMetaValue = [
-			'seo_title' => $seoTitle,
-			'seo_description' => $seoDescription,
-			'index' => $existingMetaValue['index'] ?? 'index', // Retain existing index if not provided
-		];
+		$updatedMetaValue = [];
+		if (!empty($seoTitle)) {
+			$updatedMetaValue['seo_title'] = $seoTitle;
+		}
+
+		if (!empty($seoDescription)) {
+			$updatedMetaValue['seo_description'] = $seoDescription;
+		}
+		$updatedMetaValue['index'] = $existingMetaValue['index'] ?? 'index';
 
 		/* Store the updated meta value as an array */
 		$seoMetaData->meta_value = [$updatedMetaValue];
@@ -373,7 +331,7 @@ class ImportProductJob implements ShouldQueue
 	{
 		if (strpos($url, '/products/') !== false) {
 			$urlParts = explode('/products/', $url);
-			$output = $urlParts[1];
+			$outputUrl = $urlParts[1];
 		} else {
 			$outputUrl = null; // Handle the case where "/products/" is not found
 		}
@@ -391,7 +349,7 @@ class ImportProductJob implements ShouldQueue
 
 	private function saveTranslation($product, $rowData)
 	{
-		if ($rowData['Name (AR)'] || $rowData['Description (AR)'] || $rowData['Content (AR)'] || $rowData['Warranty Information (AR)']) {
+		if (!empty(trim($rowData['Name (AR)'] ?? '')) || !empty(trim($rowData['Description (AR)'] ?? '')) || !empty(trim($rowData['Content (AR)'] ?? '')) || !empty(trim($rowData['Warranty Information (AR)'] ?? ''))) {
 			$checkExist = $product->translations()->where('lang_code', 'ar')->first();
 
 			if ($checkExist) {
@@ -417,12 +375,12 @@ class ImportProductJob implements ShouldQueue
 	private function saveDiscount($product, $rowData)
 	{
 		$requiredFieldValues = [
-			'quantity1' => $rowData['buying_quantity_1'] ?? null,
-			'value1' => $rowData['discount_1'] ?? null,
-			'start_date1' => $rowData['start_date_1'] ?? null,
-			'quantity2' => $rowData['buying_quantity_2'] ?? null,
-			'value2' => $rowData['discount_2'] ?? null,
-			'start_date2' => $rowData['start_date_2'] ?? null,
+			'quantity1' => $rowData['Buying Quantity1'] ?? null,
+			'value1' => $rowData['Discount1'] ?? null,
+			'start_date1' => $rowData['Start Date1'] ?? null,
+			'quantity2' => $rowData['Buying Quantity2'] ?? null,
+			'value2' => $rowData['Discount2'] ?? null,
+			'start_date2' => $rowData['Start Date2'] ?? null,
 		];
 
 		$requiredFieldsProvided = !empty($requiredFieldValues['quantity1']) && !empty($requiredFieldValues['value1']) && !empty($requiredFieldValues['start_date1']) && !empty($requiredFieldValues['quantity2']) && !empty($requiredFieldValues['value2']) && !empty($requiredFieldValues['start_date2']);
@@ -433,9 +391,9 @@ class ImportProductJob implements ShouldQueue
 
 				// Required fields for discounts
 				$requiredFields = [
-					'quantity' => $rowData['buying_quantity_' . $i] ?? null,
-					'value' => $rowData['discount_' . $i] ?? null,
-					'start_date' => $rowData['start_date_' . $i] ?? null,
+					'quantity' => $rowData['Buying Quantity' . $i] ?? null,
+					'value' => $rowData['Discount' . $i] ?? null,
+					'start_date' => $rowData['Start Date' . $i] ?? null,
 				];
 
 				// Check if all required fields are non-empty
@@ -450,7 +408,7 @@ class ImportProductJob implements ShouldQueue
 					$discount->type = 'promotion';
 					$discount->value = $requiredFields['value'];
 					$discount->start_date = !empty($requiredFields['start_date']) ? Carbon::parse($requiredFields['start_date']) : null;
-					$discount->end_date = !empty($rowData['end_date_' . $i]) ? Carbon::parse($rowData['end_date_' . $i]) : null;
+					$discount->end_date = !empty($rowData['End Date' . $i]) ? Carbon::parse($rowData['End Date' . $i]) : null;
 					$discount->save();
 
 					// Associate the discount with the product

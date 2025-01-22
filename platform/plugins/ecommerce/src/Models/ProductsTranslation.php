@@ -16,4 +16,5 @@ class ProductsTranslation extends BaseModel
 		'content',
 		'warranty_information',
 	];
+	public $timestamps = false;
 }
