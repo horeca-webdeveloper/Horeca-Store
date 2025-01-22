@@ -276,7 +276,7 @@ public function getAllHomeBrandProducts(Request $request)
 }
 
     /**
-     * Optimized query logic for guest users.
+     * Optimized query logic for guest users dfds .
      */
     // public function getAllBrandGuestProducts(Request $request)
     // {
