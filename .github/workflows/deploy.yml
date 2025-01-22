@@ -62,6 +62,7 @@ jobs:
             # Set proper permissions for storage and bootstrap/cache
             sudo chown -R www-data:www-data storage bootstrap/cache
             sudo chmod -R 775 storage bootstrap/cache
+            composer update square/square
             
             # Clear caches
             sudo php artisan cache:clear
