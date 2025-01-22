@@ -290,3 +290,5 @@ Route::middleware('web')->group(function () {
         Route::put('/orders/{id}', [OrderApiController::class, 'update']);
         Route::delete('/orders/{id}', [OrderApiController::class, 'destroy']);
     });
+
+    Route::post('/guest-orders', [OrderApiController::class, 'storeGuest']);
