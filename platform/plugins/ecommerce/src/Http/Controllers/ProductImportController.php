@@ -33,8 +33,9 @@ class ProductImportController extends BaseController
 
 	public function index()
 	{
+		$logs = TransactionLog::all();
 		$this->pageTitle(trans('plugins/ecommerce::products.import_products'));
-		return view('plugins/ecommerce::product-import.index');
+		return view('plugins/ecommerce::product-import.index', compact('logs'));
 	}
 
 	public function store(Request $request)
@@ -122,7 +123,7 @@ class ProductImportController extends BaseController
 				$batch->add(new ImportProductJob($data));
 			}
 
-			session()->put('success', 'The import process has been scheduled successfully. Please track it under transaction log.');
+			session()->put('success', 'The import process has been scheduled successfully. Please track it under import log.');
 			return back();
 		} catch(Exception $exception) {
 			# Exception
