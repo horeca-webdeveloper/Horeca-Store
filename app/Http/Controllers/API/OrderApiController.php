@@ -710,7 +710,7 @@ public function getLatestOrder(Request $request)
             'ec_products.description',
             'ec_products.images',
             'ec_order_product.price',
-            'ec_order_product.quantity'
+            'ec_order_product.qty'
         )
         ->get()
         ->map(function ($product) {
