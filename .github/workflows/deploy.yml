@@ -13,16 +13,28 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Set up AWS CLI
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+      - name: Prepare SSH
+        run: |
+          # Create SSH directory
+          mkdir -p ~/.ssh
+
+          # Write SSH key with proper permissions
+          echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+          # Create SSH config to bypass strict host checking
+          touch ~/.ssh/config
+          echo "Host *" > ~/.ssh/config
+          echo "  StrictHostKeyChecking no" >> ~/.ssh/config
+          echo "  UserKnownHostsFile=/dev/null" >> ~/.ssh/config
 
       - name: Deploy to EC2
         run: |
-          ssh -i ~/.ssh/id_ed25519 ubuntu@${{ secrets.AWS_INSTANCE_IP }} << 'EOF'
+          # Verify SSH key exists and has correct permissions
+          ls -l ~/.ssh/id_ed25519
+          
+          # Attempt SSH connection with verbose output
+          ssh -vvv -i ~/.ssh/id_ed25519 ubuntu@${{ secrets.AWS_INSTANCE_IP }} << 'EOF'
             cd /var/www/html/Horeca-Store
 
             # Git configuration and pull
@@ -48,6 +60,7 @@ jobs:
             sudo chmod -R 775 storage bootstrap/cache
 
             # Composer update and install
+            composer install --no-interaction --prefer-dist --optimize-autoloader
             composer update square/square
 
             # Laravel commands
