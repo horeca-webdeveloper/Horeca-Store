@@ -56,11 +56,16 @@
 
 <div class="container mt-1">
 	<h2>Product Import</h2>
+	<div class="mb-3">
+		<label class="label-field">{{ __("Download Template") }}</label>
+		<a href="{{ asset('templates/product-import-template.csv') }}"><button class="button-set"><i class="fa fa-download"></i> {{ __("Download") }}</button></a>
+	</div>
 	<form action="{{ route('products.upload') }}" method="POST" enctype="multipart/form-data">
 		@csrf
+
 		<div class="form-group">
 			<label for="fileInput">Upload File:</label>
-			<input type="file" name="upload_file" id="fileInput" class="form-control">
+			<input class="form-control" type="file" name="upload_file" id="fileInput" class="form-control">
 		</div>
 		<button type="submit" class="btn btn-primary">Upload</button>
 	</form>
@@ -84,17 +89,22 @@
 				<td>{{ $log->module }}</td>
 				<td>{{ $log->action }}</td>
 				<td>{{ $log->identifier }}</td>
-				<td>{{ $log->status }}</td>
-				<td>{{ $log->created_by }}</td>
+				<td><span class="statusStyle" @if($log->status=="Completed") style="background-color: green" @elseif($log->status=="Failed") style="background-color: red" @elseif($log->status=="In-progress") style="background-color: #d7d73f" @endif>{{ $log->status }}</span></td>
+				<td>{{ $log->createdBy->name }}</td>
 				<td>{{ $log->created_at }}</td>
 				<td>
-					<a href="{{ route('logs.view', $log->id) }}" class="btn btn-sm btn-info">View</a>
+					<a href="{{ route('products.import_view', $log->id) }}" class="btn btn-sm btn-info">View</a>
 				</td>
 			</tr>
 			@endforeach
 		</tbody>
 	</table>
 </div>
-
-
+<style type="text/css">
+	.statusStyle {
+		border-radius: 5px;
+		padding: 5px;
+		color: white;
+	}
+</style>
 @endsection

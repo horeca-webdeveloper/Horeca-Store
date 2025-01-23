@@ -1,0 +1,153 @@
+@extends($layout ?? BaseHelper::getAdminMasterLayoutTemplate())
+
+@section('content')
+
+@php
+$jsonDescription = false;
+if ($log->description && json_validate($log->description)) {
+	$jsonDescription = json_decode($log->description, true);
+}
+@endphp
+
+<h6 class="section-title">{{ __("Log") }}</h6>
+<div class="db-details mb-2">
+
+	<div class="row">
+		<div class="col-md-2">
+			<div class="detailed-head">
+				<p>{{ __("ID") }}</p>
+			</div>
+		</div>
+		<div class="col-md-10">
+			<div class="detailed-description">
+				<p>{{ $log->id }}</p>
+			</div>
+		</div>
+	</div>
+
+	<div class="row">
+		<div class="col-md-2">
+			<div class="detailed-head">
+				<p>{{ __("Module") }}</p>
+			</div>
+		</div>
+		<div class="col-md-10">
+			<div class="detailed-description">
+				<p>{{ $log->module }}</p>
+			</div>
+		</div>
+	</div>
+
+	<div class="row">
+		<div class="col-md-2">
+			<div class="detailed-head">
+				<p>{{ __("Action") }}</p>
+			</div>
+		</div>
+		<div class="col-md-10">
+			<div class="detailed-description">
+				<p>{{ $log->action }}</p>
+			</div>
+		</div>
+	</div>
+
+	<div class="row">
+		<div class="col-md-2">
+			<div class="detailed-head">
+				<p>{{ __("Identifier") }}</p>
+			</div>
+		</div>
+		<div class="col-md-10">
+			<div class="detailed-description">
+				<p>{{ $log->identifier }}</p>
+			</div>
+		</div>
+	</div>
+
+	<div class="row">
+		<div class="col-md-2">
+			<div class="detailed-head">
+				<p>{{ __("Status") }}</p>
+			</div>
+		</div>
+		<div class="col-md-10">
+			<div class="detailed-description">
+				<p>
+					<span class="statusStyle" @if($log->status=="Completed") style="background-color: green" @elseif($log->status=="Failed") style="background-color: red" @elseif($log->status=="In-progress") style="background-color: #d7d73f" @endif> {{ is_array($log->status) ? json_encode($log->status):$log->status }}</span>
+				</p>
+			</div>
+		</div>
+	</div>
+
+	<div class="row">
+		<div class="col-md-2">
+			<div class="detailed-head">
+				<p>{{ __("Created By") }}</p>
+			</div>
+		</div>
+		<div class="col-md-10">
+			<div class="detailed-description">
+				<p>{{ $log->createdBy->name ?? '' }}</p>
+			</div>
+		</div>
+	</div>
+
+	<div class="row">
+		<div class="col-md-2">
+			<div class="detailed-head">
+				<p>{{ __("Created At") }}</p>
+			</div>
+		</div>
+		<div class="col-md-10">
+			<div class="detailed-description">
+				<p>{{ $log->created_at }}</p>
+			</div>
+		</div>
+	</div>
+</div>
+
+@if ($jsonDescription)
+	<h6 class="section-title">{{ __("Description") }}</h6>
+	<div class="table-responsive">
+		<table class="table">
+			<thead>
+				<tr>
+					<th width="17%">{{ __("Label") }}</th>
+					<th width="83%">{{ __("Value") }}</th>
+				</tr>
+			</thead>
+			<tbody>
+					@foreach($jsonDescription as $key => $value)
+						<tr>
+							<td><b>{{ $key }}</b></td>
+							<td>
+								@if(is_array($value) && count($value)>0)
+									@foreach($value as $key1 => $value1)
+										@if(is_array($value1))
+											@foreach($value1 as $key2 => $value2)
+												<b>{{ $key2 }}</b>: {{ is_array($value2) ? json_encode($value2):$value2 }}<br>
+											@endforeach
+										@else
+											<b>{{ $key1 }}</b>: {{ $value1 }}<br>
+										@endif
+										<br>
+									@endforeach
+								@else
+									{{ is_array($value) ? json_encode($value):$value }}
+								@endif
+							</td>
+						</tr>
+					@endforeach
+			</tbody>
+		</table>
+	</div>
+@endif
+
+<style type="text/css">
+	.statusStyle {
+		border-radius: 5px;
+		padding: 5px;
+		color: white;
+	}
+</style>
+@endsection

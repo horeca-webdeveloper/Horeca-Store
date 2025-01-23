@@ -139,6 +139,11 @@ AdminHelper::registerRoutes(function () {
                 'uses' => 'ProductImportController@store',
                 'permission' => 'products.index',
             ]);
+            Route::get('product-import-view/{id}', [
+                'as' => 'import_view',
+                'uses' => 'ProductImportController@show',
+                'permission' => 'products.index',
+            ]);
         });
     });
 

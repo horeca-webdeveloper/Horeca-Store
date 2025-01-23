@@ -110,8 +110,8 @@ class ProductImportController extends BaseController
 				]);
 
 				# To delete imported excel file
-				// $command = "rm -rf ".$fileNameWithPath;
-				// shell_exec($command);
+				$command = "rm -rf ".$fileNameWithPath;
+				shell_exec($command);
 			})->name("Product Import")->dispatch();
 
 			foreach ($chunks as $chunk) {
@@ -130,5 +130,17 @@ class ProductImportController extends BaseController
 			session()->put('error', $exception->getMessage());
 			return redirect('schools')->with('error', $exception->getMessage());
 		}
+	}
+
+	/**
+	 * Display the specified resource.
+	 */
+	public function show($transactionLogId)
+	{
+		parent::breadcrumb()->add('Import Products', route('products.import'));
+		$log = TransactionLog::find($transactionLogId);
+
+		return view('plugins/ecommerce::product-import.show', compact('log'));
+
 	}
 }
