@@ -518,6 +518,56 @@ public function index(Request $request)
     // Return the orders with the product details as a JSON response
     return response()->json($orders);
 }
+public function getLatestOrder(Request $request)
+{
+    // Retrieve the latest order for the logged-in user
+    $latestOrder = Order::where('user_id', $request->user()->id)
+        ->latest('created_at')
+        ->first();
+
+    // If no order is found, return a message
+    if (!$latestOrder) {
+        return response()->json(['message' => 'No orders found'], 404);
+    }
+
+    // Process the order to extract product details from the 'description' field
+    if ($latestOrder->description) {
+        // Decode the 'description' field (JSON data)
+        $productDetails = json_decode($latestOrder->description, true);
+
+        // Ensure the decoded JSON is an array
+        if (is_array($productDetails)) {
+            $products = [];
+
+            // Loop through each product in the 'description' field and retrieve product data
+            foreach ($productDetails as $item) {
+                $product = Product::find($item['product_id']);
+
+                if ($product) {
+                    $products[] = [
+                        'product_id' => $product->id,
+                        'name' => $product->name,
+                        'price' => $item['price'],
+                        'sale_price' => $product->sale_price,
+                        'quantity' => $item['quantity'],
+                        'description' => $product->description,
+                        'images' => $product->images
+                    ];
+                }
+            }
+
+            // Attach the product details to the order
+            $latestOrder->setAttribute('products', $products);
+        } else {
+            $latestOrder->setAttribute('products', []);
+        }
+    } else {
+        $latestOrder->setAttribute('products', []);
+    }
+
+    // Return the latest order with product details as a JSON response
+    return response()->json($latestOrder);
+}
 
 
     // Get a specific order
