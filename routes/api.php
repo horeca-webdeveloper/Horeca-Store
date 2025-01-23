@@ -286,10 +286,10 @@ Route::middleware('web')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/orders', [OrderApiController::class, 'index']);
         Route::post('/orders', [OrderApiController::class, 'store']);
-        Route::post('/orders/latest', [OrderApiController::class, 'getLatestOrder']);
+     
         Route::get('/orders/{id}', [OrderApiController::class, 'show']);
         Route::put('/orders/{id}', [OrderApiController::class, 'update']);
         Route::delete('/orders/{id}', [OrderApiController::class, 'destroy']);
     });
-
+    Route::post('/orders/latest', [OrderApiController::class, 'getLatestOrder']);
     Route::post('/guest-orders', [OrderApiController::class, 'storeGuest']);
