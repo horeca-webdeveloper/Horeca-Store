@@ -33,33 +33,30 @@ jobs:
           ssh -i ~/.ssh/id_ed25519 ubuntu@${{ secrets.AWS_INSTANCE_IP }} << 'EOF'
             cd /var/www/html/Horeca-Store
 
-            # Git safety configuration
-            sudo git config --global --add safe.directory /var/www/html/Horeca-Store
-            sudo git config --global --add safe.directory '*'
+            # Take full ownership of the directory
+            sudo chown -R ubuntu:ubuntu .
+            sudo chmod -R 755 .
 
-            # Pull changes
-            git fetch origin main
-            git reset --hard origin/main
+            # Ensure git can operate
+            sudo -u ubuntu git config --global --add safe.directory /var/www/html/Horeca-Store
+            
+            # Pull changes as ubuntu user
+            sudo -u ubuntu git fetch origin main
+            sudo -u ubuntu git reset --hard origin/main
 
-            # Comprehensive permission reset
-            sudo chown -R ubuntu:www-data .
-            sudo chmod -R 775 storage bootstrap/cache
-            sudo find . -type d -exec chmod 755 {} \;
-            sudo find . -type f -exec chmod 644 {} \;
+            # Reset permissions comprehensively
+            sudo chown -R www-data:ubuntu .
+            sudo chmod -R 775 .
 
-            # Ensure Laravel directories exist with correct permissions
-            sudo mkdir -p storage/framework/cache
-            sudo mkdir -p storage/framework/sessions
-            sudo mkdir -p storage/framework/views
-            sudo mkdir -p storage/logs
-            sudo mkdir -p bootstrap/cache
+            # Ensure Laravel directories exist
+            mkdir -p storage/framework/cache
+            mkdir -p storage/framework/sessions
+            mkdir -p storage/framework/views
+            mkdir -p storage/logs
+            mkdir -p bootstrap/cache
 
-            # Clear caches
-            sudo php artisan cache:clear
-            sudo php artisan config:clear
-            sudo php artisan view:clear
-            sudo php artisan route:clear
-            sudo chown -R www-data:www-data storage bootstrap/cache
+            # Set specific permissions for Laravel directories
+            sudo chown -R www-data:ubuntu storage bootstrap/cache
             sudo chmod -R 775 storage bootstrap/cache
 
             # Composer dependencies
