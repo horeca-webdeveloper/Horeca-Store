@@ -18,6 +18,7 @@ use Botble\Payment\Models\Payment;
 use Botble\Ecommerce\Enums\OrderStatusEnum;
 use Botble\Ecommerce\Enums\OrderHistoryActionEnum;
 use Botble\Payment\Enums\PaymentStatusEnum;
+use Illuminate\Support\Facades\DB;
 
 class OrderApiController extends Controller
 {
