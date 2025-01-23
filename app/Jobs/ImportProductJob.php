@@ -27,6 +27,7 @@ use Botble\Slug\Models\Slug;
 use Botble\Ecommerce\Models\Discount;
 use Botble\Ecommerce\Models\DiscountProduct;
 use App\Models\TransactionLog;
+use Botble\Ecommerce\Models\UnitOfMeasurement;
 
 use Botble\Ecommerce\Services\StoreProductTagService;
 
@@ -51,10 +52,10 @@ class ImportProductJob implements ShouldQueue
 	public function handle()
 	{
 		$brandIdNames = Brand::pluck('name', 'id')->all();
+		$storeIdNames = Store::pluck('name', 'id')->all();
 		$this->categoryIdNames = ProductCategory::pluck('name', 'id')->all();
 		$this->tagIdNames = ProductTag::pluck('name', 'id')->all();
 		$this->productTypeIdNames = ProductTypes::pluck('name', 'id')->all();
-		$storeIdNames = Store::pluck('name', 'id')->all();
 
 		$errorArray = [];
 		$success = 0;
@@ -63,18 +64,19 @@ class ImportProductJob implements ShouldQueue
 		foreach ($this->chunk as $row) {
 			$rowData = array_combine($this->header, $row);
 			$rowError = [];
+			$id = trim($rowData['Id']);
+			$url = trim($rowData['URL']);
+			$name = trim($rowData['Name']);
+			$sku = trim($rowData['SKU']);
+			$brand = trim($rowData['Brand']);
+			$vendor = trim($rowData['Vendor']);
+			$productTypes = trim($rowData['Product Types']);
+			$categories = trim($rowData['Categories']);
+			$status = trim($rowData['Status']);
 
-			if (
-				empty(trim($rowData['Name'])) ||
-				empty(trim($rowData['URL'])) ||
-				empty(trim($rowData['SKU'])) ||
-				empty(trim($rowData['Categories'])) ||
-				empty(trim($rowData['Status'])) ||
-				empty(trim($rowData['Vendor'])) ||
-				empty(trim($rowData['Brand'])) ||
-				empty(trim($rowData['Producttypes']))
-			) {
-				$rowError[] = 'Required fields data not present';
+			/* Required data validation */
+			if (empty($url) || empty($name) || empty($sku) || empty($brand) || empty($vendor) || empty($productTypes) || empty($categories) || empty($status)) {
+				$rowError[] = 'One or more required fields are missing.';
 				$errorArray[] = [
 					"Row Number" => $failed + $success + 2,
 					"Error" => implode(' | ', $rowError),
@@ -83,84 +85,309 @@ class ImportProductJob implements ShouldQueue
 				continue;
 			}
 
+			/* Brand validation */
+			if (!in_array($brand, array_values($brandIdNames))) {
+				$rowError[] = "$brand brand does not exist.";
+			} else {
+				$brandId = array_search($brand, $brandIdNames);
+			}
+
+			/* Vendor validation */
+			if (!in_array($vendor, array_values($vendorIdNames))) {
+				$rowError[] = "$vendor vendor does not exist.";
+			} else {
+				$storeId = array_search($vendor, $storeIdNames);
+			}
+
+			/* Product types validation */
+			$productTypeArray = array_map('trim', explode(',', $productTypes));
+			$productTypeArrayDiff = array_diff($productTypeArray, array_values($this->productTypeIdNames));
+
+			if (!empty($productTypeArrayDiff)) {
+				$missingProductTypes = implode(', ', $productTypeArrayDiff);
+				$rowError[] = count($productTypeArrayDiff) > 1
+				? "$missingProductTypes product types do not exist."
+				: "$missingProductTypes product type does not exist.";
+			}
+
+			/* Category validation */
+			$categoryArray = array_map('trim', explode(',', $categories));
+			$categoryArrayDiff = array_diff($categoryArray, array_values($this->categoryIdNames));
+
+			if (!empty($categoryArrayDiff)) {
+				$missingCategories = implode(', ', $categoryArrayDiff);
+				$rowError[] = count($categoryArrayDiff) > 1
+				? "$missingCategories categories do not exist."
+				: "$missingCategories category does not exist.";
+			}
+
+			$usStatusArray = [
+				1 => "published",
+				2 => "draft",
+				3 => "pending"
+			];
+			/* Status validation */
+			if (!is_numeric($status) || !in_array($status, [1, 2, 3])) {
+				$rowError[] = "Status should be numeric and either 1 for Published, 2 for Draft, or 3 for Pending.";
+			} else {
+				$status = $usStatusArray[$status];
+			}
+
+			/* Additional field validations */
+			$stockStatus = trim($rowData['Stock Status']);
+			$withStorehouseManagement = trim($rowData['With Storehouse Management']);
+			$unitOfMeasurement = trim($rowData['Unit of Measurement']);
+			$variantRequiresShipping = trim($rowData['Variant Requires Shipping']);
+			$refundPolicy = trim($rowData['Refund Policy']);
+			$isFeatured = trim($rowData['Is Featured']);
+			$weightOption = trim($rowData['Weight Option']);
+			$dimensionOption = trim($rowData['Dimension Option']);
+			$shippingWeightOption = trim($rowData['Shipping Weight Option']);
+			$shippingDimensionOption = trim($rowData['Shipping Dimension Option']);
+			/* Stock status validation */
+			$usStockStatusArray = [
+				1 => "in_stock",
+				2 => "out_of_stock",
+				3 => "on_backorder"
+			];
+
+			if ($stockStatus) {
+				if (!is_numeric($stockStatus) || !array_key_exists((int) $stockStatus, $usStockStatusArray)) {
+					$rowError[] = "Stock status should be numeric and either 1 for In-Stock, 2 for Out of Stock, or 3 for Pre Order.";
+				} else {
+					$stockStatus = $usStockStatusArray[(int) $stockStatus];
+				}
+			} else {
+				$stockStatus = null;
+			}
+
+			/* With storehouse management validation (Check for 0 if empty) */
+			if ($withStorehouseManagement !== '' && (!is_numeric($withStorehouseManagement) || !in_array($withStorehouseManagement, [0, 1]))) {
+				$rowError[] = "With storehouse management should be numeric and either 1 for Yes, or 0 for No.";
+			} else {
+				$withStorehouseManagement = $withStorehouseManagement !== '' ? (int) $withStorehouseManagement : 0;
+			}
+
+			/* Unit of measurement validation */
+			$usUnitOfMeasurementArray = UnitOfMeasurement::pluck('name', 'id')->all();
+			if ($unitOfMeasurement && (!is_numeric($unitOfMeasurement) || !array_key_exists((int) $unitOfMeasurement, $usUnitOfMeasurementArray))) {
+				$rowError[] = "Unit of measurement should be numeric and either 1 for Each, 2 for Dozen, 3 for Box, or 4 for Case.";
+			} else {
+				$unitOfMeasurementID = $unitOfMeasurement ? $unitOfMeasurement : null;
+			}
+
+			/* Variant requires shipping validation (Check for 0 if empty) */
+			if ($variantRequiresShipping !== '' && (!is_numeric($variantRequiresShipping) || !in_array($variantRequiresShipping, [0, 1]))) {
+				$rowError[] = "Variant requires shipping should be numeric and either 1 for Yes, or 0 for No.";
+			} else {
+				$variantRequiresShipping = $variantRequiresShipping !== '' ? (int) $variantRequiresShipping : null;
+			}
+
+			/* Refund policy validation */
+			$usRefundPolicyArray = [
+				1 => "non-refundable",
+				2 => "15 days",
+				3 => "90 days"
+			];
+			if ($refundPolicy && (!is_numeric($refundPolicy) || !in_array($refundPolicy, [1, 2, 3]))) {
+				$rowError[] = "Refund policy should be numeric and either 1 for Non-Refundable, 2 for 15 Days Refund, or 3 for 90 Days Refund.";
+			} else {
+				$refundPolicy = $refundPolicy ? $usRefundPolicyArray[$refundPolicy] ?? null : null;
+			}
+
+			/* Is featured validation (Check for 0 if empty) */
+			if ($isFeatured !== '' && (!is_numeric($isFeatured) || !in_array($isFeatured, [0, 1]))) {
+				$rowError[] = "Is featured should be numeric and either 1 for Enable, or 0 for Disable.";
+			} else {
+				$isFeatured = $isFeatured !== '' ? (int) $isFeatured : 0;
+			}
+
+			/* Weight option validation */
+			$usWeightArray = [
+				5 => "kg",
+				6 => "g",
+				9 => "lbs",
+			];
+			if ($weightOption && !in_array($weightOption, ['lbs', 'kg', 'g'])) {
+				$rowError[] = "Weight option should be 'lbs', 'kg', or 'g'.";
+			} else {
+				$weightOption = $weightOption ? array_search($weightOption, $usWeightArray) : 9;
+			}
+
+			/* Dimension option validation */
+			$usDimensionArray = [
+				1 => "cm",
+				3 => "inch",
+				11 => "mm",
+			];
+			if ($dimensionOption && !in_array($dimensionOption, ['inch', 'cm', 'mm'])) {
+				$rowError[] = "Dimension option should be 'inch', 'cm', or 'mm'.";
+			} else {
+				$dimensionOption = $dimensionOption ? array_search($dimensionOption, $usDimensionArray) : 3;
+			}
+
+			/* Shipping weight option validation */
+			if ($shippingWeightOption && !in_array($shippingWeightOption, ['lbs', 'kg', 'g'])) {
+				$rowError[] = "Shipping weight option should be 'lbs', 'kg', or 'g'.";
+			} else {
+				$shippingWeightOption = $shippingWeightOption ? $shippingWeightOption : 'lbs';
+			}
+
+			/* Shipping dimension option validation */
+			if ($shippingDimensionOption && !in_array($shippingDimensionOption, ['inch', 'cm', 'mm'])) {
+				$rowError[] = "Shipping dimension option should be 'inch', 'cm', or 'mm'.";
+			} else {
+				$shippingDimensionOption = $shippingDimensionOption ? $shippingDimensionOption : 'inch';
+			}
+
+			if ($rowError) {
+				$errorArray[] = [
+					"Row Number" => $failed + $success + 2,
+					"Error" => implode(' | ', $rowError),
+				];
+				$failed++;
+				continue;
+			}
+
+			$content = trim($rowData['Content']);
+			$description = trim($rowData['Description']);
+			$warrantyInformation = trim($rowData['Warranty Information']);
+			$tags = trim($rowData['Tags']);
+			$quantity = trim($rowData['Quantity']);
+			$costPerItem = trim($rowData['Cost Per Item']);
+			$price = trim($rowData['Price']);
+			$salePrice = trim($rowData['Sale Price']);
+			$startDateSalePrice = trim($rowData['Start Date Sale Price']);
+			$endDateSalePrice = trim($rowData['End Date Sale Price']);
+			$minimumOrderQuantity = trim($rowData['Minimum Order Quantity']);
+			$boxQuantity = trim($rowData['Box Quantity']);
+			$deliveryDays = trim($rowData['Delivery Days']);
+			$images = trim($rowData['Images']);
+			$uploadVideo = trim($rowData['Upload Video']);
+			$seoTitle = trim($rowData['Seo Title']);
+			$seoDescription = trim($rowData['Seo Description']);
+			$barcode = trim($rowData['Barcode (ISBN, UPC, GTIN, etc.)']);
+			$googleShoppingCategory = trim($rowData['Google Shopping Category']);
+			$googleShoppingMpn = trim($rowData['Google Shopping Mpn']);
+			$weight = trim($rowData['Weight']);
+			$length = trim($rowData['Length']);
+			$width = trim($rowData['Width']);
+			$height = trim($rowData['Height']);
+			$depth = trim($rowData['Depth']);
+			$shippingWeight = trim($rowData['Shipping Weight']);
+			$shippingWidth = trim($rowData['Shipping Width']);
+			$shippingDepth = trim($rowData['Shipping Depth']);
+			$shippingHeight = trim($rowData['Shipping Height']);
+			$shippingLength = trim($rowData['Shipping Length']);
+			$frequentlyBoughtTogether = trim($rowData['Frequently Bought Together']);
+			$compareProducts = trim($rowData['Compare Products']);
+			$variant1Title = trim($rowData['Variant 1 Title']);
+			$variant1Value = trim($rowData['Variant 1 Value']);
+			$variant1Products = trim($rowData['Variant 1 Products']);
+			$variant2Title = trim($rowData['Variant 2 Title']);
+			$variant2Value = trim($rowData['Variant 2 Value']);
+			$variant2Products = trim($rowData['Variant 2 Products']);
+			$variant3Title = trim($rowData['Variant 3 Title']);
+			$variant3Value = trim($rowData['Variant 3 Value']);
+			$variant3Products = trim($rowData['Variant 3 Products']);
+			$variantColorTitle = trim($rowData['Variant Color Title']);
+			$variantColorValue = trim($rowData['Variant Color Value']);
+			$variantColorProducts = trim($rowData['Variant Color Products']);
+			$buyingQuantity1 = trim($rowData['Buying Quantity1']);
+			$discount1 = trim($rowData['Discount1']);
+			$startDate1 = trim($rowData['Start Date1']);
+			$endDate1 = trim($rowData['End Date1']);
+			$buyingQuantity2 = trim($rowData['Buying Quantity2']);
+			$discount2 = trim($rowData['Discount2']);
+			$startDate2 = trim($rowData['Start Date2']);
+			$endDate2 = trim($rowData['End Date2']);
+			$buyingQuantity3 = trim($rowData['Buying Quantity3']);
+			$discount3 = trim($rowData['Discount3']);
+			$startDate3 = trim($rowData['Start Date3']);
+			$endDate3 = trim($rowData['End Date3']);
+			$nameAr = trim($rowData['Name (AR)']);
+			$descriptionAr = trim($rowData['Description (AR)']);
+			$contentAr = trim($rowData['Content (AR)']);
+			$warrantyInformationAr = trim($rowData['Warranty Information (AR)']);
+
+			/* Process Images */
+			$fetchedImages = $this->getImageURLs((array) $images ?? []);
+
+			/* Get Sale Type */
+			$saleType = ($startDateSalePrice || $endDateSalePrice) ? 1 : 0;
+
+			/* Set Quantity */
+			if (!$withStorehouseManagement) {
+				$quantity = null;
+			}
+
 			// Wrap in a transaction
 			DB::beginTransaction();
 
 			try {
-				/* Fetch IDs for relationships */
-				$brandId = array_search($rowData['Brand'], $brandIdNames) ?: null;
-				$storeId = array_search($rowData['Vendor'], $storeIdNames) ?: null;
-
-				/* Process Images */
-				$images = $this->getImageURLs((array) $rowData['Images'] ?? []);
-
-				/* Get Sale Type */
-				$saleType = ($rowData['Start Date Sale Price'] || $rowData['End Date Sale Price']) ? 1 : 0;
-
-				/* Set Quantity */
-				if (!$rowData['With Storehouse Management']) {
-					$rowData['Quantity'] = null;
-				}
 				/*************/
 				$product = new Product();
 
-				$product->name = $rowData['Name'];
-				$product->description = !empty($rowData['Description']) ? $rowData['Description'] : null;
-				$product->content = !empty($rowData['Content']) ? $rowData['Content'] : null;
-				$product->warranty_information = !empty($rowData['Warranty Information']) ? $rowData['Warranty Information'] : null;
-				$product->sku = $rowData['SKU'];
-				$product->status = $rowData['Status'];
-				$product->delivery_days = !empty($rowData['Delivery Days']) ? $rowData['Delivery Days'] : null;
-				$product->is_featured = !empty($rowData['Is Featured']) ? $rowData['Is Featured'] : 0;
+
+				$product->name = $name;
+				$product->description = !empty($description) ? $description : null;
+				$product->content = !empty($content) ? $content : null;
+				$product->warranty_information = !empty($warrantyInformation) ? $warrantyInformation : null;
+				$product->sku = $sku;
+				$product->status = $status;
+				$product->delivery_days = !empty($deliveryDays) ? $deliveryDays : null;
+				$product->is_featured = $isFeatured;
 				$product->brand_id = $brandId;
 				$product->images = json_encode($images);
 				$product->image = $images[0] ?? null;
-				$product->video_path = $rowData['Upload Video'];
-				$product->stock_status = !empty($rowData['Stock Status']) ? $rowData['Stock Status'] : 'in_stock';
-				$product->with_storehouse_management = !empty($rowData['With Storehouse Management']) ? $rowData['With Storehouse Management'] : 0;
-				$product->quantity = !empty($rowData['Quantity']) ? $rowData['Quantity'] : null;
-				$product->cost_per_item = !empty($rowData['Cost Per Item']) ? $rowData['Cost Per Item'] : null;
-				$product->price = !empty($rowData['Price']) ? $rowData['Price'] : null;
-				$product->sale_price = !empty($rowData['Sale Price']) ? $rowData['Sale Price'] : null;
-				$product->start_date = !empty($rowData['Start Date Sale Price']) ? Carbon::parse($rowData['Start Date Sale Price']) : null;
-				$product->end_date = !empty($rowData['End Date Sale Price']) ? Carbon::parse($rowData['End Date Sale Price']) : null;
+				$product->video_path = $uploadVideo;
+				$product->stock_status = $stockStatus;
+				$product->with_storehouse_management = $withStorehouseManagement;
+				$product->unit_of_measurement_id = $unitOfMeasurementID;
+				$product->quantity = !empty($quantity) ? $quantity : null;
+				$product->cost_per_item = !empty($costPerItem) ? $costPerItem : null;
+				$product->price = !empty($price) ? $price : null;
+				$product->sale_price = !empty($salePrice) ? $salePrice : null;
+				$product->start_date = !empty($startDateSalePrice) ? Carbon::parse($startDateSalePrice) : null;
+				$product->end_date = !empty($endDateSalePrice) ? Carbon::parse($endDateSalePrice) : null;
 				$product->sale_type = $saleType;
-				$product->weight = !empty($rowData['Weight']) ? $rowData['Weight'] : null;
-				$product->length = !empty($rowData['Length']) ? $rowData['Length'] : null;
-				$product->width = !empty($rowData['Width']) ? $rowData['Width'] : null;
-				$product->height = !empty($rowData['Height']) ? $rowData['Height'] : null;
-				$product->depth = !empty($rowData['Depth']) ? $rowData['Depth'] : null;
-				$product->shipping_weight_option = !empty($rowData['Shipping Weight Option']) ? $rowData['Shipping Weight Option'] : null;
-				$product->shipping_weight = !empty($rowData['Shipping Weight']) ? $rowData['Shipping Weight'] : null;
-				$product->shipping_dimension_option = !empty($rowData['Shipping Dimension Option']) ? $rowData['Shipping Dimension Option'] : null;
-				$product->shipping_width = !empty($rowData['Shipping Width']) ? $rowData['Shipping Width'] : null;
-				$product->shipping_depth = !empty($rowData['Shipping Depth']) ? $rowData['Shipping Depth'] : null;
-				$product->shipping_height = !empty($rowData['Shipping Height']) ? $rowData['Shipping Height'] : null;
-				$product->shipping_length = !empty($rowData['Shipping Length']) ? $rowData['Shipping Length'] : null;
-				$product->frequently_bought_together = !empty($rowData['Frequently Bought Together']) ? $rowData['Frequently Bought Together'] : null;
-				$product->compare_type = !empty($rowData['Compare Type']) ? $rowData['Compare Type'] : null;
-				$product->compare_products = !empty($rowData['Compare Products']) ? $rowData['Compare Products'] : null;
-				$product->refund = !empty($rowData['Refund Policy']) ? $rowData['Refund Policy'] : null;
-				// $product->currency_id = !empty($rowData['Currency ID']) ? $rowData['Currency ID'] : 1;
+				$product->weight = !empty($weight) ? $weight : null;
+				$product->weight_unit_id = $weightOption;
+				$product->length = !empty($length) ? $length : null;
+				$product->length_unit_id = $dimensionOption;
+				$product->width = !empty($width) ? $width : null;
+				$product->height = !empty($height) ? $height : null;
+				$product->depth = !empty($depth) ? $depth : null;
+				$product->shipping_weight_option = $shippingWeightOption;
+				$product->shipping_weight = !empty($shippingWeight) ? $shippingWeight : null;
+				$product->shipping_dimension_option = $shippingDimensionOption;
+				$product->shipping_width = !empty($shippingWidth) ? $shippingWidth : null;
+				$product->shipping_depth = !empty($shippingDepth) ? $shippingDepth : null;
+				$product->shipping_height = !empty($shippingHeight) ? $shippingHeight : null;
+				$product->shipping_length = !empty($shippingLength) ? $shippingLength : null;
+				$product->frequently_bought_together = !empty($frequentlyBoughtTogether) ? $frequentlyBoughtTogether : null;
+				$product->compare_type = !empty($compareType) ? $compareType : null;
+				$product->compare_products = !empty($compareProducts) ? $compareProducts : null;
+				$product->refund = $refundPolicy;
 				$product->currency_id = 1;
-				$product->variant_1_title = !empty($rowData['Variant 1 Title']) ? $rowData['Variant 1 Title'] : null;
-				$product->variant_1_value = !empty($rowData['Variant 1 Value']) ? $rowData['Variant 1 Value'] : null;
-				$product->variant_1_products = !empty($rowData['Variant 1 Products']) ? $rowData['Variant 1 Products'] : null;
-				$product->variant_2_title = !empty($rowData['Variant 2 Title']) ? $rowData['Variant 2 Title'] : null;
-				$product->variant_2_value = !empty($rowData['Variant 2 Value']) ? $rowData['Variant 2 Value'] : null;
-				$product->variant_2_products = !empty($rowData['Variant 2 Products']) ? $rowData['Variant 2 Products'] : null;
-				$product->variant_3_title = !empty($rowData['Variant 3 Title']) ? $rowData['Variant 3 Title'] : null;
-				$product->variant_3_value = !empty($rowData['Variant 3 Value']) ? $rowData['Variant 3 Value'] : null;
-				$product->variant_3_products = !empty($rowData['Variant 3 Products']) ? $rowData['Variant 3 Products'] : null;
-				$product->variant_color_title = !empty($rowData['Variant Color Title']) ? $rowData['Variant Color Title'] : null;
-				$product->variant_color_value = !empty($rowData['Variant Color Value']) ? $rowData['Variant Color Value'] : null;
-				$product->variant_color_products = !empty($rowData['Variant Color Products']) ? $rowData['Variant Color Products'] : null;
-				$product->barcode = !empty($rowData['Barcode (ISBN,UPC,GTIN,etc.)']) ? $rowData['Barcode (ISBN,UPC,GTIN,etc.)'] : null;
-				$product->minimum_order_quantity = !empty($rowData['Minimum Order Quantity']) ? $rowData['Minimum Order Quantity'] : 0;
-				$product->variant_requires_shipping = !empty($rowData['Variant Requires Shipping']) ? $rowData['Variant Requires Shipping'] : null;
-				$product->google_shopping_category = !empty($rowData['Google Shopping Category']) ? $rowData['Google Shopping Category'] : null;
-				$product->google_shopping_mpn = !empty($rowData['Google Shopping Mpn']) ? $rowData['Google Shopping Mpn'] : null;
-				$product->box_quantity = !empty($rowData['Box Quantity']) ? $rowData['Box Quantity'] : null;
+				$product->variant_1_title = !empty($variant1Title) ? $variant1Title : null;
+				$product->variant_1_value = !empty($variant1Value) ? $variant1Value : null;
+				$product->variant_1_products = !empty($variant1Products) ? $variant1Products : null;
+				$product->variant_2_title = !empty($variant2Title) ? $variant2Title : null;
+				$product->variant_2_value = !empty($variant2Value) ? $variant2Value : null;
+				$product->variant_2_products = !empty($variant2Products) ? $variant2Products : null;
+				$product->variant_3_title = !empty($variant3Title) ? $variant3Title : null;
+				$product->variant_3_value = !empty($variant3Value) ? $variant3Value : null;
+				$product->variant_3_products = !empty($variant3Products) ? $variant3Products : null;
+				$product->variant_color_title = !empty($variantColorTitle) ? $variantColorTitle : null;
+				$product->variant_color_value = !empty($variantColorValue) ? $variantColorValue : null;
+				$product->variant_color_products = !empty($variantColorProducts) ? $variantColorProducts : null;
+				$product->barcode = !empty($barcode) ? $barcode : null;
+				$product->minimum_order_quantity = !empty($minimumOrderQuantity) ? $minimumOrderQuantity : 0;
+				$product->variant_requires_shipping = $variantRequiresShipping;
+				$product->google_shopping_category = !empty($googleShoppingCategory) ? $googleShoppingCategory : null;
+				$product->google_shopping_mpn = !empty($googleShoppingMpn) ? $googleShoppingMpn : null;
+				$product->box_quantity = !empty($boxQuantity) ? $boxQuantity : null;
 
 				$product->store_id = $storeId;
 				$product->created_at = now();
@@ -169,12 +396,12 @@ class ImportProductJob implements ShouldQueue
 				$product->created_by_type = User::class;
 				$product->save();
 
-				$categoryIdArray = $this->changeCategoryNameToId($rowData['Categories']);
+				$this->saveProductProductType($product, $productTypes);
+				$categoryIdArray = $this->changeCategoryNameToId($categories);
 				$this->saveProductCategory($product, $categoryIdArray);
-				$this->saveProductTag($product, $rowData['Tags']);
-				$this->saveProductProductType($product, $rowData['Producttypes']);
-				$this->saveSeoMetaData($product, $rowData['Seo Title'], $rowData['Seo Description']);
-				$this->saveSlugData($product, $rowData['URL']);
+				$this->saveProductTag($product, $tags);
+				$this->saveSeoMetaData($product, $seoTitle, $seoDescription);
+				$this->saveSlugData($product, $url);
 				$this->saveTranslation($product, $rowData);
 				$this->saveDiscount($product, $rowData);
 
@@ -205,6 +432,24 @@ class ImportProductJob implements ShouldQueue
 		TransactionLog::where('id', $log->id)->update([
 			'description' => json_encode($descArray),
 		]);
+	}
+
+	private function saveProductProductType($product, string $productTypes)
+	{
+		$productTypeIds = [];
+		$productTypeNames = explode(',', $productTypes);
+
+		foreach ($productTypeNames as $productTypeName) {
+			$trimmedName = trim($productTypeName);
+			if (empty($trimmedName)) {
+				continue;
+			}
+			$productTypeId = array_search($trimmedName, $this->productTypeIdNames);
+			if ($productTypeId !== false) {
+				$productTypeIds[] = $productTypeId;
+			}
+		}
+		$product->producttypes()->sync($productTypeIds);
 	}
 
 	private function changeCategoryNameToId(string $categories)
@@ -270,24 +515,6 @@ class ImportProductJob implements ShouldQueue
 			}
 		}
 		$product->tags()->sync($tagIds);
-	}
-
-	private function saveProductProductType($product, string $productTypes)
-	{
-		$productTypeIds = [];
-		$productTypeNames = explode(',', $productTypes);
-
-		foreach ($productTypeNames as $productTypeName) {
-			$trimmedName = trim($productTypeName);
-			if (empty($trimmedName)) {
-				continue;
-			}
-			$productTypeId = array_search($trimmedName, $this->productTypeIdNames);
-			if ($productTypeId !== false) {
-				$productTypeIds[] = $productTypeId;
-			}
-		}
-		$product->producttypes()->sync($productTypeIds);
 	}
 
 	private function saveSeoMetaData($product, $seoTitle, $seoDescription)
@@ -490,6 +717,14 @@ class ImportProductJob implements ShouldQueue
 			case 'image/jpeg':
 			$imageCreateFunction = 'imagecreatefromjpeg';
 			$imageSaveFunction = 'imagejpeg';
+			break;
+			case 'image/jpg':
+			$imageCreateFunction = 'imagecreatefromjpg';
+			$imageSaveFunction = 'imagejpg';
+			break;
+			case 'image/webp':
+			$imageCreateFunction = 'imagecreatefromwebp';
+			$imageSaveFunction = 'imagewebp';
 			break;
 			case 'image/png':
 			$imageCreateFunction = 'imagecreatefrompng';
