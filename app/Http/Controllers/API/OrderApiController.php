@@ -573,19 +573,11 @@ public function getLatestOrder(Request $request)
 {
     // Validate the email address in the request
     $request->validate([
-        'email' => 'required|email|exists:users,email', // Ensure the email exists in the database
+        'email' => 'required|email', // Only ensure it's a valid email format
     ]);
 
-    // Retrieve the user by email
-    $user = User::where('email', $request->email)->first();
-
-    // If no user is found, return a message (this shouldn't happen due to validation, but a safeguard is good)
-    if (!$user) {
-        return response()->json(['message' => 'User not found'], 404);
-    }
-
-    // Retrieve the latest order for the user based on their email
-    $latestOrder = Order::where('user_id', $user->id)
+    // Retrieve the latest order based on the email address provided
+    $latestOrder = Order::where('email', $request->email) // Assuming 'email' column exists in the orders table
         ->latest('created_at')
         ->first();
 
