@@ -11,65 +11,58 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v2
 
-      - name: Prepare SSH
+      - name: Set up AWS CLI
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Deploy to EC2
         run: |
-          # Create SSH directory
           mkdir -p ~/.ssh
-
-          # Write SSH key with proper permissions
           echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
 
-          # Create SSH config to bypass strict host checking
-          touch ~/.ssh/config
           echo "Host *" > ~/.ssh/config
           echo "  StrictHostKeyChecking no" >> ~/.ssh/config
           echo "  UserKnownHostsFile=/dev/null" >> ~/.ssh/config
 
-      - name: Deploy to EC2
-        run: |
-          # Verify SSH key exists and has correct permissions
-          ls -l ~/.ssh/id_ed25519
-          
-          # Attempt SSH connection with verbose output
-          ssh -vvv -i ~/.ssh/id_ed25519 ubuntu@${{ secrets.AWS_INSTANCE_IP }} << 'EOF'
+          ssh -i ~/.ssh/id_ed25519 ubuntu@${{ secrets.AWS_INSTANCE_IP }} << 'EOF'
             cd /var/www/html/Horeca-Store
 
-            # Git configuration and pull
+            # Git safety configuration
             sudo git config --global --add safe.directory /var/www/html/Horeca-Store
+            sudo git config --global --add safe.directory '*'
+
+            # Pull changes
             git fetch origin main
             git reset --hard origin/main
 
-            # Comprehensive permission fix
-            sudo chown -R www-data:www-data .
+            # Comprehensive permission reset
+            sudo chown -R ubuntu:www-data .
             sudo chmod -R 775 storage bootstrap/cache
             sudo find . -type d -exec chmod 755 {} \;
             sudo find . -type f -exec chmod 644 {} \;
 
-            # Ensure Laravel directories exist
-            mkdir -p storage/framework/cache
-            mkdir -p storage/framework/sessions
-            mkdir -p storage/framework/views
-            mkdir -p storage/logs
-            mkdir -p bootstrap/cache
+            # Ensure Laravel directories exist with correct permissions
+            sudo mkdir -p storage/framework/cache
+            sudo mkdir -p storage/framework/sessions
+            sudo mkdir -p storage/framework/views
+            sudo mkdir -p storage/logs
+            sudo mkdir -p bootstrap/cache
 
-            # Set permissions for Laravel directories
+            # Clear caches
+            sudo php artisan cache:clear
+            sudo php artisan config:clear
+            sudo php artisan view:clear
+            sudo php artisan route:clear
             sudo chown -R www-data:www-data storage bootstrap/cache
             sudo chmod -R 775 storage bootstrap/cache
 
-            # Composer update and install
-            composer install --no-interaction --prefer-dist --optimize-autoloader
+            # Composer dependencies
+            # composer install --no-interaction --prefer-dist --optimize-autoloader
             composer update square/square
-
-            # Laravel commands
-            php artisan cache:clear
-            php artisan config:clear
-            php artisan view:clear
-            php artisan route:clear
-            php artisan migrate --force
-            php artisan optimize
-
-            echo "Deployment completed successfully!"
           EOF
