@@ -707,7 +707,7 @@ public function getLatestOrder(Request $request)
             'ec_products.id as product_id',
             'ec_products.name',
             'ec_products.sale_price',
-            'ec_products.description',
+            'ec_products.delivery_days',
             'ec_products.images',
             'ec_order_product.price',
             'ec_order_product.qty'
