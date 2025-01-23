@@ -628,6 +628,8 @@ public function index(Request $request)
 //     return response()->json($latestOrder);
 // }
 
+
+
 public function getLatestOrder(Request $request)
 {
     // Validate the email address in the request
@@ -660,7 +662,16 @@ public function getLatestOrder(Request $request)
             'ec_order_product.price',
             'ec_order_product.qty'
         )
-        ->get();
+        ->get()
+        ->map(function ($product) {
+            // Decode the images field if it's JSON-encoded and get the first URL
+            if ($product->images) {
+                $images = json_decode($product->images, true);
+                // Return the first image URL, or the whole array if you want to return all
+                $product->images = is_array($images) ? $images[0] : $product->images;
+            }
+            return $product;
+        });
 
     // Attach the products to the latest order
     $latestOrder->setAttribute('products', $products);
@@ -668,6 +679,7 @@ public function getLatestOrder(Request $request)
     // Return the latest order with product details as a JSON response
     return response()->json($latestOrder);
 }
+
 
 
     // Get a specific order
