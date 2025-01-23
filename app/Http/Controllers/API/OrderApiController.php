@@ -569,6 +569,64 @@ public function index(Request $request)
 //     return response()->json($latestOrder);
 // }
 
+// public function getLatestOrder(Request $request)
+// {
+//     // Validate the email address in the request
+//     $request->validate([
+//         'email' => 'required|email',
+//     ]);
+
+//     // Retrieve the latest order based on the email in the ec_order_addresses table
+//     $latestOrder = Order::join('ec_order_addresses', 'ec_orders.id', '=', 'ec_order_addresses.order_id')
+//         ->where('ec_order_addresses.email', $request->email)
+//         ->select('ec_orders.*') // Select all columns from ec_orders
+//         ->latest('ec_orders.created_at')
+//         ->first();
+
+//     // If no order is found, return a message
+//     if (!$latestOrder) {
+//         return response()->json(['message' => 'No orders found'], 404);
+//     }
+
+//     // Process the order to extract product details from the 'description' field
+//     if ($latestOrder->description) {
+//         // Decode the 'description' field (JSON data)
+//         $productDetails = json_decode($latestOrder->description, true);
+
+//         // Ensure the decoded JSON is an array
+//         if (is_array($productDetails)) {
+//             $products = [];
+
+//             // Loop through each product in the 'description' field and retrieve product data
+//             foreach ($productDetails as $item) {
+//                 $product = Product::find($item['product_id']);
+
+//                 if ($product) {
+//                     $products[] = [
+//                         'product_id' => $product->id,
+//                         'name' => $product->name,
+//                         'price' => $item['price'],
+//                         'sale_price' => $product->sale_price,
+//                         'quantity' => $item['quantity'],
+//                         'description' => $product->description,
+//                         'images' => $product->images
+//                     ];
+//                 }
+//             }
+
+//             // Attach the product details to the order
+//             $latestOrder->setAttribute('products', $products);
+//         } else {
+//             $latestOrder->setAttribute('products', []);
+//         }
+//     } else {
+//         $latestOrder->setAttribute('products', []);
+//     }
+
+//     // Return the latest order with product details as a JSON response
+//     return response()->json($latestOrder);
+// }
+
 public function getLatestOrder(Request $request)
 {
     // Validate the email address in the request
@@ -588,40 +646,23 @@ public function getLatestOrder(Request $request)
         return response()->json(['message' => 'No orders found'], 404);
     }
 
-    // Process the order to extract product details from the 'description' field
-    if ($latestOrder->description) {
-        // Decode the 'description' field (JSON data)
-        $productDetails = json_decode($latestOrder->description, true);
+    // Fetch the products associated with the order via the ec_order_product table
+    $products = DB::table('ec_order_product')
+        ->join('ec_products', 'ec_order_product.product_id', '=', 'ec_products.id')
+        ->where('ec_order_product.order_id', $latestOrder->id)
+        ->select(
+            'ec_products.id as product_id',
+            'ec_products.name',
+            'ec_products.sale_price',
+            'ec_products.description',
+            'ec_products.images',
+            'ec_order_product.price',
+            'ec_order_product.quantity'
+        )
+        ->get();
 
-        // Ensure the decoded JSON is an array
-        if (is_array($productDetails)) {
-            $products = [];
-
-            // Loop through each product in the 'description' field and retrieve product data
-            foreach ($productDetails as $item) {
-                $product = Product::find($item['product_id']);
-
-                if ($product) {
-                    $products[] = [
-                        'product_id' => $product->id,
-                        'name' => $product->name,
-                        'price' => $item['price'],
-                        'sale_price' => $product->sale_price,
-                        'quantity' => $item['quantity'],
-                        'description' => $product->description,
-                        'images' => $product->images
-                    ];
-                }
-            }
-
-            // Attach the product details to the order
-            $latestOrder->setAttribute('products', $products);
-        } else {
-            $latestOrder->setAttribute('products', []);
-        }
-    } else {
-        $latestOrder->setAttribute('products', []);
-    }
+    // Attach the products to the latest order
+    $latestOrder->setAttribute('products', $products);
 
     // Return the latest order with product details as a JSON response
     return response()->json($latestOrder);
