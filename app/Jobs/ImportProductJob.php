@@ -93,7 +93,7 @@ class ImportProductJob implements ShouldQueue
 			}
 
 			/* Vendor validation */
-			if (!in_array($vendor, array_values($vendorIdNames))) {
+			if (!in_array($vendor, array_values($storeIdNames))) {
 				$rowError[] = "$vendor vendor does not exist.";
 			} else {
 				$storeId = array_search($vendor, $storeIdNames);
