@@ -573,12 +573,14 @@ public function getLatestOrder(Request $request)
 {
     // Validate the email address in the request
     $request->validate([
-        'email' => 'required|email', // Only ensure it's a valid email format
+        'email' => 'required|email',
     ]);
 
-    // Retrieve the latest order based on the email address provided
-    $latestOrder = Order::where('email', $request->email) // Assuming 'email' column exists in the orders table
-        ->latest('created_at')
+    // Retrieve the latest order based on the email in the ec_order_addresses table
+    $latestOrder = Order::join('ec_order_addresses', 'ec_orders.id', '=', 'ec_order_addresses.order_id')
+        ->where('ec_order_addresses.email', $request->email)
+        ->select('ec_orders.*') // Select all columns from ec_orders
+        ->latest('ec_orders.created_at')
         ->first();
 
     // If no order is found, return a message
