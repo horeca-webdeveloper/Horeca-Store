@@ -86,6 +86,7 @@ use Botble\Ecommerce\Models\Order;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Botble\Ecommerce\Facades\EcommerceHelper;
+use Illuminate\Http\Request;
 
 class OrderTrackingController extends Controller
 {
