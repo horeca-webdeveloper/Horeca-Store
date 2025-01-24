@@ -20,7 +20,6 @@ use Botble\Marketplace\Models\Store;
 use App\Models\TransactionLog;
 use DB, Carbon\Carbon, Validator;
 
-// use App\Jobs\InitialImportProductJob;
 use App\Jobs\ImportProductJob;
 
 class ProductImportController extends BaseController
@@ -61,59 +60,81 @@ class ProductImportController extends BaseController
 			$file->move($saveDirectory, $fileName);
 			$fileNameWithPath = storage_path('temp/').$fileName;
 
-			// Split the CSV into manageable chunks
-			// $data = array_map('str_getcsv', file($fileNameWithPath));
-
 			$data = [];
+
+			/* Open the CSV file and read its content */
 			if (($handle = fopen($fileNameWithPath, "r")) !== false) {
 				while (($row = fgetcsv($handle, 0, ",", '"', "\\")) !== false) {
-					$data[] = $row;
-				}
+					/* Sanitize and encode each row to ensure UTF-8 compatibility */
+					$row = array_map(function ($value) {
+						/* Check if the value is UTF-8 encoded */
+						if (!mb_check_encoding($value, 'UTF-8')) {
+							/* Attempt to convert to UTF-8, fallback to ISO-8859-1 if detection fails */
+							$value = @mb_convert_encoding($value, 'UTF-8', 'auto') ?: utf8_encode($value);
+						}
 
+						/* Remove invalid characters and trim spaces */
+						$value = preg_replace('/[^\x20-\x7E\xA0-\xFF]/u', '', $value);
+						return trim($value);
+					}, $row);
+
+					/* Skip blank rows */
+					if (array_filter($row)) {
+						$data[] = $row;
+					}
+				}
 				fclose($handle);
 			}
 
-			// Remove the header row
+			/* Remove the header row */
 			$header = array_shift($data);
 
-			// Get the total record count
+			/* Get the total record count */
 			$totalRecords = count($data);
+			if ($totalRecords == 0) {
+				session()->put('error', "The uploaded CSV file does not contain any records. Please ensure the file has valid data and try again.");
+				return back();
+			}
 
-			// Chunk the data into manageable portions (e.g., 500 rows per chunk)
-			$chunksize = 100;
-			$chunks = array_chunk($data, $chunksize);
+			/* Chunk the data into manageable portions (e.g., 500 rows per chunk) */
+			$chunkSize = 100;
+			$chunks = array_chunk($data, $chunkSize);
 
-			# start import process
-			$batch = Bus::batch([])->
-			before(function (Batch $batch) use ($totalRecords) {
+			/* Start import process */
+			$batch = Bus::batch([])
+			->before(function (Batch $batch) use ($totalRecords) {
 				$descArray = [
 					"Total Count" => $totalRecords,
 					"Success Count" => 0,
 					"Failed Count" => 0,
 					"Errors" => []
 				];
-				/*Save transaction log*/
+				/* Save transaction log */
 				$log = new TransactionLog();
 				$log->module = "Product";
 				$log->action = "Import";
 				$log->identifier = $batch->id;
 				$log->status = 'In-progress';
-				$log->description = json_encode($descArray);
+				$log->description = json_encode($descArray, JSON_UNESCAPED_UNICODE);
 				$log->created_by = auth()->id() ?? null;
 				$log->created_at = now();
 				$log->save();
-				/*****************/
-			})->finally(function (Batch $batch) use ($fileNameWithPath) {
+			})
+			->finally(function (Batch $batch) use ($fileNameWithPath) {
 				$log = TransactionLog::where('identifier', $batch->id)->first();
 				TransactionLog::where('id', $log->id)->update([
 					'status' => 'Completed',
 				]);
 
-				# To delete imported excel file
-				$command = "rm -rf ".$fileNameWithPath;
-				shell_exec($command);
-			})->name("Product Import")->dispatch();
+				/* Delete the imported file after processing */
+				if (file_exists($fileNameWithPath)) {
+					unlink($fileNameWithPath);
+				}
+			})
+			->name("Product Import")
+			->dispatch();
 
+			/* Add jobs to the batch for processing chunks */
 			foreach ($chunks as $chunk) {
 				$data = [
 					'header' => $header,
@@ -122,6 +143,7 @@ class ProductImportController extends BaseController
 				];
 				$batch->add(new ImportProductJob($data));
 			}
+
 
 			session()->put('success', 'The import process has been scheduled successfully. Please track it under import log.');
 			return back();
@@ -137,7 +159,7 @@ class ProductImportController extends BaseController
 	 */
 	public function show($transactionLogId)
 	{
-		// parent::breadcrumb()->add('Import Products', route('tools.data-synchronize.import.products.import'));
+		/* parent::breadcrumb()->add('Import Products', route('tools.data-synchronize.import.products.import')); */
 		$log = TransactionLog::find($transactionLogId);
 
 		return view('plugins/ecommerce::product-import.show', compact('log'));
