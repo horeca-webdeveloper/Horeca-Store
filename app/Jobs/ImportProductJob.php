@@ -144,6 +144,11 @@ class ImportProductJob implements ShouldQueue
 			$dimensionOption = trim($rowData['Dimension Option']);
 			$shippingWeightOption = trim($rowData['Shipping Weight Option']);
 			$shippingDimensionOption = trim($rowData['Shipping Dimension Option']);
+			$frequentlyBoughtTogether = trim($rowData['Frequently Bought Together']);
+			$compareProducts = trim($rowData['Compare Products']);
+			$price = trim($rowData['Price']);
+			$salePrice = trim($rowData['Sale Price']);
+
 			/* Stock status validation */
 			$usStockStatusArray = [
 				1 => "in_stock",
@@ -240,6 +245,25 @@ class ImportProductJob implements ShouldQueue
 				$shippingDimensionOption = $shippingDimensionOption ? $shippingDimensionOption : 'inch';
 			}
 
+			$frequentlyBoughtTogether = trim($rowData['Frequently Bought Together']);
+			if ($frequentlyBoughtTogether) {
+				$frequentlyBoughtTogether = json_encode(array_map(fn($value) => ['value' => trim($value)], explode(',', $frequentlyBoughtTogether)));
+			} else {
+				$frequentlyBoughtTogether = null;
+			}
+
+			$compareProducts = trim($rowData['Compare Products']);
+			if ($compareProducts) {
+				$compareProductsArray = array_unique(array_map(fn($value) => trim($value), explode(',', $compareProducts)));
+				$compareProducts = !empty($compareProductsArray) ? json_encode($compareProductsArray) : null;
+			} else {
+				$compareProducts = null;
+			}
+
+			if ($price && $salePrice && $price < $salePrice) {
+				$rowError[] = "The sale price must be less than the price.";
+			}
+
 			if ($rowError) {
 				$errorArray[] = [
 					"Row Number" => $failed + $success + 2,
@@ -255,8 +279,6 @@ class ImportProductJob implements ShouldQueue
 			$tags = trim($rowData['Tags']);
 			$quantity = trim($rowData['Quantity']);
 			$costPerItem = trim($rowData['Cost Per Item']);
-			$price = trim($rowData['Price']);
-			$salePrice = trim($rowData['Sale Price']);
 			$startDateSalePrice = trim($rowData['Start Date Sale Price']);
 			$endDateSalePrice = trim($rowData['End Date Sale Price']);
 			$minimumOrderQuantity = trim($rowData['Minimum Order Quantity']);
@@ -279,8 +301,6 @@ class ImportProductJob implements ShouldQueue
 			$shippingDepth = trim($rowData['Shipping Depth']);
 			$shippingHeight = trim($rowData['Shipping Height']);
 			$shippingLength = trim($rowData['Shipping Length']);
-			$frequentlyBoughtTogether = trim($rowData['Frequently Bought Together']);
-			$compareProducts = trim($rowData['Compare Products']);
 			$variant1Title = trim($rowData['Variant 1 Title']);
 			$variant1Value = trim($rowData['Variant 1 Value']);
 			$variant1Products = trim($rowData['Variant 1 Products']);
@@ -328,7 +348,6 @@ class ImportProductJob implements ShouldQueue
 				/*************/
 				$product = new Product();
 
-
 				$product->name = $name;
 				$product->description = !empty($description) ? $description : null;
 				$product->content = !empty($content) ? $content : null;
@@ -338,8 +357,8 @@ class ImportProductJob implements ShouldQueue
 				$product->delivery_days = !empty($deliveryDays) ? $deliveryDays : null;
 				$product->is_featured = $isFeatured;
 				$product->brand_id = $brandId;
-				$product->images = json_encode($images);
-				$product->image = $images[0] ?? null;
+				$product->images = json_encode($fetchedImages);
+				$product->image = $fetchedImages[0] ?? null;
 				$product->video_path = $uploadVideo;
 				$product->stock_status = $stockStatus;
 				$product->with_storehouse_management = $withStorehouseManagement;
@@ -365,9 +384,9 @@ class ImportProductJob implements ShouldQueue
 				$product->shipping_depth = !empty($shippingDepth) ? $shippingDepth : null;
 				$product->shipping_height = !empty($shippingHeight) ? $shippingHeight : null;
 				$product->shipping_length = !empty($shippingLength) ? $shippingLength : null;
-				$product->frequently_bought_together = !empty($frequentlyBoughtTogether) ? $frequentlyBoughtTogether : null;
-				$product->compare_type = !empty($compareType) ? $compareType : null;
-				$product->compare_products = !empty($compareProducts) ? $compareProducts : null;
+				$product->frequently_bought_together = $frequentlyBoughtTogether;
+				// $product->compare_type = !empty($compareType) ? $compareType : null;
+				$product->compare_products = $compareProducts;
 				$product->refund = $refundPolicy;
 				$product->currency_id = 1;
 				$product->variant_1_title = !empty($variant1Title) ? $variant1Title : null;
