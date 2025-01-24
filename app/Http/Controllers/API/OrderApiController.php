@@ -556,7 +556,9 @@ public function index(Request $request)
                     $images = json_decode($product->images, true);
 
                     if (is_array($images)) {
+                        // Use array_map to process each image URL
                         $images = array_map(function ($image) {
+                            // If the image URL already starts with http or https, don't modify it
                             if (!preg_match('/^https?:\/\//', $image)) {
                                 // Check if the path starts with 'storage/' or 'storage/products/'
                                 if (strpos($image, 'storage/') === 0) {
@@ -565,6 +567,7 @@ public function index(Request $request)
                                     $image = asset($image);  // Prepend the base URL
                                 }
                             }
+                            return $image;  // Return the modified image URL
                         }, $images);
                     }
 
