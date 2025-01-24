@@ -60,7 +60,7 @@
 		<label class="label-field">{{ __("Download Template") }}</label>
 		<a href="{{ asset('templates/product-import-template.csv') }}"><button class="button-set"><i class="fa fa-download"></i> {{ __("Download") }}</button></a>
 	</div>
-	<form action="{{ route('products.upload') }}" method="POST" enctype="multipart/form-data">
+	<form action="{{ route('tools.data-synchronize.import.products.upload') }}" method="POST" enctype="multipart/form-data">
 		@csrf
 
 		<div class="form-group">
@@ -93,7 +93,7 @@
 				<td>{{ $log->createdBy->name }}</td>
 				<td>{{ $log->created_at }}</td>
 				<td>
-					<a href="{{ route('products.import_view', $log->id) }}" class="btn btn-sm btn-info">View</a>
+					<a href="{{ route('tools.data-synchronize.import.products.import_view', $log->id) }}" class="btn btn-sm btn-info">View</a>
 				</td>
 			</tr>
 			@endforeach

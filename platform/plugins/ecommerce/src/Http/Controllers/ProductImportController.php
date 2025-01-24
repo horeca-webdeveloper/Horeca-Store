@@ -25,11 +25,11 @@ use App\Jobs\ImportProductJob;
 
 class ProductImportController extends BaseController
 {
-	protected function breadcrumb(): Breadcrumb
-	{
-		return parent::breadcrumb()
-		->add(trans('plugins/ecommerce::products.name'), route('products.index'));
-	}
+	// protected function breadcrumb(): Breadcrumb
+	// {
+	// 	return parent::breadcrumb()
+	// 	->add(trans('plugins/ecommerce::products.name'), route('products.index'));
+	// }
 
 	public function index()
 	{
@@ -137,7 +137,7 @@ class ProductImportController extends BaseController
 	 */
 	public function show($transactionLogId)
 	{
-		parent::breadcrumb()->add('Import Products', route('products.import'));
+		parent::breadcrumb()->add('Import Products', route('tools.data-synchronize.import.products.import'));
 		$log = TransactionLog::find($transactionLogId);
 
 		return view('plugins/ecommerce::product-import.show', compact('log'));

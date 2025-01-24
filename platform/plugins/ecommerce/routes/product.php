@@ -3,6 +3,7 @@
 use Botble\Base\Facades\AdminHelper;
 use Botble\Ecommerce\Http\Controllers\ExportProductController;
 use Botble\Ecommerce\Http\Controllers\ImportProductController;
+use Botble\Ecommerce\Http\Controllers\ProductImportController;
 use Illuminate\Support\Facades\Route;
 
 AdminHelper::registerRoutes(function () {
@@ -129,21 +130,21 @@ AdminHelper::registerRoutes(function () {
             Route::post('/approve-product/{id}', [ProductController::class, 'approveProduct']);
 
 
-            Route::get('product-import', [
-                'as' => 'import',
-                'uses' => 'ProductImportController@index',
-                'permission' => 'products.index',
-            ]);
-            Route::post('product-import', [
-                'as' => 'upload',
-                'uses' => 'ProductImportController@store',
-                'permission' => 'products.index',
-            ]);
-            Route::get('product-import-view/{id}', [
-                'as' => 'import_view',
-                'uses' => 'ProductImportController@show',
-                'permission' => 'products.index',
-            ]);
+            // Route::get('product-import', [
+            //     'as' => 'import',
+            //     'uses' => 'ProductImportController@index',
+            //     'permission' => 'products.index',
+            // ]);
+            // Route::post('product-import', [
+            //     'as' => 'upload',
+            //     'uses' => 'ProductImportController@store',
+            //     'permission' => 'products.index',
+            // ]);
+            // Route::get('product-import-view/{id}', [
+            //     'as' => 'import_view',
+            //     'uses' => 'ProductImportController@show',
+            //     'permission' => 'products.index',
+            // ]);
         });
     });
 
@@ -157,12 +158,20 @@ AdminHelper::registerRoutes(function () {
             });
         });
 
+        // Route::prefix('import')->name('import.')->group(function () {
+        //     Route::group(['prefix' => 'products', 'as' => 'products.', 'permission' => 'ecommerce.import.products.index'], function () {
+        //         Route::get('/', [ImportProductController::class, 'index'])->name('index');
+        //         Route::post('validate', [ImportProductController::class, 'validateData'])->name('validate');
+        //         Route::post('import', [ImportProductController::class, 'import'])->name('store');
+        //         Route::post('download-example', [ImportProductController::class, 'downloadExample'])->name('download-example');
+        //     });
+        // });
+
         Route::prefix('import')->name('import.')->group(function () {
             Route::group(['prefix' => 'products', 'as' => 'products.', 'permission' => 'ecommerce.import.products.index'], function () {
-                Route::get('/', [ImportProductController::class, 'index'])->name('index');
-                Route::post('validate', [ImportProductController::class, 'validateData'])->name('validate');
-                Route::post('import', [ImportProductController::class, 'import'])->name('store');
-                Route::post('download-example', [ImportProductController::class, 'downloadExample'])->name('download-example');
+                Route::get('/', [ProductImportController::class, 'index'])->name('index');
+                Route::post('/', [ProductImportController::class, 'store'])->name('upload');
+                Route::get('/{id}', [ProductImportController::class, 'show'])->name('import_view');
             });
         });
     });
