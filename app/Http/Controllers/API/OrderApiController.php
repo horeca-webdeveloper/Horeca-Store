@@ -557,11 +557,14 @@ public function index(Request $request)
 
                     if (is_array($images)) {
                         $images = array_map(function ($image) {
-                            // Ensure the image URL is properly formatted
                             if (!preg_match('/^https?:\/\//', $image)) {
-                                $image = asset($image);
+                                // Check if the path starts with 'storage/' or 'storage/products/'
+                                if (strpos($image, 'storage/') === 0) {
+                                    $image = asset($image);  // Prepend the base URL
+                                } elseif (strpos($image, 'storage/products/') === 0) {
+                                    $image = asset($image);  // Prepend the base URL
+                                }
                             }
-                            return $image;
                         }, $images);
                     }
 
