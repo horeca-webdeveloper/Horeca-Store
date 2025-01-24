@@ -564,6 +564,10 @@ public function index(Request $request)
                                 if (strpos($image, 'storage/') === 0 || strpos($image, 'storage/products/') === 0) {
                                     // Prepend the base URL using asset() for local storage paths
                                     $image = asset('storage/' . ltrim($image, 'storage/'));  // Handle the path correctly
+                                } else {
+                                    // Handle the case where the image is neither a URL nor in storage/
+                                    // (e.g., if it's a relative path or file name)
+                                    $image = asset('storage/products/' . $image);  // Prepend base URL for default product storage path
                                 }
                             }
                             return $image;  // Return the modified image URL
@@ -586,6 +590,7 @@ public function index(Request $request)
     // Return all orders with their product details as a JSON response
     return response()->json($orders);
 }
+
 
 
 
