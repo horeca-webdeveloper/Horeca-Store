@@ -61,6 +61,7 @@ resources/docs
 /storage/installing
 /storage/installed
 /storage/temp
+public/storage/products/*
 
 /lang/*
 !/lang/en
