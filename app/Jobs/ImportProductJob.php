@@ -58,6 +58,12 @@ class ImportProductJob implements ShouldQueue
 		$this->tagIdNames = ProductTag::pluck('name', 'id')->all();
 		$this->productTypeIdNames = ProductTypes::pluck('name', 'id')->all();
 
+
+		$log = TransactionLog::where('identifier', $this->batch()->id)->first();
+		$descArray = json_decode($log->description, true) ?? ["Errors" => ''];
+		$previousSuccessCount = $descArray["Success Count"] ?? 0;
+		$previousFailedCount = $descArray["Failed Count"] ?? 0;
+
 		$errorArray = [];
 		$success = 0;
 		$failed = 0;
@@ -79,7 +85,7 @@ class ImportProductJob implements ShouldQueue
 			if (empty($url) || empty($name) || empty($sku) || empty($brand) || empty($vendor) || empty($productTypes) || empty($categories) || empty($status)) {
 				$rowError[] = 'One or more required fields are missing.';
 				$errorArray[] = [
-					"Row Number" => $failed + $success + 2,
+					"Row Number" => $failed + $success + 2 + $previousSuccessCount + $previousFailedCount,
 					"Error" => implode(' | ', $rowError),
 				];
 				$failed++;
@@ -267,7 +273,7 @@ class ImportProductJob implements ShouldQueue
 
 			if ($rowError) {
 				$errorArray[] = [
-					"Row Number" => $failed + $success + 2,
+					"Row Number" => $failed + $success + 2 + $previousSuccessCount + $previousFailedCount,
 					"Error" => implode(' | ', $rowError),
 				];
 				$failed++;
@@ -435,7 +441,7 @@ class ImportProductJob implements ShouldQueue
 				$rowError[] = 'File: ' . $e->getFile();
 				$rowError[] = 'Line: ' . $e->getLine();
 				$errorArray[] = [
-					"Row Number" => $failed + $success + 2,
+					"Row Number" => $failed + $success + 2 + $previousSuccessCount + $previousFailedCount,
 					"Error" => implode(' | ', $rowError),
 				];
 				$failed++;
