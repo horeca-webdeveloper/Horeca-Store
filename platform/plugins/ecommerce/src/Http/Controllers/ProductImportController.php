@@ -42,7 +42,7 @@ class ProductImportController extends BaseController
 	{
 		try {
 			$rules = [
-				'upload_file' => 'required|max:10240|mimes:csv'
+				'upload_file' => 'required|max:10240|mimes:csv,txt'
 			];
 			$validator = Validator::make($request->all(), $rules);
 			if ($validator->fails()) {
