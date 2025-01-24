@@ -865,4 +865,24 @@ class Product extends BaseModel
         return $this->hasMany(RecentlyViewedProduct::class, 'product_id');
     }
 
+    /**
+     * Define a relation to the `ec_products_translations` table.
+     *
+     * @return HasMany
+     */
+    public function translations(): HasMany
+    {
+        return $this->hasMany(ProductsTranslation::class, 'ec_products_id', 'id');
+    }
+
+    /**
+     * Get the translation for a specific language code.
+     *
+     * @param string $langCode
+     * @return ProductsTranslation|null
+     */
+    public function translation(string $langCode)
+    {
+        return $this->translations()->where('lang_code', $langCode)->first();
+    }
 }
