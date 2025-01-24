@@ -42,7 +42,7 @@ class ProductImportController extends BaseController
 	{
 		try {
 			$rules = [
-				'upload_file' => 'required|max:10240|mimes:csv,txt'
+				'upload_file' => 'required|max:5120|mimes:csv,txt'
 			];
 			$validator = Validator::make($request->all(), $rules);
 			if ($validator->fails()) {
@@ -80,7 +80,7 @@ class ProductImportController extends BaseController
 			$totalRecords = count($data);
 
 			// Chunk the data into manageable portions (e.g., 500 rows per chunk)
-			$chunksize = 500;
+			$chunksize = 100;
 			$chunks = array_chunk($data, $chunksize);
 
 			# start import process
