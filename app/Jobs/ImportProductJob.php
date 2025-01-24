@@ -14,6 +14,7 @@ use Botble\Media\Facades\RvMedia;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Exception, Throwable;
 
 use Botble\Ecommerce\Models\Brand;
 use Botble\ACL\Models\User;
@@ -53,7 +54,7 @@ class ImportProductJob implements ShouldQueue
 	{
 		$brandIdNames = Brand::pluck('name', 'id')->all();
 		$storeIdNames = Store::pluck('name', 'id')->all();
-		$this->categoryIdNames = ProductCategory::pluck('name', 'id')->all();
+		$this->categoryIdNames = ProductCategory::whereDoesntHave('children')->pluck('name', 'id')->all();
 		$this->tagIdNames = ProductTag::pluck('name', 'id')->all();
 		$this->productTypeIdNames = ProductTypes::pluck('name', 'id')->all();
 
@@ -481,7 +482,7 @@ class ImportProductJob implements ShouldQueue
 			if (empty($trimmedName)) {
 				continue;
 			}
-			$categoryId = array_search($trimmedName, $this->tagIdNames);
+			$categoryId = array_search($trimmedName, $this->categoryIdNames);
 			if ($categoryId !== false) {
 				$categoryIds[] = $categoryId;
 			}
@@ -795,5 +796,15 @@ class ImportProductJob implements ShouldQueue
 
 		// Generate the URL for the saved image
 		return url('storage/products/' . $fileName);
+	}
+
+	/**
+	 * Handle a job failure.
+	 */
+	public function failed(Throwable $exception): void
+	{
+		$error = $exception->getMessage().$exception->getTraceAsString();
+		logger(__("Product Import Error").': '.$error);
+		// $this->jobFailed($error);
 	}
 }
