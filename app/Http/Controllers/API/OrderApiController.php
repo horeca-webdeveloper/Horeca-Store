@@ -521,70 +521,68 @@ private function calculateTotalAmount(array $products, float $sub_total): float
 // }
 
 
+
 public function index(Request $request)
 {
-    // Validate the email address in the request
-    $request->validate([
-        'email' => 'required|email',
-    ]);
+    // Retrieve all orders for the authenticated user
+    $orders = Order::where('user_id', $request->user()->id)
+        ->orderBy('created_at', 'desc')
+        ->get();
 
-    // Retrieve the latest order based on the email in the ec_order_addresses table
-    $latestOrder = Order::join('ec_order_addresses', 'ec_orders.id', '=', 'ec_order_addresses.order_id')
-        ->where('ec_order_addresses.email', $request->email)
-        ->select('ec_orders.*'); // Select all columns from ec_orders;
-
-    // If no order is found, return a message
-    if (!$latestOrder) {
+    // If no orders are found, return a message
+    if ($orders->isEmpty()) {
         return response()->json(['message' => 'No orders found'], 404);
     }
 
-    // Fetch the products associated with the order via the ec_order_product table
-    $products = DB::table('ec_order_product')
-        ->join('ec_products', 'ec_order_product.product_id', '=', 'ec_products.id')
-        ->where('ec_order_product.order_id', $latestOrder->id)
-        ->select(
-            'ec_products.id as product_id',
-            'ec_products.name',
-            'ec_products.sale_price',
-            'ec_products.delivery_days',
-            'ec_products.images',
-            'ec_order_product.price',
-            'ec_order_product.qty'
-        )
-        ->get()
-        ->map(function ($product) {
-            // Decode the images field if it's JSON-encoded and get the first URL
-            if ($product->images) {
-                $images = json_decode($product->images, true);
+    // Transform each order to include its associated products
+    $orders->transform(function ($order) {
+        // Fetch the products associated with the order via the `ec_order_product` table
+        $products = DB::table('ec_order_product')
+            ->join('ec_products', 'ec_order_product.product_id', '=', 'ec_products.id')
+            ->where('ec_order_product.order_id', $order->id)
+            ->select(
+                'ec_products.id as product_id',
+                'ec_products.name',
+                'ec_products.sale_price',
+                'ec_products.delivery_days',
+                'ec_products.images',
+                'ec_order_product.price',
+                'ec_order_product.qty'
+            )
+            ->get()
+            ->map(function ($product) {
+                // Decode the images field if it's JSON-encoded and process the URLs
+                if ($product->images) {
+                    $images = json_decode($product->images, true);
 
-                // If images are in an array, process them
-                if (is_array($images)) {
-                    $images = array_map(function ($image) {
-                        // Check if image URL starts with 'http' or 'https'
-                        if (!preg_match('/^https?:\/\//', $image)) {
-                            // Check if the path starts with 'storage/' or 'storage/products/'
-                            if (strpos($image, 'storage/') === 0) {
-                                $image = asset($image);  // Prepend the base URL
-                            } elseif (strpos($image, 'storage/products/') === 0) {
-                                $image = asset($image);  // Prepend the base URL
+                    if (is_array($images)) {
+                        $images = array_map(function ($image) {
+                            // Ensure the image URL is properly formatted
+                            if (!preg_match('/^https?:\/\//', $image)) {
+                                $image = asset($image);
                             }
-                        }
-                        return $image;
-                    }, $images);
+                            return $image;
+                        }, $images);
+                    }
+
+                    $product->images = $images;
                 }
 
-                // Return the images array (or first image, depending on your need)
-                $product->images = $images;
-            }
-            return $product;
-        });
+                return $product;
+            });
 
-    // Attach the products to the latest order
-    $latestOrder->setAttribute('products', $products);
+        // Attach the products to the order
+        $order->setAttribute('products', $products);
 
-    // Return the latest order with product details as a JSON response
-    return response()->json($latestOrder);
+        return $order;
+    });
+
+    // Return all orders with their product details as a JSON response
+    return response()->json($orders);
 }
+
+
+
 
 // public function getLatestOrder(Request $request)
 // {
