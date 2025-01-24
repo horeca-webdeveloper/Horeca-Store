@@ -460,65 +460,106 @@ private function calculateTotalAmount(array $products, float $sub_total): float
     //     $orders = Order::where('user_id', $request->user()->id)->get();
     //     return response()->json($orders);
     // }
+// public function index(Request $request)
+// {
+//     // Retrieve the orders for the logged-in user, including related data
+//     $orders = Order::where('user_id', $request->user()->id)->get();
+
+//     // If no orders are found, return a message
+//     if ($orders->isEmpty()) {
+//         return response()->json(['message' => 'No orders found'], 404);
+//     }
+
+//     // Iterate through each order and extract product details from the 'description' field
+//     $orders->transform(function ($order) {
+//         // Check if the 'description' field is not empty or null
+//         if ($order->description) {
+//             // Decode the 'description' field (which contains JSON data)
+//             $productDetails = json_decode($order->description, true);
+
+//             // Ensure the decoded JSON is an array
+//             if (is_array($productDetails)) {
+//                 // Initialize an array to store the product details
+//                 $products = [];
+
+//                 // Loop through each product in the 'description' field and retrieve product data
+//                 foreach ($productDetails as $item) {
+//                     // Fetch the product details from the 'ec_products' table based on the 'product_id'
+//                     $product = Product::find($item['product_id']);
+
+//                     // If the product exists, add the necessary details
+//                     if ($product) {
+//                         $products[] = [
+//                             'product_id' => $product->id,
+//                             'name' => $product->name,
+//                             'price' => $item['price'],
+//                              'sale_price' => $product->sale_price,
+//                             'quantity' => $item['quantity'],
+//                             'description' => $product->description,  // Include other details as needed
+//                             'images' => $product-> images
+//                         ];
+//                     }
+//                 }
+
+//                 // Attach the product details to the order as a custom attribute
+//                 $order->setAttribute('products', $products);
+//             } else {
+//                 // If the description is not a valid array, set products to an empty array
+//                 $order->setAttribute('products', []);
+//             }
+//         } else {
+//             // If description is null or empty, set products to an empty array
+//             $order->setAttribute('products', []);
+//         }
+
+//         // Return the updated order with the product details
+//         return $order;
+//     });
+
+//     // Return the orders with the product details as a JSON response
+//     return response()->json($orders);
+// }
+
+
 public function index(Request $request)
 {
-    // Retrieve the orders for the logged-in user, including related data
-    $orders = Order::where('user_id', $request->user()->id)->get();
+    // Retrieve the orders for the logged-in user, including related products
+    $orders = Order::where('user_id', $request->user()->id)
+        ->with(['products' => function ($query) {
+            $query->select('ec_products.id', 'ec_products.name', 'ec_products.sale_price', 'ec_products.description', 'ec_products.images');
+        }])
+        ->get();
 
     // If no orders are found, return a message
     if ($orders->isEmpty()) {
         return response()->json(['message' => 'No orders found'], 404);
     }
 
-    // Iterate through each order and extract product details from the 'description' field
+    // Transform the orders to include product details along with price and quantity from the pivot table
     $orders->transform(function ($order) {
-        // Check if the 'description' field is not empty or null
-        if ($order->description) {
-            // Decode the 'description' field (which contains JSON data)
-            $productDetails = json_decode($order->description, true);
+        // Map products with additional details from the pivot table
+        $products = $order->products->map(function ($product) {
+            return [
+                'product_id' => $product->id,
+                'name' => $product->name,
+                'price' => $product->pivot->price,
+                'sale_price' => $product->sale_price,
+                'quantity' => $product->pivot->quantity,
+                'description' => $product->description,
+                'images' => $product->images,
+            ];
+        });
 
-            // Ensure the decoded JSON is an array
-            if (is_array($productDetails)) {
-                // Initialize an array to store the product details
-                $products = [];
+        // Attach the products to the order
+        $order->setAttribute('products', $products);
 
-                // Loop through each product in the 'description' field and retrieve product data
-                foreach ($productDetails as $item) {
-                    // Fetch the product details from the 'ec_products' table based on the 'product_id'
-                    $product = Product::find($item['product_id']);
-
-                    // If the product exists, add the necessary details
-                    if ($product) {
-                        $products[] = [
-                            'product_id' => $product->id,
-                            'name' => $product->name,
-                            'price' => $item['price'],
-                             'sale_price' => $product->sale_price,
-                            'quantity' => $item['quantity'],
-                            'description' => $product->description,  // Include other details as needed
-                            'images' => $product-> images
-                        ];
-                    }
-                }
-
-                // Attach the product details to the order as a custom attribute
-                $order->setAttribute('products', $products);
-            } else {
-                // If the description is not a valid array, set products to an empty array
-                $order->setAttribute('products', []);
-            }
-        } else {
-            // If description is null or empty, set products to an empty array
-            $order->setAttribute('products', []);
-        }
-
-        // Return the updated order with the product details
         return $order;
     });
 
     // Return the orders with the product details as a JSON response
     return response()->json($orders);
 }
+
 // public function getLatestOrder(Request $request)
 // {
 //     // Retrieve the latest order for the logged-in user
