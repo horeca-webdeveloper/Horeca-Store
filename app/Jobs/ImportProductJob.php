@@ -536,8 +536,11 @@ class ImportProductJob implements ShouldQueue
 			if ($tagId !== false) {
 				$tagIds[] = $tagId;
 			} else {
-				$tag = ProductTag::create(['name' => $tagName]);
+				$tag = ProductTag::create(['name' => $trimmedName]);
 				$tagIds[] = $tag->id;
+
+				// Update the tagIdNames array with the new tag
+				$this->tagIdNames[$tag->id] = $trimmedName;
 			}
 		}
 		$product->tags()->sync($tagIds);
