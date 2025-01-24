@@ -13,7 +13,7 @@ if ($log->description && json_validate($log->description)) {
 	<div class="card">
 		<div class="card-header d-flex justify-content-between align-items-center">
 			<h3 class="mb-0">{{ __("Import Log") }}</h3>
-			<a href="{{ route('tools.data-synchronize.import.products.import') }}" class="btn btn-primary">
+			<a href="{{ route('tools.data-synchronize.import.products.index') }}" class="btn btn-primary">
 				{{ __("Back to Import File") }}
 			</a>
 		</div>
