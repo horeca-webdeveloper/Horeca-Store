@@ -561,16 +561,16 @@ public function index(Request $request)
                             // If the image URL already starts with http or https, don't modify it
                             if (!preg_match('/^https?:\/\//', $image)) {
                                 // Check if the path starts with 'storage/' or 'storage/products/'
-                                if (strpos($image, 'storage/') === 0) {
-                                    $image = asset($image);  // Prepend the base URL
-                                } elseif (strpos($image, 'storage/products/') === 0) {
-                                    $image = asset($image);  // Prepend the base URL
+                                if (strpos($image, 'storage/') === 0 || strpos($image, 'storage/products/') === 0) {
+                                    // Prepend the base URL using asset() for local storage paths
+                                    $image = asset('storage/' . ltrim($image, 'storage/'));  // Handle the path correctly
                                 }
                             }
                             return $image;  // Return the modified image URL
                         }, $images);
                     }
 
+                    // Assign the processed images back to the product
                     $product->images = $images;
                 }
 
@@ -586,6 +586,7 @@ public function index(Request $request)
     // Return all orders with their product details as a JSON response
     return response()->json($orders);
 }
+
 
 
 
