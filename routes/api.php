@@ -287,6 +287,7 @@ Route::middleware('web')->group(function () {
         Route::get('/orders', [OrderApiController::class, 'index']);
         Route::post('/orders', [OrderApiController::class, 'store']);
         Route::get('/reorder', [OrderApiController::class, 'reorder']);
+        Route::post('/reorder/{orderId}', [OrderApiController::class, 'reorderToCart']);
         Route::get('/orders/{id}', [OrderApiController::class, 'show']);
         Route::put('/orders/{id}', [OrderApiController::class, 'update']);
         Route::delete('/orders/{id}', [OrderApiController::class, 'destroy']);
