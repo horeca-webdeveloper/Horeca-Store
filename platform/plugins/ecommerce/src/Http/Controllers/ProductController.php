@@ -505,7 +505,7 @@ class ProductController extends BaseController
             $product->shipping_weight= $request->input('shipping_weight');
 
             $product->shipping_weight= $request->input('shipping_weight');
-            $allowedOptions = ['Kg', 'g', 'pounds', 'oz'];
+            $allowedOptions = ['Kg', 'g', 'lbs'];
             $shippingWeightOption = $request->input('shipping_weight_option');
 
             // Check if the provided option is valid
@@ -1536,7 +1536,7 @@ class ProductController extends BaseController
             $product->refund = $request->input('refund');
             $product->shipping_weight = $request->input('shipping_weight');
 
-            $allowedOptions = ['Kg', 'g', 'pounds', 'oz'];
+            $allowedOptions = ['Kg', 'g', 'lbs'];
             $shippingWeightOption = $request->input('shipping_weight_option');
             if (in_array($shippingWeightOption, $allowedOptions)) {
                 $product->shipping_weight_option = $shippingWeightOption;
