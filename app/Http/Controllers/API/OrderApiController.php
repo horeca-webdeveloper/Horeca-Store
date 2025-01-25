@@ -19,6 +19,11 @@ use Botble\Ecommerce\Enums\OrderStatusEnum;
 use Botble\Ecommerce\Enums\OrderHistoryActionEnum;
 use Botble\Payment\Enums\PaymentStatusEnum;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use Botble\Ecommerce\Models\Cart;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage; // Import the Storage facade
+
 
 class OrderApiController extends Controller
 {
