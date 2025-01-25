@@ -653,6 +653,52 @@ public function reorder(Request $request)
     return response()->json($orders);
 }
 
+public function reorderToCart(Request $request, $orderId)
+{
+    // Validate that the order exists and belongs to the authenticated user
+    $order = Order::where('id', $orderId)
+        ->where('user_id', $request->user()->id)
+        ->where('status', 'completed') // Ensure it's a completed order
+        ->first();
+
+    if (!$order) {
+        return response()->json(['success' => false, 'message' => 'Order not found or not completed'], 404);
+    }
+
+    // Fetch the products associated with the order
+    $orderProducts = DB::table('ec_order_product')
+        ->where('order_id', $order->id)
+        ->get();
+
+    if ($orderProducts->isEmpty()) {
+        return response()->json(['success' => false, 'message' => 'No products found in this order'], 404);
+    }
+
+    // Add each product from the order to the cart
+    foreach ($orderProducts as $orderProduct) {
+        $cartItem = Cart::where('user_id', $request->user()->id)
+            ->where('product_id', $orderProduct->product_id)
+            ->first();
+
+        if ($cartItem) {
+            // If the product is already in the cart, increase the quantity
+            $cartItem->quantity += $orderProduct->qty;
+            $cartItem->save();
+        } else {
+            // Add a new item to the cart
+            Cart::create([
+                'user_id' => $request->user()->id,
+                'product_id' => $orderProduct->product_id,
+                'quantity' => $orderProduct->qty,
+            ]);
+        }
+    }
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Order items have been added to the cart',
+    ]);
+}
 
 
 
