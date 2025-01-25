@@ -597,24 +597,28 @@ private function calculateTotalAmount(array $products, float $sub_total): float
 // }
 public function index(Request $request)
 {
-    // Get the search term from the request
-    $search = $request->input('search');
-
-    // Retrieve orders for the authenticated user
     $query = Order::where('user_id', $request->user()->id);
 
-    // Apply search if a term is provided
-    if ($search) {
+    // If a search term is provided, add it to the query
+    if ($request->has('search') && $request->search != '') {
+        $search = $request->search;
+
         $query->where(function ($q) use ($search) {
-            $q->where('id', 'like', "%$search%") // Search by Order ID
-              ->orWhereHas('products', function ($productQuery) use ($search) {
-                  // Assuming you have a `products` relationship in the `Order` model
-                  $productQuery->where('name', 'like', "%$search%"); // Search by Product Name
+            // Search by order ID or order code
+            $q->where('id', 'like', '%' . $search . '%')
+              ->orWhere('code', 'like', '%' . $search . '%') // Search by order code
+              // Search by product name (joins ec_order_product and ec_products tables)
+              ->orWhereExists(function ($query) use ($search) {
+                  $query->select(DB::raw(1))
+                        ->from('ec_order_product')
+                        ->join('ec_products', 'ec_order_product.product_id', '=', 'ec_products.id')
+                        ->whereRaw('ec_order_product.order_id = ec_orders.id')
+                        ->where('ec_products.name', 'like', '%' . $search . '%');
               });
         });
     }
 
-    // Get the filtered orders
+    // Retrieve orders and return them
     $orders = $query->orderBy('created_at', 'desc')->get();
 
     // If no orders are found, return a message
@@ -624,7 +628,6 @@ public function index(Request $request)
 
     // Transform each order to include its associated products
     $orders->transform(function ($order) {
-        // Fetch the products associated with the order via the `ec_order_product` table
         $products = DB::table('ec_order_product')
             ->join('ec_products', 'ec_order_product.product_id', '=', 'ec_products.id')
             ->where('ec_order_product.order_id', $order->id)
