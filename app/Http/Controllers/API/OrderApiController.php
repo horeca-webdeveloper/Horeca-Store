@@ -527,12 +527,95 @@ private function calculateTotalAmount(array $products, float $sub_total): float
 
 
 
+// public function index(Request $request)
+// {
+//     // Retrieve all orders for the authenticated user
+//     $orders = Order::where('user_id', $request->user()->id)
+//         ->orderBy('created_at', 'desc')
+//         ->get();
+
+//     // If no orders are found, return a message
+//     if ($orders->isEmpty()) {
+//         return response()->json(['message' => 'No orders found'], 404);
+//     }
+
+//     // Transform each order to include its associated products
+//     $orders->transform(function ($order) {
+//         // Fetch the products associated with the order via the `ec_order_product` table
+//         $products = DB::table('ec_order_product')
+//             ->join('ec_products', 'ec_order_product.product_id', '=', 'ec_products.id')
+//             ->where('ec_order_product.order_id', $order->id)
+//             ->select(
+//                 'ec_products.id as product_id',
+//                 'ec_products.name',
+//                 'ec_products.sale_price',
+//                 'ec_products.delivery_days',
+//                 'ec_products.images',
+//                 'ec_order_product.price',
+//                 'ec_order_product.qty'
+//             )
+//             ->get()
+//             ->map(function ($product) {
+//                 // Decode the images field if it's JSON-encoded and process the URLs
+//                 if ($product->images) {
+//                     $images = json_decode($product->images, true);
+
+//                     if (is_array($images)) {
+//                         // Use array_map to process each image URL
+//                         $images = array_map(function ($image) {
+//                             // If the image URL already starts with http or https, don't modify it
+//                             if (!preg_match('/^https?:\/\//', $image)) {
+//                                 // Check if the path starts with 'storage/' or 'storage/products/'
+//                                 if (strpos($image, 'storage/') === 0 || strpos($image, 'storage/products/') === 0) {
+//                                     // Prepend the base URL using asset() for local storage paths
+//                                     $image = asset('storage/' . ltrim($image, 'storage/'));  // Handle the path correctly
+//                                 } else {
+//                                     // Handle the case where the image is neither a URL nor in storage/
+//                                     // (e.g., if it's a relative path or file name)
+//                                     $image = asset('storage/products/' . $image);  // Prepend base URL for default product storage path
+//                                 }
+//                             }
+//                             return $image;  // Return the modified image URL
+//                         }, $images);
+//                     }
+
+//                     // Assign the processed images back to the product
+//                     $product->images = $images;
+//                 }
+
+//                 return $product;
+//             });
+
+//         // Attach the products to the order
+//         $order->setAttribute('products', $products);
+
+//         return $order;
+//     });
+
+//     // Return all orders with their product details as a JSON response
+//     return response()->json($orders);
+// }
 public function index(Request $request)
 {
-    // Retrieve all orders for the authenticated user
-    $orders = Order::where('user_id', $request->user()->id)
-        ->orderBy('created_at', 'desc')
-        ->get();
+    // Get the search term from the request
+    $search = $request->input('search');
+
+    // Retrieve orders for the authenticated user
+    $query = Order::where('user_id', $request->user()->id);
+
+    // Apply search if a term is provided
+    if ($search) {
+        $query->where(function ($q) use ($search) {
+            $q->where('id', 'like', "%$search%") // Search by Order ID
+              ->orWhereHas('products', function ($productQuery) use ($search) {
+                  // Assuming you have a `products` relationship in the `Order` model
+                  $productQuery->where('name', 'like', "%$search%"); // Search by Product Name
+              });
+        });
+    }
+
+    // Get the filtered orders
+    $orders = $query->orderBy('created_at', 'desc')->get();
 
     // If no orders are found, return a message
     if ($orders->isEmpty()) {
