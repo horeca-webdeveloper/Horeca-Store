@@ -197,27 +197,29 @@ public function getAllHomeBrandProducts(Request $request)
 {
     $wishlistIds = $this->getWishlistProductIds();
 
+    // Fetch brands with at least 10 products
     $brands = Brand::whereHas('products', function ($query) {
         $query->where('is_variation', 0)
             ->where('status', 'published')
-            ->selectRaw('brand_id, COUNT(*) as product_count')
-            ->groupBy('brand_id')
-            ->having('product_count', '>=', 10);
+            ->groupBy('brand_id') // Group by brand_id
+            ->havingRaw('COUNT(*) >= 10'); // Ensure brand has at least 10 products
     })
-    ->orderBy('created_at', 'desc')
+    ->orderBy('created_at', 'desc') // Order by latest brands
     ->take(5)
     ->with(['products' => function ($query) use ($request) {
-        $query->when($request->has('search'), function ($query) use ($request) {
-            $query->where('name', 'like', '%' . $request->input('search') . '%');
-        })
-        ->when($request->has('price_min'), function ($query) use ($request) {
-            $query->where('price', '>=', $request->input('price_min'));
-        })
-        ->when($request->has('price_max'), function ($query) use ($request) {
-            $query->where('price', '<=', $request->input('price_max'));
-        })
-        ->orderBy('created_at', 'desc')
-        ->take(10);
+        $query->where('is_variation', 0)
+            ->where('status', 'published')
+            ->when($request->has('search'), function ($query) use ($request) {
+                $query->where('name', 'like', '%' . $request->input('search') . '%');
+            })
+            ->when($request->has('price_min'), function ($query) use ($request) {
+                $query->where('price', '>=', $request->input('price_min'));
+            })
+            ->when($request->has('price_max'), function ($query) use ($request) {
+                $query->where('price', '<=', $request->input('price_max'));
+            })
+            ->orderBy('created_at', 'desc')
+            ->take(10); // Limit products to 10 per brand
     }])
     ->get();
 
