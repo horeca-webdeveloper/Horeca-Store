@@ -78,11 +78,11 @@ class ImportProductJob implements ShouldQueue
 			$brand = trim($rowData['Brand']);
 			$vendor = trim($rowData['Vendor']);
 			$productTypes = trim($rowData['Product Types']);
-			$categories = trim($rowData['Categories']);
+			$category = trim($rowData['Categories']);
 			$status = trim($rowData['Status']);
 
 			/* Required data validation */
-			if (empty($url) || empty($name) || empty($sku) || empty($brand) || empty($vendor) || empty($productTypes) || empty($categories) || empty($status)) {
+			if (empty($url) || empty($name) || empty($sku) || empty($brand) || empty($vendor) || empty($productTypes) || empty($category) || empty($status)) {
 				$rowError[] = 'One or more required fields are missing.';
 				$errorArray[] = [
 					"Row Number" => $failed + $success + 2 + $previousSuccessCount + $previousFailedCount,
@@ -118,14 +118,33 @@ class ImportProductJob implements ShouldQueue
 			}
 
 			/* Category validation */
-			$categoryArray = array_map('trim', explode(',', $categories));
-			$categoryArrayDiff = array_diff($categoryArray, array_values($this->categoryIdNames));
+			// $categoryArray = array_map('trim', explode(',', $categories));
+			// $categoryArrayDiff = array_diff($categoryArray, array_values($this->categoryIdNames));
 
-			if (!empty($categoryArrayDiff)) {
-				$missingCategories = implode(', ', $categoryArrayDiff);
-				$rowError[] = count($categoryArrayDiff) > 1
-				? "$missingCategories categories do not exist."
-				: "$missingCategories category does not exist.";
+			// if (!empty($categoryArrayDiff)) {
+			// 	$missingCategories = implode(', ', $categoryArrayDiff);
+			// 	$rowError[] = count($categoryArrayDiff) > 1
+			// 	? "$missingCategories categories do not exist."
+			// 	: "$missingCategories category does not exist.";
+			// }
+
+			// /* Category validation */
+			// $categoryArray = array_map('trim', explode(',', $categories));
+			// $validCategories = array_intersect($categoryArray, array_values($this->categoryIdNames));
+
+			// if (empty($validCategories)) {
+			// 	$rowError[] = "At least one valid lowest-level category should be present.";
+			// } else {
+			// 	$categories = implode(',', $validCategories);
+			// }
+
+			/* Category validation */
+			$lowercaseCategory = strtolower($category);
+			$lowercaseCategoryIdNames = array_change_key_case(array_flip($this->categoryIdNames), CASE_LOWER);
+			if (array_key_exists($lowercaseCategory, $lowercaseCategoryIdNames)) {
+				$categoryId = $lowercaseCategoryIdNames[$lowercaseCategory];
+			} else {
+				$rowError[] = "$category category does not exist or is not a valid lowest-level category.";
 			}
 
 			$usStatusArray = [
@@ -423,8 +442,9 @@ class ImportProductJob implements ShouldQueue
 				$product->save();
 
 				$this->saveProductProductType($product, $productTypes);
-				$categoryIdArray = $this->changeCategoryNameToId($categories);
-				$this->saveProductCategory($product, $categoryIdArray);
+				// $categoryIdArray = $this->changeCategoryNameToId($categories);
+				// $this->saveProductCategory($product, $categoryIdArray);
+				$this->saveProductCategory($product, $categoryId);
 				$this->saveProductTag($product, $tags);
 				$this->saveSeoMetaData($product, $seoTitle, $seoDescription);
 				$this->saveSlugData($product, $url);
@@ -478,49 +498,69 @@ class ImportProductJob implements ShouldQueue
 		$product->producttypes()->sync($productTypeIds);
 	}
 
-	private function changeCategoryNameToId(string $categories)
-	{
-		$categoryIds = [];
-		$categoryNames = explode(',', $categories);
+	// private function changeCategoryNameToId(string $categories)
+	// {
+	// 	$categoryIds = [];
+	// 	$categoryNames = explode(',', $categories);
 
-		foreach ($categoryNames as $categoryName) {
-			$trimmedName = trim($categoryName);
-			if (empty($trimmedName)) {
-				continue;
-			}
-			$categoryId = array_search($trimmedName, $this->categoryIdNames);
-			if ($categoryId !== false) {
-				$categoryIds[] = $categoryId;
-			}
-		}
+	// 	foreach ($categoryNames as $categoryName) {
+	// 		$trimmedName = trim($categoryName);
+	// 		if (empty($trimmedName)) {
+	// 			continue;
+	// 		}
+	// 		$categoryId = array_search($trimmedName, $this->categoryIdNames);
+	// 		if ($categoryId !== false) {
+	// 			$categoryIds[] = $categoryId;
+	// 		}
+	// 	}
 
-		return $categoryIds;
-	}
+	// 	return $categoryIds;
+	// }
 
-	private function saveProductCategory($product, $selectedCategories)
+
+	private function saveProductCategory($product, $categoryId)
 	{
 		/* Step 1: Fetch existing pivot data for the product */
 		$existingCategories = $product->categories()->pluck('category_id')->toArray();
 
-		if (array_diff($selectedCategories, $existingCategories)) {
-			/* Clear existing specs */
+		if (!in_array($categoryId, $existingCategories)) {
+			/* Clear existing specs if the category is different */
 			$product->specifications()->delete();
 		}
 
-		/* Step 2: Prepare categories for syncing */
-		$categoriesWithTimestamps = collect($selectedCategories)->mapWithKeys(function ($categoryId) use ($existingCategories) {
-			if (in_array($categoryId, $existingCategories)) {
-				/* Existing category, do not modify created_at */
-				return [$categoryId => []];
-			} else {
-				/* New category, set created_at */
-				return [$categoryId => ['created_at' => now()]];
-			}
-		})->toArray();
+		/* Step 2: Prepare the category for syncing */
+		$categoryWithTimestamp = in_array($categoryId, $existingCategories)
+		? [$categoryId => []]
+		: [$categoryId => ['created_at' => now()]];
 
-		/* Step 3: Sync categories */
-		$product->categories()->sync($categoriesWithTimestamps);
+		/* Step 3: Sync the single category */
+		$product->categories()->sync($categoryWithTimestamp);
 	}
+
+	// private function saveProductCategory($product, $selectedCategories)
+	// {
+	// 	/* Step 1: Fetch existing pivot data for the product */
+	// 	$existingCategories = $product->categories()->pluck('category_id')->toArray();
+
+	// 	if (array_diff($selectedCategories, $existingCategories)) {
+	// 		/* Clear existing specs */
+	// 		$product->specifications()->delete();
+	// 	}
+
+	// 	/* Step 2: Prepare categories for syncing */
+	// 	$categoriesWithTimestamps = collect($selectedCategories)->mapWithKeys(function ($categoryId) use ($existingCategories) {
+	// 		if (in_array($categoryId, $existingCategories)) {
+	// 			/* Existing category, do not modify created_at */
+	// 			return [$categoryId => []];
+	// 		} else {
+	// 			/* New category, set created_at */
+	// 			return [$categoryId => ['created_at' => now()]];
+	// 		}
+	// 	})->toArray();
+
+	// 	/* Step 3: Sync categories */
+	// 	$product->categories()->sync($categoriesWithTimestamps);
+	// }
 
 	private function saveProductTag($product, string $tags)
 	{
