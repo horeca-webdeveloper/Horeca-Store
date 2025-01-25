@@ -618,12 +618,15 @@ public function index(Request $request)
         });
     }
 
-    // Retrieve orders and return them
+    // Retrieve orders
     $orders = $query->orderBy('created_at', 'desc')->get();
 
-    // If no orders are found, return a message
+    // If no orders are found, return a message with success false
     if ($orders->isEmpty()) {
-        return response()->json(['message' => 'No orders found'], 404);
+        return response()->json([
+            'success' => false,
+            'message' => 'No orders found'
+        ], 200);
     }
 
     // Transform each order to include its associated products
@@ -679,8 +682,12 @@ public function index(Request $request)
     });
 
     // Return all orders with their product details as a JSON response
-    return response()->json($orders);
+    return response()->json([
+        'success' => true,
+        'data' => $orders
+    ], 200);
 }
+
 
 
 public function reorder(Request $request)
