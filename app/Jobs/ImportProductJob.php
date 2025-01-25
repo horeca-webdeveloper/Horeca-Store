@@ -78,11 +78,11 @@ class ImportProductJob implements ShouldQueue
 			$brand = trim($rowData['Brand']);
 			$vendor = trim($rowData['Vendor']);
 			$productTypes = trim($rowData['Product Types']);
-			$categories = trim($rowData['Categories']);
+			$category = trim($rowData['Categories']);
 			$status = trim($rowData['Status']);
 
 			/* Required data validation */
-			if (empty($url) || empty($name) || empty($sku) || empty($brand) || empty($vendor) || empty($productTypes) || empty($categories) || empty($status)) {
+			if (empty($url) || empty($name) || empty($sku) || empty($brand) || empty($vendor) || empty($productTypes) || empty($category) || empty($status)) {
 				$rowError[] = 'One or more required fields are missing.';
 				$errorArray[] = [
 					"Row Number" => $failed + $success + 2 + $previousSuccessCount + $previousFailedCount,
@@ -118,14 +118,33 @@ class ImportProductJob implements ShouldQueue
 			}
 
 			/* Category validation */
-			$categoryArray = array_map('trim', explode(',', $categories));
-			$categoryArrayDiff = array_diff($categoryArray, array_values($this->categoryIdNames));
+			// $categoryArray = array_map('trim', explode(',', $categories));
+			// $categoryArrayDiff = array_diff($categoryArray, array_values($this->categoryIdNames));
 
-			if (!empty($categoryArrayDiff)) {
-				$missingCategories = implode(', ', $categoryArrayDiff);
-				$rowError[] = count($categoryArrayDiff) > 1
-				? "$missingCategories categories do not exist."
-				: "$missingCategories category does not exist.";
+			// if (!empty($categoryArrayDiff)) {
+			// 	$missingCategories = implode(', ', $categoryArrayDiff);
+			// 	$rowError[] = count($categoryArrayDiff) > 1
+			// 	? "$missingCategories categories do not exist."
+			// 	: "$missingCategories category does not exist.";
+			// }
+
+			// /* Category validation */
+			// $categoryArray = array_map('trim', explode(',', $categories));
+			// $validCategories = array_intersect($categoryArray, array_values($this->categoryIdNames));
+
+			// if (empty($validCategories)) {
+			// 	$rowError[] = "At least one valid lowest-level category should be present.";
+			// } else {
+			// 	$categories = implode(',', $validCategories);
+			// }
+
+			/* Category validation */
+			$lowercaseCategory = strtolower($category);
+			$lowercaseCategoryIdNames = array_change_key_case(array_flip($this->categoryIdNames), CASE_LOWER);
+			if (array_key_exists($lowercaseCategory, $lowercaseCategoryIdNames)) {
+				$categoryId = $lowercaseCategoryIdNames[$lowercaseCategory];
+			} else {
+				$rowError[] = "$category category does not exist or is not a valid lowest-level category.";
 			}
 
 			$usStatusArray = [
