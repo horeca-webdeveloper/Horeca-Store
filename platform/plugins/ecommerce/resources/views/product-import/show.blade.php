@@ -129,28 +129,31 @@ if ($log->description && json_validate($log->description)) {
 								<tr>
 									<td><b>{{ $key }}</b></td>
 									<td>
-										@if(is_array($value) && count($value)>0)
-											@foreach($value as $key1 => $value1)
-												@if(is_array($value1))
-													@foreach($value1 as $key2 => $value2)
-														@if($key2=="Error")
-															@php($errorArray = explode(' | ', $value2))
-															@foreach($errorArray as $error)
-																&nbsp; &nbsp; &nbsp; {{$loop->iteration}}. {{ $error }}<br>
-															@endforeach
-														@else
-															<b>{{ $key2 }}</b>: {{ is_array($value2) ? json_encode($value2):$value2 }}<br>
-														@endif
-													@endforeach
-												@else
-													<b>{{ $key1 }}</b>: {{ $value1 }}<br>
-												@endif
-												<br>
-											@endforeach
-										@else
-											{{ is_array($value) ? json_encode($value):$value }}
-										@endif
+										<div style="max-height: 300px; overflow-y: auto;">
+											@if(is_array($value) && count($value) > 0)
+												@foreach($value as $key1 => $value1)
+													@if(is_array($value1))
+														@foreach($value1 as $key2 => $value2)
+															@if($key2 == "Error")
+																@php($errorArray = explode(' | ', $value2))
+																@foreach($errorArray as $error)
+																	&nbsp; &nbsp; &nbsp; {{$loop->iteration}}. {{ $error }}<br>
+																@endforeach
+															@else
+																<b>{{ $key2 }}</b>: {{ is_array($value2) ? json_encode($value2) : $value2 }}<br>
+															@endif
+														@endforeach
+													@else
+														<b>{{ $key1 }}</b>: {{ $value1 }}<br>
+													@endif
+													<br>
+												@endforeach
+											@else
+												{{ is_array($value) ? json_encode($value) : $value }}
+											@endif
+										</div>
 									</td>
+
 								</tr>
 							@endforeach
 					</tbody>
