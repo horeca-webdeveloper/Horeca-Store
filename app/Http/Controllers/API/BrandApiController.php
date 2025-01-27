@@ -200,7 +200,9 @@ public function getAllHomeBrandProducts(Request $request)
     // Fetch only the latest 5 brands with at least 10 products
     $brands = Brand::with(['products'])
         ->whereHas('products', function ($query) {
-            $query->havingRaw('COUNT(*) >= 10'); // Ensure brand has at least 10 products
+            $query->select('brand_id') // Select only the column needed for grouping
+                ->groupBy('brand_id') // Group by the brand_id
+                ->havingRaw('COUNT(*) >= 10'); // Ensure the brand has at least 10 products
         })
         ->orderBy('created_at', 'desc') // Order by latest brands
         ->take(5) // Limit to 5 brands
@@ -208,7 +210,7 @@ public function getAllHomeBrandProducts(Request $request)
 
     return response()->json([
         'success' => true,
-        'data' => $brands->map(function ($brand) use ($wishlistIds, $request) {
+        'data' => $brands->map(function ($brand) use ($request, $wishlistIds) {
             // Filter and limit products to 10 for each brand
             $products = $brand->products()
                 ->when($request->has('search'), function ($query) use ($request) {
@@ -223,8 +225,8 @@ public function getAllHomeBrandProducts(Request $request)
                 ->when($request->has('rating'), function ($query) use ($request) {
                     $query->whereHas('reviews', function ($q) use ($request) {
                         $q->selectRaw('AVG(star) as avg_rating')
-                          ->groupBy('product_id')
-                          ->havingRaw('AVG(star) >= ?', [$request->input('rating')]);
+                            ->groupBy('product_id')
+                            ->havingRaw('AVG(star) >= ?', [$request->input('rating')]);
                     });
                 })
                 ->orderBy('created_at', 'desc') // Order products by latest
@@ -235,24 +237,24 @@ public function getAllHomeBrandProducts(Request $request)
             return [
                 'brand_name' => $brand->name,
                 'products' => $products->map(function ($product) use ($wishlistIds) {
-                    // Check product images and construct URLs
+                    // Improved logic to construct image URLs
                     $getImageUrl = function ($imageName) {
                         if (Str::startsWith($imageName, ['http://', 'https://'])) {
-                            return $imageName;
+                            return $imageName; // Return the full URL if already valid
                         }
 
-                        $imagePaths = [
-                            public_path("storage/products/{$imageName}"),
-                            public_path("storage/{$imageName}")
+                        $paths = [
+                            "storage/products/{$imageName}",
+                            "storage/{$imageName}",
                         ];
 
-                        foreach ($imagePaths as $path) {
-                            if (file_exists($path)) {
-                                return asset('storage/' . str_replace(public_path('storage/'), '', $path));
+                        foreach ($paths as $path) {
+                            if (file_exists(public_path($path))) {
+                                return asset($path);
                             }
                         }
 
-                        return null; // Return null if image doesn't exist
+                        return asset('images/default.png'); // Default image if none found
                     };
 
                     $productImages = is_array($product->images) ? $product->images : ($product->images ? $product->images->toArray() : []);
@@ -274,6 +276,8 @@ public function getAllHomeBrandProducts(Request $request)
         }),
     ]);
 }
+
+
 
     /**
      * Optimized query logic for guest users dfds s.
@@ -358,84 +362,86 @@ public function getAllHomeBrandProducts(Request $request)
     //}
 
     public function getAllBrandGuestProducts(Request $request)
-{
-    // Fetch only the latest 5 brands with at least 10 products
-    $brands = Brand::with(['products'])
-        ->whereHas('products', function ($query) {
-            $query->havingRaw('COUNT(*) >= 10'); // Ensure brand has at least 10 products
-        })
-        ->orderBy('created_at', 'desc') // Order by latest brands
-        ->take(5) // Limit to 5 brands
-        ->get();
-
-    return response()->json([
-        'success' => true,
-        'data' => $brands->map(function ($brand) use ($request) {
-            // Filter and limit products to 10 for each brand
-            $products = $brand->products()
-                ->when($request->has('search'), function ($query) use ($request) {
-                    $query->where('name', 'like', '%' . $request->input('search') . '%');
-                })
-                ->when($request->has('price_min'), function ($query) use ($request) {
-                    $query->where('price', '>=', $request->input('price_min'));
-                })
-                ->when($request->has('price_max'), function ($query) use ($request) {
-                    $query->where('price', '<=', $request->input('price_max'));
-                })
-                ->when($request->has('rating'), function ($query) use ($request) {
-                    $query->whereHas('reviews', function ($q) use ($request) {
-                        $q->selectRaw('AVG(star) as avg_rating')
-                          ->groupBy('product_id')
-                          ->havingRaw('AVG(star) >= ?', [$request->input('rating')]);
-                    });
-                })
-                ->orderBy('created_at', 'desc') // Order products by latest
-                ->take(10) // Limit to 10 products per brand
-                ->get();
-
-            // Map brand data
-            return [
-                'brand_name' => $brand->name,
-                'products' => $products->map(function ($product) {
-                    // Check product images and construct URLs
-                    $getImageUrl = function ($imageName) {
-                        if (Str::startsWith($imageName, ['http://', 'https://'])) {
-                            return $imageName;
-                        }
-
-                        $imagePaths = [
-                            public_path("storage/products/{$imageName}"),
-                            public_path("storage/{$imageName}")
-                        ];
-
-                        foreach ($imagePaths as $path) {
-                            if (file_exists($path)) {
-                                return asset('storage/' . str_replace(public_path('storage/'), '', $path));
+    {
+        // Fetch only the latest 5 brands with at least 10 products
+        $brands = Brand::with(['products'])
+            ->whereHas('products', function ($query) {
+                $query->select('brand_id') // Select only the column needed for grouping
+                    ->groupBy('brand_id') // Group by the brand_id
+                    ->havingRaw('COUNT(*) >= 10'); // Ensure the brand has at least 10 products
+            })
+            ->orderBy('created_at', 'desc') // Order by latest brands
+            ->take(5) // Limit to 5 brands
+            ->get();
+    
+        return response()->json([
+            'success' => true,
+            'data' => $brands->map(function ($brand) use ($request) {
+                // Filter and limit products to 10 for each brand
+                $products = $brand->products()
+                    ->when($request->has('search'), function ($query) use ($request) {
+                        $query->where('name', 'like', '%' . $request->input('search') . '%');
+                    })
+                    ->when($request->has('price_min'), function ($query) use ($request) {
+                        $query->where('price', '>=', $request->input('price_min'));
+                    })
+                    ->when($request->has('price_max'), function ($query) use ($request) {
+                        $query->where('price', '<=', $request->input('price_max'));
+                    })
+                    ->when($request->has('rating'), function ($query) use ($request) {
+                        $query->whereHas('reviews', function ($q) use ($request) {
+                            $q->selectRaw('AVG(star) as avg_rating')
+                                ->groupBy('product_id')
+                                ->havingRaw('AVG(star) >= ?', [$request->input('rating')]);
+                        });
+                    })
+                    ->orderBy('created_at', 'desc') // Order products by latest
+                    ->take(10) // Limit to 10 products per brand
+                    ->get();
+    
+                // Map brand data
+                return [
+                    'brand_name' => $brand->name,
+                    'products' => $products->map(function ($product) {
+                        // Check product images and construct URLs
+                        $getImageUrl = function ($imageName) {
+                            if (Str::startsWith($imageName, ['http://', 'https://'])) {
+                                return $imageName;
                             }
-                        }
-
-                        return null; // Return null if image doesn't exist
-                    };
-
-                    $productImages = is_array($product->images) ? $product->images : ($product->images ? $product->images->toArray() : []);
-
-                    return [
-                        "id" => $product->id,
-                        "name" => $product->name,
-                        "images" => array_map(function ($image) use ($getImageUrl) {
-                            return $getImageUrl($image);
-                        }, $productImages),
-                        "sku" => $product->sku ?? '',
-                        "price" => $product->price,
-                        "sale_price" => $product->sale_price ?? null,
-                        "rating" => $product->reviews()->avg('star') ?? null,
-                    ];
-                }),
-            ];
-        }),
-    ]);
-}
-
+    
+                            $imagePaths = [
+                                public_path("storage/products/{$imageName}"),
+                                public_path("storage/{$imageName}")
+                            ];
+    
+                            foreach ($imagePaths as $path) {
+                                if (file_exists($path)) {
+                                    return asset('storage/' . str_replace(public_path('storage/'), '', $path));
+                                }
+                            }
+    
+                            return null; // Return null if image doesn't exist
+                        };
+    
+                        $productImages = is_array($product->images) ? $product->images : ($product->images ? $product->images->toArray() : []);
+    
+                        return [
+                            "id" => $product->id,
+                            "name" => $product->name,
+                            "images" => array_map(function ($image) use ($getImageUrl) {
+                                return $getImageUrl($image);
+                            }, $productImages),
+                            "sku" => $product->sku ?? '',
+                            "price" => $product->price,
+                            "sale_price" => $product->sale_price ?? null,
+                            "rating" => $product->reviews()->avg('star') ?? null,
+                        ];
+                    }),
+                ];
+            }),
+        ]);
+    }
+    
 }
 
 // namespace App\Http\Controllers\API;

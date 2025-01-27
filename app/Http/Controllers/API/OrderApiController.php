@@ -19,6 +19,11 @@ use Botble\Ecommerce\Enums\OrderStatusEnum;
 use Botble\Ecommerce\Enums\OrderHistoryActionEnum;
 use Botble\Payment\Enums\PaymentStatusEnum;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use Botble\Ecommerce\Models\Cart;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage; // Import the Storage facade
+
 
 class OrderApiController extends Controller
 {
@@ -522,21 +527,110 @@ private function calculateTotalAmount(array $products, float $sub_total): float
 
 
 
+// public function index(Request $request)
+// {
+//     // Retrieve all orders for the authenticated user
+//     $orders = Order::where('user_id', $request->user()->id)
+//         ->orderBy('created_at', 'desc')
+//         ->get();
+
+//     // If no orders are found, return a message
+//     if ($orders->isEmpty()) {
+//         return response()->json(['message' => 'No orders found'], 404);
+//     }
+
+//     // Transform each order to include its associated products
+//     $orders->transform(function ($order) {
+//         // Fetch the products associated with the order via the `ec_order_product` table
+//         $products = DB::table('ec_order_product')
+//             ->join('ec_products', 'ec_order_product.product_id', '=', 'ec_products.id')
+//             ->where('ec_order_product.order_id', $order->id)
+//             ->select(
+//                 'ec_products.id as product_id',
+//                 'ec_products.name',
+//                 'ec_products.sale_price',
+//                 'ec_products.delivery_days',
+//                 'ec_products.images',
+//                 'ec_order_product.price',
+//                 'ec_order_product.qty'
+//             )
+//             ->get()
+//             ->map(function ($product) {
+//                 // Decode the images field if it's JSON-encoded and process the URLs
+//                 if ($product->images) {
+//                     $images = json_decode($product->images, true);
+
+//                     if (is_array($images)) {
+//                         // Use array_map to process each image URL
+//                         $images = array_map(function ($image) {
+//                             // If the image URL already starts with http or https, don't modify it
+//                             if (!preg_match('/^https?:\/\//', $image)) {
+//                                 // Check if the path starts with 'storage/' or 'storage/products/'
+//                                 if (strpos($image, 'storage/') === 0 || strpos($image, 'storage/products/') === 0) {
+//                                     // Prepend the base URL using asset() for local storage paths
+//                                     $image = asset('storage/' . ltrim($image, 'storage/'));  // Handle the path correctly
+//                                 } else {
+//                                     // Handle the case where the image is neither a URL nor in storage/
+//                                     // (e.g., if it's a relative path or file name)
+//                                     $image = asset('storage/products/' . $image);  // Prepend base URL for default product storage path
+//                                 }
+//                             }
+//                             return $image;  // Return the modified image URL
+//                         }, $images);
+//                     }
+
+//                     // Assign the processed images back to the product
+//                     $product->images = $images;
+//                 }
+
+//                 return $product;
+//             });
+
+//         // Attach the products to the order
+//         $order->setAttribute('products', $products);
+
+//         return $order;
+//     });
+
+//     // Return all orders with their product details as a JSON response
+//     return response()->json($orders);
+// }
 public function index(Request $request)
 {
-    // Retrieve all orders for the authenticated user
-    $orders = Order::where('user_id', $request->user()->id)
-        ->orderBy('created_at', 'desc')
-        ->get();
+    $query = Order::where('user_id', $request->user()->id);
 
-    // If no orders are found, return a message
+    // If a search term is provided, add it to the query
+    if ($request->has('search') && $request->search != '') {
+        $search = $request->search;
+
+        $query->where(function ($q) use ($search) {
+            // Search by order ID or order code
+            $q->where('id', 'like', '%' . $search . '%')
+              ->orWhere('code', 'like', '%' . $search . '%') // Search by order code
+              // Search by product name (joins ec_order_product and ec_products tables)
+              ->orWhereExists(function ($query) use ($search) {
+                  $query->select(DB::raw(1))
+                        ->from('ec_order_product')
+                        ->join('ec_products', 'ec_order_product.product_id', '=', 'ec_products.id')
+                        ->whereRaw('ec_order_product.order_id = ec_orders.id')
+                        ->where('ec_products.name', 'like', '%' . $search . '%');
+              });
+        });
+    }
+
+    // Retrieve orders
+    $orders = $query->orderBy('created_at', 'desc')->get();
+
+    // If no orders are found, return a message with success false
     if ($orders->isEmpty()) {
-        return response()->json(['message' => 'No orders found'], 404);
+        return response()->json([
+            'success' => false,
+            'message' => 'No orders found'
+        ], 200);
     }
 
     // Transform each order to include its associated products
     $orders->transform(function ($order) {
-        // Fetch the products associated with the order via the `ec_order_product` table
         $products = DB::table('ec_order_product')
             ->join('ec_products', 'ec_order_product.product_id', '=', 'ec_products.id')
             ->where('ec_order_product.order_id', $order->id)
@@ -588,9 +682,121 @@ public function index(Request $request)
     });
 
     // Return all orders with their product details as a JSON response
+    return response()->json([
+        'success' => true,
+        'data' => $orders
+    ], 200);
+}
+
+
+
+public function reorder(Request $request)
+{
+    // Retrieve the last 5 completed orders for the authenticated user
+    $orders = Order::where('user_id', $request->user()->id)
+        ->where('status', 'completed') // Filter only completed orders
+        ->orderBy('created_at', 'desc')
+        ->take(5) // Limit to the last 5 orders
+        ->get();
+
+    // If no completed orders are found, return a message
+    if ($orders->isEmpty()) {
+        return response()->json(['message' => 'No completed orders found'], 404);
+    }
+
+    // Transform each order to include its associated products
+    $orders->transform(function ($order) {
+        // Fetch the products associated with the order via the `ec_order_product` table
+        $products = DB::table('ec_order_product')
+            ->join('ec_products', 'ec_order_product.product_id', '=', 'ec_products.id')
+            ->where('ec_order_product.order_id', $order->id)
+            ->select(
+                'ec_products.id as product_id',
+                'ec_products.name',
+                'ec_products.sale_price',
+                'ec_products.delivery_days',
+                'ec_products.images',
+                'ec_order_product.price',
+                'ec_order_product.qty'
+            )
+            ->get()
+            ->map(function ($product) {
+                // Decode and process images field if JSON-encoded
+                if ($product->images) {
+                    $images = json_decode($product->images, true);
+
+                    if (is_array($images)) {
+                        $images = array_map(function ($image) {
+                            // Prepend the base URL if the image isn't an absolute URL
+                            if (!preg_match('/^https?:\/\//', $image)) {
+                                $image = asset('storage/products/' . ltrim($image, '/'));
+                            }
+                            return $image;
+                        }, $images);
+                    }
+
+                    $product->images = $images;
+                }
+
+                return $product;
+            });
+
+        // Attach the products to the order
+        $order->setAttribute('products', $products);
+
+        return $order;
+    });
+
+    // Return the last 5 completed orders with their product details
     return response()->json($orders);
 }
 
+public function reorderToCart(Request $request, $orderId)
+{
+    // Validate that the order exists and belongs to the authenticated user
+    $order = Order::where('id', $orderId)
+        ->where('user_id', $request->user()->id)
+        ->where('status', 'completed') // Ensure it's a completed order
+        ->first();
+
+    if (!$order) {
+        return response()->json(['success' => false, 'message' => 'Order not found or not completed'], 404);
+    }
+
+    // Fetch the products associated with the order
+    $orderProducts = DB::table('ec_order_product')
+        ->where('order_id', $order->id)
+        ->get();
+
+    if ($orderProducts->isEmpty()) {
+        return response()->json(['success' => false, 'message' => 'No products found in this order'], 404);
+    }
+
+    // Add each product from the order to the cart
+    foreach ($orderProducts as $orderProduct) {
+        $cartItem = Cart::where('user_id', $request->user()->id)
+            ->where('product_id', $orderProduct->product_id)
+            ->first();
+
+        if ($cartItem) {
+            // If the product is already in the cart, increase the quantity
+            $cartItem->quantity += $orderProduct->qty;
+            $cartItem->save();
+        } else {
+            // Add a new item to the cart
+            Cart::create([
+                'user_id' => $request->user()->id,
+                'product_id' => $orderProduct->product_id,
+                'quantity' => $orderProduct->qty,
+            ]);
+        }
+    }
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Order items have been added to the cart',
+    ]);
+}
 
 
 
