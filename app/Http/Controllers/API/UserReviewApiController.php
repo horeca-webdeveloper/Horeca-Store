@@ -68,12 +68,14 @@ class UserReviewApiController extends Controller
             $images = $record->images;
 
             // Generate URLs dynamically
-            $imageUrls = collect($images)->mapWithKeys(function ($fileName, $key) {
-                return [$key => url('storage/' . $fileName)];
-            })->toArray();
+            if ($images) {
+                $imageUrls = collect($images)->mapWithKeys(function ($fileName, $key) {
+                    return [$key => url('storage/' . $fileName)];
+                })->toArray();
 
-            // Add the new imageUrls field
-            $record->imageUrls = $imageUrls;
+                // Add the new imageUrls field
+                $record->imageUrls = $imageUrls;
+            }
 
             return $record;
         });
@@ -121,6 +123,8 @@ class UserReviewApiController extends Controller
 
         // Handle file uploads
         try {
+            $images = [];
+            $imageUrls = [];
             if ($request->has('images')) {
                 $destinationPath = public_path('storage');
                 // Ensure the directory exists
@@ -128,8 +132,6 @@ class UserReviewApiController extends Controller
                     mkdir($destinationPath, 0755, true);
                 }
                 $i = 1;
-                $images = [];
-                $imageUrls = [];
                 foreach ($request->file('images') as $image) {
                     // Save the image to the destination path
                     $image->move($destinationPath, $image->getClientOriginalName());
@@ -239,6 +241,8 @@ class UserReviewApiController extends Controller
         ]);
 
         $dataToUpdate = $request->only(['star', 'comment']);
+        $images = [];
+        $imageUrls = [];
         if ($request->has('images')) {
             $destinationPath = public_path('storage');
             // Ensure the directory exists
@@ -246,8 +250,6 @@ class UserReviewApiController extends Controller
                 mkdir($destinationPath, 0755, true);
             }
             $i = 1;
-            $images = [];
-            $imageUrls = [];
             foreach ($request->file('images') as $image) {
                 // Save the image to the destination path
                 $image->move($destinationPath, $image->getClientOriginalName());
