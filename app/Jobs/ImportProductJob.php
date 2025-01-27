@@ -42,12 +42,14 @@ class ImportProductJob implements ShouldQueue
 	protected $categoryIdNames;
 	protected $tagIdNames;
 	protected $productTypeIdNames;
+	protected $productFileFormatArray;
 
 	public function __construct($data)
 	{
 		$this->header = $data['header'];
 		$this->chunk = $data['chunk'];
 		$this->userId = $data['userId'];
+		$this->productFileFormatArray = $data['productFileFormatArray'];
 	}
 
 	public function handle()
@@ -71,15 +73,12 @@ class ImportProductJob implements ShouldQueue
 		foreach ($this->chunk as $row) {
 			$rowData = array_combine($this->header, $row);
 			$rowError = [];
-			$id = trim($rowData['Id']);
-			$url = trim($rowData['URL']);
-			$name = trim($rowData['Name']);
-			$sku = trim($rowData['SKU']);
-			$brand = trim($rowData['Brand']);
-			$vendor = trim($rowData['Vendor']);
-			$productTypes = trim($rowData['Product Types']);
-			$category = trim($rowData['Categories']);
-			$status = trim($rowData['Status']);
+
+			foreach ($this->productFileFormatArray as $headerKey => $variableName) {
+				if (in_array($headerKey, $this->header)) {
+					${$variableName} = trim($rowData[$headerKey]);
+				}
+			}
 
 			/* Required data validation */
 			if (empty($url) || empty($name) || empty($sku) || empty($brand) || empty($vendor) || empty($productTypes) || empty($category) || empty($status)) {
@@ -90,6 +89,21 @@ class ImportProductJob implements ShouldQueue
 				];
 				$failed++;
 				continue;
+			}
+
+			if (!empty($id)) {
+				$product = Product::find($id);
+				if (!$product) {
+					$rowError[] = 'Product does not exist with the given ID.';
+					$errorArray[] = [
+						"Row Number" => $failed + $success + 2 + $previousSuccessCount + $previousFailedCount,
+						"Error" => implode(' | ', $rowError),
+					];
+					$failed++;
+					continue;
+				}
+			} else {
+				$product = new Product();
 			}
 
 			/* Brand validation */
@@ -160,20 +174,6 @@ class ImportProductJob implements ShouldQueue
 			}
 
 			/* Additional field validations */
-			$stockStatus = trim($rowData['Stock Status']);
-			$withStorehouseManagement = trim($rowData['With Storehouse Management']);
-			$unitOfMeasurement = trim($rowData['Unit of Measurement']);
-			$variantRequiresShipping = trim($rowData['Variant Requires Shipping']);
-			$refundPolicy = trim($rowData['Refund Policy']);
-			$isFeatured = trim($rowData['Is Featured']);
-			$weightOption = trim($rowData['Weight Option']);
-			$dimensionOption = trim($rowData['Dimension Option']);
-			$shippingWeightOption = trim($rowData['Shipping Weight Option']);
-			$shippingDimensionOption = trim($rowData['Shipping Dimension Option']);
-			$frequentlyBoughtTogether = trim($rowData['Frequently Bought Together']);
-			$compareProducts = trim($rowData['Compare Products']);
-			$price = trim($rowData['Price']);
-			$salePrice = trim($rowData['Sale Price']);
 
 			/* Stock status validation */
 			$usStockStatusArray = [
@@ -299,63 +299,6 @@ class ImportProductJob implements ShouldQueue
 				continue;
 			}
 
-			$content = trim($rowData['Content']);
-			$description = trim($rowData['Description']);
-			$warrantyInformation = trim($rowData['Warranty Information']);
-			$tags = trim($rowData['Tags']);
-			$quantity = trim($rowData['Quantity']);
-			$costPerItem = trim($rowData['Cost Per Item']);
-			$startDateSalePrice = trim($rowData['Start Date Sale Price']);
-			$endDateSalePrice = trim($rowData['End Date Sale Price']);
-			$minimumOrderQuantity = trim($rowData['Minimum Order Quantity']);
-			$boxQuantity = trim($rowData['Box Quantity']);
-			$deliveryDays = trim($rowData['Delivery Days']);
-			$images = trim($rowData['Images']);
-			$uploadVideo = trim($rowData['Upload Video']);
-			$seoTitle = trim($rowData['Seo Title']);
-			$seoDescription = trim($rowData['Seo Description']);
-			$barcode = trim($rowData['Barcode (ISBN, UPC, GTIN, etc.)']);
-			$googleShoppingCategory = trim($rowData['Google Shopping Category']);
-			$googleShoppingMpn = trim($rowData['Google Shopping Mpn']);
-			$weight = trim($rowData['Weight']);
-			$length = trim($rowData['Length']);
-			$width = trim($rowData['Width']);
-			$height = trim($rowData['Height']);
-			$depth = trim($rowData['Depth']);
-			$shippingWeight = trim($rowData['Shipping Weight']);
-			$shippingWidth = trim($rowData['Shipping Width']);
-			$shippingDepth = trim($rowData['Shipping Depth']);
-			$shippingHeight = trim($rowData['Shipping Height']);
-			$shippingLength = trim($rowData['Shipping Length']);
-			$variant1Title = trim($rowData['Variant 1 Title']);
-			$variant1Value = trim($rowData['Variant 1 Value']);
-			$variant1Products = trim($rowData['Variant 1 Products']);
-			$variant2Title = trim($rowData['Variant 2 Title']);
-			$variant2Value = trim($rowData['Variant 2 Value']);
-			$variant2Products = trim($rowData['Variant 2 Products']);
-			$variant3Title = trim($rowData['Variant 3 Title']);
-			$variant3Value = trim($rowData['Variant 3 Value']);
-			$variant3Products = trim($rowData['Variant 3 Products']);
-			$variantColorTitle = trim($rowData['Variant Color Title']);
-			$variantColorValue = trim($rowData['Variant Color Value']);
-			$variantColorProducts = trim($rowData['Variant Color Products']);
-			$buyingQuantity1 = trim($rowData['Buying Quantity1']);
-			$discount1 = trim($rowData['Discount1']);
-			$startDate1 = trim($rowData['Start Date1']);
-			$endDate1 = trim($rowData['End Date1']);
-			$buyingQuantity2 = trim($rowData['Buying Quantity2']);
-			$discount2 = trim($rowData['Discount2']);
-			$startDate2 = trim($rowData['Start Date2']);
-			$endDate2 = trim($rowData['End Date2']);
-			$buyingQuantity3 = trim($rowData['Buying Quantity3']);
-			$discount3 = trim($rowData['Discount3']);
-			$startDate3 = trim($rowData['Start Date3']);
-			$endDate3 = trim($rowData['End Date3']);
-			$nameAr = trim($rowData['Name (AR)']);
-			$descriptionAr = trim($rowData['Description (AR)']);
-			$contentAr = trim($rowData['Content (AR)']);
-			$warrantyInformationAr = trim($rowData['Warranty Information (AR)']);
-
 			/* Process Images */
 			$fetchedImages = $this->getImageURLs((array) $images ?? []);
 
@@ -372,8 +315,6 @@ class ImportProductJob implements ShouldQueue
 
 			try {
 				/*************/
-				$product = new Product();
-
 				$product->name = $name;
 				$product->description = !empty($description) ? $description : null;
 				$product->content = !empty($content) ? $content : null;
