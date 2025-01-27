@@ -75,3 +75,4 @@ storage/framework/laravel-excel/
 
 storage/framework/maintenance.php
 storage/cache_keys.json
+public/storage/*
