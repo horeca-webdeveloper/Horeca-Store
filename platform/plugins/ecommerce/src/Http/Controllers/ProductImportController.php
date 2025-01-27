@@ -86,12 +86,113 @@ class ProductImportController extends BaseController
 				fclose($handle);
 			}
 
+			$productFileFormatArray = [
+				'Id' => 'id',
+				'URL' => 'url',
+				'Name' => 'name',
+				'Content' => 'content',
+				'Description' => 'description',
+				'Warranty Information' => 'warrantyInformation',
+				'SKU' => 'sku',
+				'Brand' => 'brand',
+				'Vendor' => 'vendor',
+				'Product Types' => 'productTypes',
+				'Categories' => 'category',
+				'Tags' => 'tags',
+				'Stock Status' => 'stockStatus',
+				'With Storehouse Management' => 'withStorehouseManagement',
+				'Quantity' => 'quantity',
+				'Cost Per Item' => 'costPerItem',
+				'Unit of Measurement' => 'unitOfMeasurement',
+				'Price' => 'price',
+				'Sale Price' => 'salePrice',
+				'Start Date Sale Price' => 'startDateSalePrice',
+				'End Date Sale Price' => 'endDateSalePrice',
+				'Minimum Order Quantity' => 'minimumOrderQuantity',
+				'Box Quantity' => 'boxQuantity',
+				'Delivery Days' => 'deliveryDays',
+				'Variant Requires Shipping' => 'variantRequiresShipping',
+				'Images' => 'images',
+				'Upload Video' => 'uploadVideo',
+				'Seo Title' => 'seoTitle',
+				'Seo Description' => 'seoDescription',
+				'Barcode (ISBN, UPC, GTIN, etc.)' => 'barcode',
+				'Refund Policy' => 'refundPolicy',
+				'Status' => 'status',
+				'Google Shopping Category' => 'googleShoppingCategory',
+				'Google Shopping Mpn' => 'googleShoppingMpn',
+				'Is Featured' => 'isFeatured',
+				'Weight Option' => 'weightOption',
+				'Weight' => 'weight',
+				'Dimension Option' => 'dimensionOption',
+				'Length' => 'length',
+				'Width' => 'width',
+				'Height' => 'height',
+				'Depth' => 'depth',
+				'Shipping Weight Option' => 'shippingWeightOption',
+				'Shipping Weight' => 'shippingWeight',
+				'Shipping Dimension Option' => 'shippingDimensionOption',
+				'Shipping Width' => 'shippingWidth',
+				'Shipping Depth' => 'shippingDepth',
+				'Shipping Height' => 'shippingHeight',
+				'Shipping Length' => 'shippingLength',
+				'Frequently Bought Together' => 'frequentlyBoughtTogether',
+				'Compare Products' => 'compareProducts',
+				'Variant 1 Title' => 'variant1Title',
+				'Variant 1 Value' => 'variant1Value',
+				'Variant 1 Products' => 'variant1Products',
+				'Variant 2 Title' => 'variant2Title',
+				'Variant 2 Value' => 'variant2Value',
+				'Variant 2 Products' => 'variant2Products',
+				'Variant 3 Title' => 'variant3Title',
+				'Variant 3 Value' => 'variant3Value',
+				'Variant 3 Products' => 'variant3Products',
+				'Variant Color Title' => 'variantColorTitle',
+				'Variant Color Value' => 'variantColorValue',
+				'Variant Color Products' => 'variantColorProducts',
+				'Buying Quantity1' => 'buyingQuantity1',
+				'Discount1' => 'discount1',
+				'Start Date1' => 'startDate1',
+				'End Date1' => 'endDate1',
+				'Buying Quantity2' => 'buyingQuantity2',
+				'Discount2' => 'discount2',
+				'Start Date2' => 'startDate2',
+				'End Date2' => 'endDate2',
+				'Buying Quantity3' => 'buyingQuantity3',
+				'Discount3' => 'discount3',
+				'Start Date3' => 'startDate3',
+				'End Date3' => 'endDate3',
+				'Name (AR)' => 'nameAr',
+				'Description (AR)' => 'descriptionAr',
+				'Content (AR)' => 'contentAr',
+				'Warranty Information (AR)' => 'warrantyInformationAr',
+			];
+
 			/* Remove the header row */
 			$header = array_shift($data);
+
+			$requiredHeaderArray = array_keys($productFileFormatArray);
+
+			if ($missingColumns = array_diff($requiredHeaderArray, $header)) {
+				$columns = implode(', ', array_values($missingColumns));
+				$missingCount = count($missingColumns);
+				$message = $missingCount > 1 ? "The uploaded file has an incorrect header. $columns columns are missing." : "The uploaded file has an incorrect header. $columns column is missing.";
+
+				# To delete imported excel file
+				$command = "rm -rf ".$fileNameWithPath;
+				shell_exec($command);
+
+				session()->put('error', $message);
+				return back();
+			}
 
 			/* Get the total record count */
 			$totalRecords = count($data);
 			if ($totalRecords == 0) {
+				# To delete imported excel file
+				$command = "rm -rf ".$fileNameWithPath;
+				shell_exec($command);
+
 				session()->put('error', "The uploaded CSV file does not contain any records. Please ensure the file has valid data and try again.");
 				return back();
 			}
@@ -126,10 +227,13 @@ class ProductImportController extends BaseController
 					'status' => 'Completed',
 				]);
 
-				/* Delete the imported file after processing */
-				if (file_exists($fileNameWithPath)) {
-					unlink($fileNameWithPath);
-				}
+				// /* Delete the imported file after processing */
+				// if (file_exists($fileNameWithPath)) {
+				// 	unlink($fileNameWithPath);
+				// }
+				# To delete imported excel file
+				$command = "rm -rf ".$fileNameWithPath;
+				shell_exec($command);
 			})
 			->name("Product Import")
 			->dispatch();
@@ -137,6 +241,7 @@ class ProductImportController extends BaseController
 			/* Add jobs to the batch for processing chunks */
 			foreach ($chunks as $chunk) {
 				$data = [
+					'productFileFormatArray' => $productFileFormatArray,
 					'header' => $header,
 					'chunk' => $chunk,
 					'userId' => auth()->id()
