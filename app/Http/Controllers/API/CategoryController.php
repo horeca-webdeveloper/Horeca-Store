@@ -784,6 +784,9 @@ private function getCategoryImageUrl($image)
 //     ], 200);
 // }
 
+
+
+
 // public function getSpecificationFilters(Request $request)
 // {
 //     $categoryId = $request->get('category_id');
@@ -809,10 +812,10 @@ private function getCategoryImageUrl($image)
 //         ], 200);
 //     }
 
-//     // Step 2: Fetch category-specific filters (spec_names)
+//     // Step 2: Fetch category-specific filters based on specification_type
 //     $categoryFilters = DB::table('category_specifications')
 //         ->where('category_id', $categoryId)
-//         ->where('is_checked', 1)
+//         ->where('specification_type', 'Filters') // Only filters
 //         ->pluck('specification_name');
 
 //     if ($categoryFilters->isEmpty()) {
@@ -968,18 +971,11 @@ public function getSpecificationFilters(Request $request)
         ], 200);
     }
 
-    // Step 2: Fetch category-specific filters based on specification_type
+    // Step 2: Fetch category-specific filters (spec_names)
     $categoryFilters = DB::table('category_specifications')
         ->where('category_id', $categoryId)
-        ->where('specification_type', 'Filters') // Only filters
+        ->where('specification_type', 'Filters') // Only fetch Filters type
         ->pluck('specification_name');
-
-    if ($categoryFilters->isEmpty()) {
-        return response()->json([
-            'success' => false,
-            'message' => 'No filters found for this category',
-        ], 200);
-    }
 
     // Step 3: Fetch specifications for these products and filters
     $specifications = DB::table('specifications')
@@ -987,49 +983,44 @@ public function getSpecificationFilters(Request $request)
         ->whereIn('spec_name', $categoryFilters)
         ->get();
 
-    if ($specifications->isEmpty()) {
-        return response()->json([
-            'success' => false,
-            'message' => 'No specifications found for this category',
-        ], 200);
-    }
+    // If filters exist, apply them
+    if (!$categoryFilters->isEmpty() && !$specifications->isEmpty()) {
+        if (!empty($filters)) {
+            foreach ($filters as $filter) {
+                $specifications = $specifications->filter(function ($spec) use ($filter) {
+                    $specNameMatch = $spec->spec_name === $filter['spec_name'];
 
-    // Step 4: Apply filters (handling both ranges and specific values)
-    if (!empty($filters)) {
-        foreach ($filters as $filter) {
-            $specifications = $specifications->filter(function ($spec) use ($filter) {
-                $specNameMatch = $spec->spec_name === $filter['spec_name'];
-
-                // Handle range filters for numeric spec values
-                $rangeMatch = false;
-                if (isset($filter['min'], $filter['max'])) {
-                    if (is_numeric($spec->spec_value)) {
-                        $rangeMatch = $spec->spec_value >= $filter['min'] && $spec->spec_value <= $filter['max'];
+                    // Handle range filters for numeric spec values
+                    $rangeMatch = false;
+                    if (isset($filter['min'], $filter['max'])) {
+                        if (is_numeric($spec->spec_value)) {
+                            $rangeMatch = $spec->spec_value >= $filter['min'] && $spec->spec_value <= $filter['max'];
+                        }
+                    } else {
+                        $rangeMatch = true;
                     }
-                } else {
-                    $rangeMatch = true;
-                }
 
-                // Handle specific value filters for both numeric and non-numeric values
-                $valueMatch = isset($filter['spec_value'])
-                    ? (string)$spec->spec_value === (string)$filter['spec_value']
-                    : true;
+                    // Handle specific value filters for both numeric and non-numeric values
+                    $valueMatch = isset($filter['spec_value'])
+                        ? (string)$spec->spec_value === (string)$filter['spec_value']
+                        : true;
 
-                return $specNameMatch && ($rangeMatch || $valueMatch);
-            });
-        }
+                    return $specNameMatch && ($rangeMatch || $valueMatch);
+                });
+            }
 
-        $productIds = $specifications->pluck('product_id')->unique();
+            $productIds = $specifications->pluck('product_id')->unique();
 
-        if ($productIds->isEmpty()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No products match the selected filters',
-            ], 200);
+            if ($productIds->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No products match the selected filters',
+                ], 200);
+            }
         }
     }
 
-    // Step 5: Fetch filtered products
+    // Step 4: Fetch products (filtered or not)
     $products = DB::table('ec_products')
         ->select([
             'id', 'name', 'images', 'sku', 'price', 'sale_price', 'refund',
@@ -1038,7 +1029,7 @@ public function getSpecificationFilters(Request $request)
         ->whereIn('id', $productIds)
         ->paginate($perPage);
 
-    // Step 6: Add specifications and ratings to products
+    // Step 5: Add specifications and ratings to products
     $products->transform(function ($product) use ($specifications) {
         $currency = DB::table('ec_currencies')->where('id', $product->currency_id)->first();
         $product->currency_title = $currency
@@ -1065,7 +1056,7 @@ public function getSpecificationFilters(Request $request)
         return $product;
     });
 
-    // Step 7: Create available filters (handling ranges and specific values)
+    // Step 6: Create available filters (handling ranges and specific values)
     $availableFilters = $specifications->groupBy('spec_name')->map(function ($specs, $specName) {
         $numericValues = $specs->pluck('spec_value')->filter(fn($value) => is_numeric($value))->unique()->sort()->values();
         $nonNumericValues = $specs->pluck('spec_value')->filter(fn($value) => !is_numeric($value))->unique();
@@ -1096,12 +1087,10 @@ public function getSpecificationFilters(Request $request)
 
     return response()->json([
         'success' => true,
-        'filters' => $availableFilters,
+        'filters' => $availableFilters, // Empty if no filters exist
         'products' => $products,
     ], 200);
 }
-
-
 
 
 
