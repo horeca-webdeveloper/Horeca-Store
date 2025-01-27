@@ -56,7 +56,7 @@ class DiscountsApiController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'No discounts available for this product or its categories.',
-            ], 404);
+            ], 200);
         }
 
         // Return the list of discounts
