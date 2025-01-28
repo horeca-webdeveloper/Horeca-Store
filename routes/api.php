@@ -58,7 +58,7 @@ Route::get('category-with-slug/{slug}', [CategoryWithSlugController::class, 'sho
 
 
 Route::get('/home-categories', [CategoriesHomeLimitController::class, 'fetchCategories']);
-
+Route::get('/all-categories', [CategoriesHomeLimitController::class, 'fetchAllCategories']);
 Route::get('/categories-menu', [CategoryMenuController::class, 'getCategoriesWithChildren']);
 
  Route::post('/payment-square', [SquarePaymentController::class, 'createPayment']);

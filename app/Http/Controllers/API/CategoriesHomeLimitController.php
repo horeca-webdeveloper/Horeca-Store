@@ -44,6 +44,30 @@ class CategoriesHomeLimitController extends Controller
         return response()->json($limitedCategories);
     }
 
+    public function fetchAllCategories(Request $request)
+{
+    // Fetch parent categories
+    $parentCategories = ProductCategory::where('parent_id', 0)
+        ->get(['id', 'name', 'slug', 'parent_id', 'image']); // Select necessary fields
+
+    // Fetch child categories
+    $childCategories = ProductCategory::whereIn('parent_id', $parentCategories->pluck('id'))
+        ->get(['id', 'name', 'slug', 'parent_id', 'image']); // Select necessary fields
+
+    // Merge parent and child categories
+    $allCategories = $parentCategories->merge($childCategories);
+
+    // Add product count and adjust image URLs
+    foreach ($allCategories as $category) {
+        $category->productCount = $category->products()->count(); // Count related products
+        $category->image = $this->getImageUrl($category->image); // Adjust image URL
+    }
+
+    // Return all categories with their details
+    return response()->json($allCategories);
+}
+
+
     /**
      * Get the full URL of the image, whether it's inside storage/categories or storage.
      *
