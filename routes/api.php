@@ -62,12 +62,12 @@ Route::get('/home-categories', [CategoriesHomeLimitController::class, 'fetchCate
 Route::get('/categories-menu', [CategoryMenuController::class, 'getCategoriesWithChildren']);
 
  Route::post('/payment-square', [SquarePaymentController::class, 'createPayment']);
- 
+
 
 
  Route::get('/popular-posts', [PopularPostsController::class, 'index']);
 
- 
+
 Route::get('/order-tracking', [OrderTrackingController::class, 'trackOrder']);
 
 Route::middleware(['auth:sanctum'])->prefix('addresses')->group(function () {
@@ -76,7 +76,7 @@ Route::middleware(['auth:sanctum'])->prefix('addresses')->group(function () {
     Route::put('/{id}', [AddressController::class, 'update']);
     Route::delete('/{id}', [AddressController::class, 'destroy']);
  Route::post('/update-default-address', [AddressController::class, 'updateDefaultAddress']);
-    
+
 });
 Route::post('/upload-product-documents', [ProductController::class, 'uploadDocuments']);
 
@@ -126,7 +126,7 @@ Route::post('categories/filtered-products', [CategoryController::class, 'getFilt
 Route::get('/categories/{slug}', [CategoryController::class, 'categoryslug']);
 
 Route::prefix('categories')->group(function () {
-    
+
     Route::get('/', [CategoryController::class, 'index']);
     Route::post('/', [CategoryController::class, 'index']);
     Route::put('{id}', [CategoryController::class, 'update']);
@@ -200,14 +200,14 @@ Route::middleware('auth:sanctum')->post('/logout', [CustomerController::class, '
     Route::get('/products-guest', [ProductApiController::class, 'getAllPublicProducts']);
 
 Route::middleware('auth:sanctum')->group(function () {
-    
+
     Route::post('/apply-coupon', [CouponApiController::class, 'applyCoupon']);
 
     Route::get('/products', [ProductApiController::class, 'getAllProducts']);
     Route::get('/product-listing', [ProductApiController::class, 'getAllProductsLising']);
     Route::get('/product-public-listing-guest', [ProductApiController::class, 'getAllProductsLisingGuest']);
-    
-    
+
+
     // Routes for logged-in users
     Route::post('/cart', [CartApiController::class, 'addToCart']);
     Route::get('/cart', [CartApiController::class, 'viewCart']);
@@ -251,7 +251,7 @@ Route::post('/cart/update-guest', [CartApiController::class, 'updateQuantityGues
 //     Route::delete('/clear-cart-guest', [CartApiController::class, 'clearCartGuest'])->name('cart.clear.guest');
 
 
-// Routes for Blog Posts 
+// Routes for Blog Posts
 Route::get('/posts', [PostApiController::class, 'index']);
 Route::get('/get-views', [PostApiController::class, 'getlikes']);
 Route::get('/posts/{id}', [PostApiController::class, 'show']);
