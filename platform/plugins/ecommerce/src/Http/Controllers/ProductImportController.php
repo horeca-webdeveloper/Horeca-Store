@@ -62,30 +62,6 @@ class ProductImportController extends BaseController
 
 			$data = [];
 
-			/* Open the CSV file and read its content */
-			if (($handle = fopen($fileNameWithPath, "r")) !== false) {
-				while (($row = fgetcsv($handle, 0, ",", '"', "\\")) !== false) {
-					/* Sanitize and encode each row to ensure UTF-8 compatibility */
-					$row = array_map(function ($value) {
-						/* Check if the value is UTF-8 encoded */
-						if (!mb_check_encoding($value, 'UTF-8')) {
-							/* Attempt to convert to UTF-8, fallback to ISO-8859-1 if detection fails */
-							$value = @mb_convert_encoding($value, 'UTF-8', 'auto') ?: utf8_encode($value);
-						}
-
-						/* Remove invalid characters and trim spaces */
-						$value = preg_replace('/[^\x20-\x7E\xA0-\xFF]/u', '', $value);
-						return trim($value);
-					}, $row);
-
-					/* Skip blank rows */
-					if (array_filter($row)) {
-						$data[] = $row;
-					}
-				}
-				fclose($handle);
-			}
-
 			$productFileFormatArray = [
 				'Id' => 'id',
 				'URL' => 'url',
@@ -168,6 +144,49 @@ class ProductImportController extends BaseController
 				'Warranty Information (AR)' => 'warrantyInformationAr',
 			];
 
+			$requiredRowCount = count($productFileFormatArray);
+
+			/* Open the CSV file and read its content */
+			$rowIndex = 1;
+			if (($handle = fopen($fileNameWithPath, "r")) !== false) {
+				while (($row = fgetcsv($handle, 0, ",", '"', "\\")) !== false) {
+					/* Fix unquoted fields and escape special characters */
+					$row = array_map(function ($value) {
+						/* Add quotes around multiline fields */
+						if (strpos($value, "\n") !== false || strpos($value, "\r") !== false) {
+							$value = '"' . str_replace('"', '""', $value) . '"';
+						}
+
+						/* Check if the value is UTF-8 encoded */
+						if (!mb_check_encoding($value, 'UTF-8')) {
+							/* Attempt to convert to UTF-8, fallback to ISO-8859-1 if detection fails */
+							$value = @mb_convert_encoding($value, 'UTF-8', 'auto') ?: utf8_encode($value);
+						}
+
+						/* Remove invalid characters and trim spaces */
+						$value = preg_replace('/[^\x20-\x7E\xA0-\xFF]/u', '', $value);
+						return trim($value);
+					}, $row);
+
+					/* Skip blank rows */
+					if (array_filter($row)) {
+						if (count($row) != $requiredRowCount) {
+							$message = "The data in row $rowIndex is not compatible for import.";
+
+							# To delete imported excel file
+							$command = "rm -rf ".$fileNameWithPath;
+							shell_exec($command);
+
+							session()->put('error', $message);
+							return back();
+						}
+						$data[] = $row;
+					}
+					$rowIndex++;
+				}
+				fclose($handle);
+			}
+
 			/* Remove the header row */
 			$header = array_shift($data);
 
@@ -197,7 +216,7 @@ class ProductImportController extends BaseController
 				return back();
 			}
 
-			/* Chunk the data into manageable portions (e.g., 500 rows per chunk) */
+			/* Chunk the data into manageable portions (e.g., 100 rows per chunk) */
 			$chunkSize = 100;
 			$chunks = array_chunk($data, $chunkSize);
 

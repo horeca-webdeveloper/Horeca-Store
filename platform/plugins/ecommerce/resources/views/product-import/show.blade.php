@@ -140,7 +140,7 @@ if ($log->description && json_validate($log->description)) {
 																	&nbsp; &nbsp; &nbsp; {{$loop->iteration}}. {{ $error }}<br>
 																@endforeach
 															@else
-																<b>{{ $key2 }}</b>: {{ is_array($value2) ? json_encode($value2) : $value2 }}<br>
+																<b>{{ $key2 }}</b>: {!! is_array($value2) ? json_encode($value2) : $value2 !!}<br>
 															@endif
 														@endforeach
 													@else
