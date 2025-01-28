@@ -71,9 +71,22 @@ class ImportProductJob implements ShouldQueue
 		$failed = 0;
 
 		foreach ($this->chunk as $row) {
-			$rowData = array_combine($this->header, $row);
+			$rowData = [];
 			$rowError = [];
+			if (count($this->header) == count($row)) {
+				$rowData = array_combine($this->header, $row);
+			} else {
+				$rowError[] = 'The data in this row is not compatible for import.';
+				$errorArray[] = [
+					"Row Number" => $failed + $success + 2 + $previousSuccessCount + $previousFailedCount,
+					"Error" => implode(' | ', $rowError),
+					// "description" => '<br>&nbsp;&nbsp;<b>Header Data</b>: '.json_encode($this->header).'<br><br>&nbsp;&nbsp;<b>Row data</b>: '.json_encode($row).'<br><br>&nbsp;&nbsp;<b>Header count</b>: '.count($this->header).'<br><br>&nbsp;&nbsp;<b>Row count</b>: '.count($row)
+				];
+				$failed++;
+				continue;
+			}
 
+			// $rowData = array_combine($this->header, $row);
 			foreach ($this->productFileFormatArray as $headerKey => $variableName) {
 				if (in_array($headerKey, $this->header)) {
 					${$variableName} = trim($rowData[$headerKey]);
