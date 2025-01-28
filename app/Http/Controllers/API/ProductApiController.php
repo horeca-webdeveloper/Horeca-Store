@@ -504,7 +504,7 @@ class ProductApiController extends Controller
                 return $product;
             });
     
-            // Fetch categories and brands
+            // Fetch categories and brandss
             $categories = ProductCategory::select('id', 'name')->get();
             $brands = Brand::select('id', 'name')->get();
     
