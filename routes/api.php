@@ -198,6 +198,7 @@ Route::middleware('auth:sanctum')->post('/logout', [CustomerController::class, '
 // Authenticated route (only accessible by authenticated users)
 // Route::middleware('auth:sanctum')->get('/products', [ProductApiController::class, 'getAllProducts']);
     Route::get('/products-guest', [ProductApiController::class, 'getAllPublicProducts']);
+    Route::get('/product-public-listing-guest', [ProductApiController::class, 'getAllProductsLisingGuest']);
 
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -205,7 +206,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/products', [ProductApiController::class, 'getAllProducts']);
     Route::get('/product-listing', [ProductApiController::class, 'getAllProductsLising']);
-    Route::get('/product-public-listing-guest', [ProductApiController::class, 'getAllProductsLisingGuest']);
 
 
     // Routes for logged-in users
