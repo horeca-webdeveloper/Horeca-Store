@@ -49,6 +49,7 @@ use App\Http\Controllers\API\CountryController;
  use App\Http\Controllers\API\CategoriesHomeLimitController;
  use App\Http\Controllers\API\CategoryWithSlugController;
  use App\Http\Controllers\Api\EmailNotificationController;
+ use App\Http\Controllers\Api\ProductSpecificationApiController;
 
 Route::post('/send-confirmation-email', [EmailNotificationController::class, 'sendConfirmationEmail']);
 
@@ -294,3 +295,6 @@ Route::middleware('web')->group(function () {
     });
     Route::post('/orders/latest', [OrderApiController::class, 'getLatestOrder']);
     Route::post('/guest-orders', [OrderApiController::class, 'storeGuest']);
+
+
+Route::get('/product-specifications', [ProductSpecificationApiController::class, 'getProductSpecifications']); // No productId in the URL

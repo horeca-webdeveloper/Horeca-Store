@@ -53,7 +53,7 @@ class CategoryProductTypeController extends BaseController
 
 		// Fetch all available product types for the multi-select
 		// $productTypes = ProductTypes::all(['id', 'name']);
-		$specificationTypes = ['At a Glance', 'Comparision', 'Filters'];
+		$specificationTypes = ['At a Glance', 'Comparison', 'Filters'];
 		$specificationNames = CategorySpecification::distinct()->pluck('specification_name')->toArray();
 
 		// Pass the data to the edit view
