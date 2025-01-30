@@ -419,22 +419,18 @@ class Product extends BaseModel
     protected function images(): Attribute
     {
         return Attribute::make(
-            get: function (?string $value): array {
-                try {
-                    if ($value === '[null]') {
-                        return [];
-                    }
-
-                    $images = json_decode((string) $value, true);
-
-                    if (is_array($images)) {
-                        $images = array_filter($images);
-                    }
-
-                    return $images ?: [];
-                } catch (Exception) {
-                    return [];
+            get: function ($value): array {
+                if (is_array($value)) {
+                    return array_filter($value); // If already an array, return filtered array
                 }
+
+                if (empty($value)) {
+                    return []; // Handle null or empty values
+                }
+
+                $decoded = json_decode($value, true);
+
+                return is_array($decoded) ? array_filter($decoded) : [];
             }
         );
     }
