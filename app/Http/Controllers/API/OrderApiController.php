@@ -898,30 +898,26 @@ public function reorderToCart(Request $request, $orderId)
 public function byitagain(Request $request)
 {
     // Retrieve the last 5 completed orders for the authenticated user
-    $orders = Order::where('user_id', $request->user()->id)
+    $orderIds = Order::where('user_id', $request->user()->id)
         ->where('status', 'completed') // Filter only completed orders
         ->orderBy('created_at', 'desc')
         ->take(5) // Limit to the last 5 orders
         ->pluck('id'); // Get only order IDs
 
     // If no completed orders are found, return a message
-    if ($orders->isEmpty()) {
+    if ($orderIds->isEmpty()) {
         return response()->json(['message' => 'No completed orders found'], 404);
     }
 
-    // Fetch the products associated with these orders
-    $products = DB::table('ec_order_product')
-        ->join('ec_products', 'ec_order_product.product_id', '=', 'ec_products.id')
-        ->whereIn('ec_order_product.order_id', $orders) // Fetch products for the last 5 orders
-        ->select(
-            'ec_products.id as product_id',
-            'ec_products.name',
-            'ec_products.sale_price',
-            'ec_products.delivery_days',
-            'ec_products.images',
-            'ec_order_product.price',
-            'ec_order_product.qty'
-        )
+    // Fetch product IDs from order-product relationship table
+    $productIds = DB::table('ec_order_product')
+        ->whereIn('order_id', $orderIds)
+        ->pluck('product_id')
+        ->unique(); // Get unique product IDs
+
+    // Fetch complete product details from ec_products
+    $products = DB::table('ec_products')
+        ->whereIn('id', $productIds)
         ->get()
         ->map(function ($product) {
             // Decode and process images field if JSON-encoded
@@ -944,7 +940,7 @@ public function byitagain(Request $request)
             return $product;
         });
 
-    // Return only the product details
+    // Return the product details
     return response()->json($products);
 }
 
