@@ -48,8 +48,8 @@ use App\Http\Controllers\API\CountryController;
  use App\Http\Controllers\API\CategoryMenuController;
  use App\Http\Controllers\API\CategoriesHomeLimitController;
  use App\Http\Controllers\API\CategoryWithSlugController;
- use App\Http\Controllers\Api\EmailNotificationController;
- use App\Http\Controllers\Api\ProductSpecificationApiController;
+ use App\Http\Controllers\API\EmailNotificationController;
+ use App\Http\Controllers\API\ProductSpecificationApiController;
 
 Route::post('/send-confirmation-email', [EmailNotificationController::class, 'sendConfirmationEmail']);
 
