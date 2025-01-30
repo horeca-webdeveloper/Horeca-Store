@@ -895,6 +895,58 @@ public function reorderToCart(Request $request, $orderId)
         'message' => 'Order items have been added to the cart',
     ]);
 }
+public function byitagain(Request $request)
+{
+    // Retrieve the last 5 completed orders for the authenticated user
+    $orders = Order::where('user_id', $request->user()->id)
+        ->where('status', 'completed') // Filter only completed orders
+        ->orderBy('created_at', 'desc')
+        ->take(5) // Limit to the last 5 orders
+        ->pluck('id'); // Get only order IDs
+
+    // If no completed orders are found, return a message
+    if ($orders->isEmpty()) {
+        return response()->json(['message' => 'No completed orders found'], 404);
+    }
+
+    // Fetch the products associated with these orders
+    $products = DB::table('ec_order_product')
+        ->join('ec_products', 'ec_order_product.product_id', '=', 'ec_products.id')
+        ->whereIn('ec_order_product.order_id', $orders) // Fetch products for the last 5 orders
+        ->select(
+            'ec_products.id as product_id',
+            'ec_products.name',
+            'ec_products.sale_price',
+            'ec_products.delivery_days',
+            'ec_products.images',
+            'ec_order_product.price',
+            'ec_order_product.qty'
+        )
+        ->get()
+        ->map(function ($product) {
+            // Decode and process images field if JSON-encoded
+            if ($product->images) {
+                $images = json_decode($product->images, true);
+
+                if (is_array($images)) {
+                    $images = array_map(function ($image) {
+                        // Prepend the base URL if the image isn't an absolute URL
+                        if (!preg_match('/^https?:\/\//', $image)) {
+                            $image = asset('storage/products/' . ltrim($image, '/'));
+                        }
+                        return $image;
+                    }, $images);
+                }
+
+                $product->images = $images;
+            }
+
+            return $product;
+        });
+
+    // Return only the product details
+    return response()->json($products);
+}
 
 
 
