@@ -940,8 +940,8 @@ public function byitagain(Request $request)
             return $product;
         });
 
-    // Return the product details
-    return response()->json($products);
+    // Return the product details inside 'data'
+    return response()->json(['data' => $products]);
 }
 
 
