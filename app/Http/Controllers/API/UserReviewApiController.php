@@ -159,7 +159,7 @@ class UserReviewApiController extends Controller
                 $reviewData['image_urls'] = $imageUrls;
 
                 return response()->json([
-                    'message' => 'Review successfully added',
+                    'message' => 'Review added successfully ',
                     'success' => true,
                     'review' => $reviewData,
                 ], 201);
