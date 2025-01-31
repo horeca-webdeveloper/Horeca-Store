@@ -37,6 +37,7 @@
     <div class="col-md-4">
         <x-core::form.text-input
             :label="trans('plugins/ecommerce::products.form.price')"
+            id="originalPrice"
             name="price"
             :data-thousands-separator="EcommerceHelper::getThousandSeparatorForInputMask()"
             :data-decimal-separator="EcommerceHelper::getDecimalSeparatorForInputMask()"
@@ -53,6 +54,7 @@
     <div class="col-md-4">
         <x-core::form.text-input
             :label="trans('plugins/ecommerce::products.form.price_sale')"
+            id="salePrice"
             class="input-mask-number"
             name="sale_price"
             :data-thousands-separator="EcommerceHelper::getThousandSeparatorForInputMask()"
@@ -388,6 +390,7 @@
     <div class="col-md-4">
         <x-core::form.text-input
             :label="trans('plugins/ecommerce::products.form.price')"
+            id="originalPrice"
             name="price"
             :data-thousands-separator="EcommerceHelper::getThousandSeparatorForInputMask()"
             :data-decimal-separator="EcommerceHelper::getDecimalSeparatorForInputMask()"
@@ -404,6 +407,7 @@
     <div class="col-md-4">
         <x-core::form.text-input
             :label="trans('plugins/ecommerce::products.form.price_sale')"
+            id="salePrice"
             class="input-mask-number"
             name="sale_price"
             :data-thousands-separator="EcommerceHelper::getThousandSeparatorForInputMask()"
@@ -1077,31 +1081,20 @@
   <!-- Real-time Margin Calculation Script -->
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-        const costInput = document.querySelector('#cost-per-item');
-        const priceInput = document.querySelector('#price');
-        const marginInput = document.querySelector('#margin');
+        function calculateMargin() {
+            const price = document.querySelector('#salePrice').value || document.querySelector('#originalPrice').value || 0;
+            const costPerItem = document.querySelector('#cost-per-item').value || 0;
+            const marginInput = document.querySelector('#margin');
 
-        // Function to calculate and update the margin
-        const calculateMargin = () => {
-            const cost = parseFloat(costInput.value) || 0;
-            const price = parseFloat(priceInput.value) || 0;
-
-            if (price > 0) {
-                const margin = ((price - cost) / price) * 100;
+            if (price > 0 && costPerItem > 0) {
+                const margin = ((price - costPerItem) / price) * 100;
                 marginInput.value = `${margin.toFixed(2)}%`;
             } else {
                 marginInput.value = '0%';
             }
-        };
+        }
 
-        // Attach real-time event listeners
-        [costInput, priceInput].forEach(input => {
-            input.addEventListener('input', calculateMargin);
-        });
-
-        // Initialize margin calculation on page load
         calculateMargin();
-
         // Run the calculation every second
         setInterval(calculateMargin, 1000);
     });

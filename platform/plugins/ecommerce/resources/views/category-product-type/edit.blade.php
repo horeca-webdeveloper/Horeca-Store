@@ -153,7 +153,7 @@
 								name="specifications[{{$i}}][is_checked]"
 								value="1"
 							/> --}}
-							<select id="specification_type" name="specifications[{{$i}}][specification_type][]" class="form-control select2 specTypes" multiple>
+							<select name="specifications[{{$i}}][specification_type][]" class="form-control select2 specTypes" multiple>
 								@foreach ($specificationTypes as $type)
 									<option value="{{ $type }}">
 										{{ $type }}
@@ -223,12 +223,12 @@
 	document.addEventListener('DOMContentLoaded', function () {
 		// Initialize Select2 for all elements with the `specTypeClass` class
 		$('.specTypes').select2({
-			placeholder: "Select Specification Types",
+			placeholder: "Select Types",
 			allowClear: true,
 			width: '100%'
 		});
 		$('.specNames').select2({
-			placeholder: "Select Specification Name",
+			placeholder: "Select Name",
 			allowClear: true,
 			width: '100%',
 			tags: true,
@@ -322,12 +322,12 @@
 
 			// Initialize Select2 for the newly added select element based on the index
 			$('#specification_type_' + index).select2({
-				placeholder: "Select",
+				placeholder: "Select Types",
 				allowClear: true,
 				width: '100%'
 			});
 			$('#specification_name_' + index).select2({
-				placeholder: "Select Specification Name",
+				placeholder: "Select Name",
 				allowClear: true,
 				width: '100%',
 				tags: true,
