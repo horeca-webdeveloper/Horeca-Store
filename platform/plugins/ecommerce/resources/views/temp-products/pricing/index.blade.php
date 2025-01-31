@@ -240,7 +240,7 @@
 						<div class="discount-item">
 							<div class="row g-3 mb-3">
 								<div class="col-md-6">
-									<input type="hidden" name="discount[${index}][discount_id]" value="${discount.discount_id}">
+									<input type="hidden" name="discount[${index}][discount_id]" value="${discount.discount_id || ''}">
 									<label for="product_quantity_${index}" class="form-label quantity-label">Buying Quantity</label>
 									<input type="number" class="form-control product-quantity"
 										   name="discount[${index}][product_quantity]"
