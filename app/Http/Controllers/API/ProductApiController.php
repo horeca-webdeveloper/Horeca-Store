@@ -732,11 +732,12 @@ class ProductApiController extends Controller
                     ->value('max_delivery_days');
 
                 // Get sort parameter
-                $sortBy = $request->input('sort_by', 'created_at');
                 $validSortOptions = ['created_at', 'price', 'name'];
-                if (!in_array($sortBy, $validSortOptions)) {
-                    $sortBy = 'created_at';
-                }
+                $sortBy = $request->input('sort_by', 'created_at');
+                
+                // if (!in_array($sortBy, $validSortOptions)) {
+                //     $sortBy = 'created_at';
+                // }
 
                 // Subquery for best price and delivery date
                 $subQuery = Product::select('sku')
@@ -746,7 +747,7 @@ class ProductApiController extends Controller
                     ->groupBy('sku');
 
                 // Paginate efficiently - only get the required number of products
-                $perPage = 50;
+                $perPage = 30;
                 $page = $request->input('page', 1);
 
                 $products = Product::leftJoinSub($subQuery, 'best_products', function ($join) {
