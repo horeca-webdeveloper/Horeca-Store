@@ -1551,49 +1551,30 @@ class ProductApiController extends Controller
                             ->selectRaw('MAX(CAST(delivery_days AS UNSIGNED)) as max_delivery_days')
                             ->value('max_delivery_days');
         
-                        // // Get sort parameter
+                        // Get sort parameter
                         // $sortBy = $request->input('sort_by', 'created_at');
                         // $validSortOptions = ['created_at', 'price', 'name'];
                         // if (!in_array($sortBy, $validSortOptions)) {
                         //     $sortBy = 'created_at';
                         // }
-        
-                        // // Subquery for best price and delivery date
-                        // $subQuery = Product::select('sku')
-                        //     ->selectRaw('MIN(price) as best_price')
-                        //     ->selectRaw('MIN(delivery_days) as best_delivery_date')
-                        //     ->whereIn('id', $filteredProductIds)
-                        //     ->groupBy('sku');
-        
-                        // // Paginate efficiently - only get the required number of products
-                        // $perPage = 50;
-                        // $page = $request->input('page', 1);
-        
-                        // $products = Product::leftJoinSub($subQuery, 'best_products', function ($join) {
-                        //     $join->on('ec_products.sku', '=', 'best_products.sku')
-                        //         ->whereColumn('ec_products.price', 'best_products.best_price');
-                        // })
-                        // ->whereIn('id', $filteredProductIds)
-                        // ->select('ec_products.*', 'best_products.best_price', 'best_products.best_delivery_date')
-                        // ->with([
-                        //     'reviews' => function($query) {
-                        //         $query->select('id', 'product_id', 'star');
-                        //     },
-                        //     'currency',
-                        //     'specifications'
-                        // ])
-                        // ->orderBy($sortBy, 'desc')
-                        // ->paginate($perPage);   
 
-                        // Update valid sort options
-                        $validSortOptions = ['created_at', 'price', 'name'];
-                        $sortBy = $request->input('sort_by', 'created_at');
-                        $sortOrder = $request->input('sort_order', 'desc');
-
-                        // Validate sort order
-                        $sortOrder = in_array(strtolower($sortOrder), ['asc', 'desc']) ? $sortOrder : 'desc';
-
-                        // Modify pagination query to handle sorting
+                         // Update valid sort options
+                         $validSortOptions = ['created_at', 'price', 'name'];
+                         $sortBy = $request->input('sort_by', 'created_at');
+                         $sortOrder = $request->input('sort_order', 'desc');
+                            // Validate sort order
+                            $sortOrder = in_array(strtolower($sortOrder), ['asc', 'desc']) ? $sortOrder : 'desc';
+                        // Subquery for best price and delivery date
+                        $subQuery = Product::select('sku')
+                            ->selectRaw('MIN(price) as best_price')
+                            ->selectRaw('MIN(delivery_days) as best_delivery_date')
+                            ->whereIn('id', $filteredProductIds)
+                            ->groupBy('sku');
+        
+                        // Paginate efficiently - only get the required number of products
+                        $perPage = 50;
+                        $page = $request->input('page', 1);
+        
                         $products = Product::leftJoinSub($subQuery, 'best_products', function ($join) {
                             $join->on('ec_products.sku', '=', 'best_products.sku')
                                 ->whereColumn('ec_products.price', 'best_products.best_price');
@@ -1612,7 +1593,10 @@ class ProductApiController extends Controller
                         }, function ($query) use ($sortBy, $sortOrder) {
                             return $query->orderBy($sortBy, $sortOrder);
                         })
-                        ->paginate($perPage);
+                        // ->orderBy($sortBy, 'desc')
+                        ->paginate($perPage);   
+
+                       
         
                         // Add query parameters to pagination
                         $products->appends($request->all());
