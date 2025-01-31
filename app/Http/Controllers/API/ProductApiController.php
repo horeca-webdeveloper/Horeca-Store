@@ -793,7 +793,7 @@ class ProductApiController extends Controller
                 ];
 
                 // Get categories and brands (consider caching these)
-                $categories = ProductCategory::select('id', 'name')->get();
+                // $categories = ProductCategory::select('id', 'name')->get();
                 $brands = Brand::select('id', 'name')->get();
                 
                     // Transform the products collection
@@ -977,7 +977,7 @@ class ProductApiController extends Controller
                         'data' => $products,
                         'pagination' => $pagination,
                         'brands' => $brands,
-                        'categories' => $categories,
+                        // 'categories' => $categories,
                         'price_min' => $priceMin,
                         'price_max' => $priceMax,
                         'length_min' => $lengthMin,
