@@ -936,9 +936,20 @@ public function byitagain(Request $request)
 
                 $product->images = $images;
             }
+            // Fetch vendor name from ec_vendors table
+            $vendor = DB::table('ec_vendors')
+            ->where('id', $product->vendor_id)
+            ->value('name');
+
+            // Append additional fields to the response
+            $product->original_price = $product->price;
+            $product->front_sale_price = $product->price;
+            $product->stock_quantity = $product->quantity;
+            $product->vendor_name = $vendor ?? 'Unknown Vendor';
 
             return $product;
-        });
+            });
+
 
     // Return the product details inside 'data'
     return response()->json(['data' => $products]);
