@@ -28,10 +28,11 @@
         "botble/theme": "*@dev",
         "botble/widget": "*@dev",
         "doctrine/dbal": "^3.8",
-        "guzzlehttp/guzzle": "^7.7",
+        "guzzlehttp/guzzle": "^7.9",
         "laravel/framework": "^10.24",
         "laravel/sanctum": "^3.3",
         "laravel/tinker": "^2.9",
+        "league/flysystem-aws-s3-v3": "^3.29",
         "predis/predis": "^2.2",
         "square/square": "^39.1",
         "wikimedia/composer-merge-plugin": "^2.1"

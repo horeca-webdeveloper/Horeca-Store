@@ -120,6 +120,10 @@ Route::get('/search', [SearchApiController::class, 'search']);
 
 
 Route::get('/location', [LocationController::class, 'getLocation']);
+Route::get('/get-coordinates', [LocationController::class, 'getCoordinates']);
+// Route::get('/get-location', [LocationController::class, 'getRealTimeLocation']);
+Route::post('get-location', [LocationController::class, 'getAddress']);
+
 Route::get('categories/{id}/products', [CategoryController::class, 'getProductsByCategory']);
 Route::get('categories/filters', [CategoryController::class, 'getSpecificationFilters']);
 Route::post('categories/specification-filters', [CategoryController::class, 'getSpecificationFilters']);
