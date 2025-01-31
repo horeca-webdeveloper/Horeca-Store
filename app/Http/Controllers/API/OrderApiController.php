@@ -895,7 +895,7 @@ public function reorderToCart(Request $request, $orderId)
         'message' => 'Order items have been added to the cart',
     ]);
 }
-public function byitagain(Request $request)
+public function byitagain(Request $request) 
 {
     // Retrieve the last 5 completed orders for the authenticated user
     $orderIds = Order::where('user_id', $request->user()->id)
@@ -915,10 +915,21 @@ public function byitagain(Request $request)
         ->pluck('product_id')
         ->unique(); // Get unique product IDs
 
+    // Build the query to fetch products
+    $productsQuery = DB::table('ec_products')
+        ->whereIn('id', $productIds);
+
+    // Filter products by rating if the rating parameter is provided
+    if ($request->has('rating')) {
+        $productsQuery->whereHas('reviews', function ($q) use ($request) {
+            $q->selectRaw('AVG(star) as avg_rating')
+                ->groupBy('product_id')
+                ->havingRaw('AVG(star) >= ?', [$request->input('rating')]);
+        });
+    }
+
     // Fetch complete product details from ec_products
-    $products = DB::table('ec_products')
-        ->whereIn('id', $productIds)
-        ->get()
+    $products = $productsQuery->get()
         ->map(function ($product) {
             // Decode and process images field if JSON-encoded
             if ($product->images) {
@@ -936,16 +947,30 @@ public function byitagain(Request $request)
 
                 $product->images = $images;
             }
-           
+
+
+            // Fetch currency details based on currency_id
+            $currency = DB::table('ec_currencies')->where('id', $product->currency_id)->first();
+            $product->currency_title = $currency
+                ? ($currency->is_prefix_symbol
+                    ? $currency->title . ' ' . $product->price
+                    : $product->price . ' ' . $currency->title)
+                : $product->price;
+
+            // Fetch average rating and total reviews
+            $totalReviews = DB::table('ec_reviews')->where('product_id', $product->id)->count();
+            $product->avg_rating = $totalReviews > 0
+                ? DB::table('ec_reviews')->where('product_id', $product->id)->avg('star')
+                : null;
 
             // Append additional fields to the response
             $product->original_price = $product->price;
             $product->front_sale_price = $product->price;
             $product->stock_quantity = $product->quantity;
-           
-            return $product;
-            });
+     
 
+            return $product;
+        });
 
     // Return the product details inside 'data'
     return response()->json(['data' => $products]);
