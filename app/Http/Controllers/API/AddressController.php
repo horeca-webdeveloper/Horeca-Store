@@ -77,7 +77,7 @@ class AddressController extends Controller
             Log::info('Address successfully created: ', ['address' => $address]);
 
             return response()->json([
-                'message' => 'Address created successfully.',
+                'message' => 'Address added successfully.',
                 'success' => true,
                 'data' => $address,
             ]);
