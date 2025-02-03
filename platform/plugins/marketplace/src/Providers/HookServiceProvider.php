@@ -701,6 +701,7 @@ class HookServiceProvider extends ServiceProvider
                                     ->where('is_variation', 0)
                                     ->where(function ($query) use ($keyword) {
                                         $query
+                                            ->orWhere('ec_products.id', 'LIKE', $keyword)
                                             ->orWhere('ec_products.sku', 'LIKE', $keyword)
                                             ->orWhere('ec_products.created_at', 'LIKE', $keyword)
                                             ->orWhereHas('store', function ($subQuery) use ($keyword) {
@@ -710,8 +711,8 @@ class HookServiceProvider extends ServiceProvider
                                                 $query->where('sku', 'LIKE', $keyword);
                                             });
                                     });
-                            });
-
+                            })
+                            ->where('ec_products.id', 'LIKE', $keyword);
                         return $query;
                     }
 
