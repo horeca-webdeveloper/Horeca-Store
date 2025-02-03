@@ -8,6 +8,7 @@ use Aws\S3\S3Client;
 use Botble\Ecommerce\Models\ProductTypes;
 use Botble\Ecommerce\Models\ProductCategory;
 use Botble\Ecommerce\Models\CategorySpecification;
+use Illuminate\Support\Facades\Storage;
 
 class CategoryProductTypeController extends BaseController
 {
@@ -98,34 +99,34 @@ class CategoryProductTypeController extends BaseController
 	}
 
 		public function test_aws() {
-			$s3Client = new S3Client([
-				'region'  => env('AWS_DEFAULT_REGION'),
-				'version' => 'latest',
-				'credentials' => [
-					'key'    => env('AWS_ACCESS_KEY_ID'),
-					'secret' => env('AWS_SECRET_ACCESS_KEY'),
-				],
-			]);
+			// $s3Client = new S3Client([
+			// 	'region'  => env('AWS_DEFAULT_REGION'),
+			// 	'version' => 'latest',
+			// 	'credentials' => [
+			// 		'key'    => env('AWS_ACCESS_KEY_ID'),
+			// 		'secret' => env('AWS_SECRET_ACCESS_KEY'),
+			// 	],
+			// ]);
 			
-			try {
-				$result = $s3Client->listBuckets();
-				dd($result); // Should return list of buckets if everything is correct
-			} catch (\Aws\Exception\AwsException $e) {
-				dd($e->getMessage()); // Catch any errors from AWS SDK
-			}
+			// try {
+			// 	$result = $s3Client->listBuckets();
+			// 	dd($result); // Should return list of buckets if everything is correct
+			// } catch (\Aws\Exception\AwsException $e) {
+			// 	dd($e->getMessage()); // Catch any errors from AWS SDK
+			// }
 			
 			
 			// // Store a file on S3
-			// $put = Storage::disk('s3')->put('filename.txt', 'File content');
+			$put = Storage::disk('s3')->put('filename.txt', 'File content');
 			// dd($put);
 			
 			// Retrieve a file from S3
-			// $file = Storage::disk('s3')->get('filename.txt');
+			 $file = Storage::disk('s3')->get('filename.txt');
 			
 			// Generate a URL for the file
-			// $url = Storage::disk('s3')->url('filename.txt');
+			 $url = Storage::disk('s3')->url('filename.txt');
 			
-			// dd($file);
+			 dd($file);
 
 		}
 
