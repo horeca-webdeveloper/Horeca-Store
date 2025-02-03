@@ -55,6 +55,7 @@ class CategoryProductTypeController extends BaseController
 		// $productTypes = ProductTypes::all(['id', 'name']);
 		$specificationTypes = ['At a Glance', 'Comparison', 'Filters'];
 		$specificationNames = CategorySpecification::pluck('specification_name')->uniqueStrict()->toArray();
+		$specificationNames = array_values($specificationNames); 
 		// Pass the data to the edit view
 		// return view('plugins/ecommerce::category-product-type.edit', compact('category', 'productTypes'));
 		return view('plugins/ecommerce::category-product-type.edit', compact('category', 'specificationTypes', 'specificationNames'));
