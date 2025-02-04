@@ -685,217 +685,123 @@ class ImportProductJob implements ShouldQueue
 		return $images;
 	}
 
-	// protected function uploadImageFromURL(?string $url): ?string
-	// {
-	// 	// Check if URL is valid
-	// 	if (!filter_var($url, FILTER_VALIDATE_URL)) {
-	// 		Log::error('Invalid URL provided: ' . $url);
-	// 		return null;
-	// 	}
-
-	// 	// Directory within public directory
-	// 	$productsDirectory = 'storage/products';
-
-	// 	// Ensure products directory exists only if it doesn't already
-	// 	$publicProductsPath = public_path($productsDirectory);
-	// 	if (!is_dir($publicProductsPath)) {
-	// 		// Create the directory only if it doesn't exist
-	// 		mkdir($publicProductsPath, 0755, true);
-	// 	}
-
-	// 	// Fetch the image content from the URL
-	// 	$imageContents = file_get_contents($url); // Use without error suppression to capture errors
-
-	// 	if ($imageContents === false) {
-	// 		Log::error('Failed to download image from URL: ' . $url);
-	// 		return null;
-	// 	}
-
-	// 	// Sanitize the file name
-	// 	$fileNameWithQuery = basename(parse_url($url, PHP_URL_PATH));
-	// 	$fileName = preg_replace('/\?.*/', '', $fileNameWithQuery); // Remove query parameters
-	// 	$fileBaseName = pathinfo($fileName, PATHINFO_FILENAME); // Get base name without extension
-
-	// 	// Save the original image
-	// 	$filePath = $publicProductsPath . '/' . $fileName;
-	// 	if (file_put_contents($filePath, $imageContents) === false) {
-	// 		Log::error('Failed to write image to file: ' . $filePath);
-	// 		return null;
-	// 	}
-
-	// 	// Get the MIME type of the image
-	// 	$imageInfo = getimagesize($filePath);
-	// 	if (!$imageInfo) {
-	// 		Log::error('Failed to get image size for path: ' . $filePath);
-	// 		return null;
-	// 	}
-	// 	$mimeType = $imageInfo['mime'];
-	// 	Log::info('MIME type of the image: ' . $mimeType); // Log the MIME type
-
-	// 	// Define the image creation function based on MIME type
-	// 	$imageCreateFunction = null;
-	// 	$imageSaveFunction = null;
-
-	// 	switch ($mimeType) {
-	// 		case 'image/jpeg':
-	// 		$imageCreateFunction = 'imagecreatefromjpeg';
-	// 		$imageSaveFunction = 'imagejpeg';
-	// 		break;
-	// 		case 'image/jpg':
-	// 		$imageCreateFunction = 'imagecreatefromjpg';
-	// 		$imageSaveFunction = 'imagejpg';
-	// 		break;
-	// 		case 'image/webp':
-	// 		$imageCreateFunction = 'imagecreatefromwebp';
-	// 		$imageSaveFunction = 'imagewebp';
-	// 		break;
-	// 		case 'image/png':
-	// 		$imageCreateFunction = 'imagecreatefrompng';
-	// 		$imageSaveFunction = 'imagepng';
-	// 		break;
-	// 		case 'image/gif':
-	// 		$imageCreateFunction = 'imagecreatefromgif';
-	// 		$imageSaveFunction = 'imagegif';
-	// 		break;
-	// 		default:
-	// 		Log::error('Unsupported image type: ' . $mimeType);
-	// 		return null;
-	// 	}
-
-	// 	foreach (['thumb' => [150, 150], 'medium' => [300, 300], 'large' => [790, 510]] as $key => $dimensions) {
-	// 		[$width, $height] = $dimensions;
-
-	// 		// Load the original image
-	// 		$src = $imageCreateFunction($filePath);
-	// 		if (!$src) {
-	// 			Log::error('Failed to load image from path: ' . $filePath);
-	// 			continue;
-	// 		}
-
-	// 		// Create a new true color image with the new dimensions
-	// 		$dst = imagecreatetruecolor($width, $height);
-	// 		if (!$dst) {
-	// 			Log::error('Failed to create true color image for size: ' . $key);
-	// 			continue;
-	// 		}
-
-	// 		// Resample the original image into the new image
-	// 		if (!imagecopyresampled($dst, $src, 0, 0, 0, 0, $width, $height, imagesx($src), imagesy($src))) {
-	// 			Log::error('Failed to resample image for size: ' . $key);
-	// 		}
-
-	// 		// Save the resized image
-	// 		$resizedImagePath = $publicProductsPath . '/' . $fileBaseName . '-' . $width . 'x' . $height . '.webp';
-	// 		if (!$imageSaveFunction($dst, $resizedImagePath)) {
-	// 			Log::error('Failed to save resized image at path: ' . $resizedImagePath);
-	// 		} else {
-	// 			Log::info('Saved resized image at path: ' . $resizedImagePath);
-	// 		}
-
-	// 		// Free up memory
-	// 		imagedestroy($src);
-	// 		imagedestroy($dst);
-	// 	}
-
-	// 	// Generate the URL for the saved image
-	// 	return url('storage/products/' . $fileName);
-	// }
-
 	protected function uploadImageFromURL(?string $url): ?string
-{
-    // Validate URL
-    if (!filter_var($url, FILTER_VALIDATE_URL)) {
-        Log::error('Invalid URL: ' . $url);
-        return null;
-    }
+	{
+		// Check if URL is valid
+		if (!filter_var($url, FILTER_VALIDATE_URL)) {
+			Log::error('Invalid URL provided: ' . $url);
+			return null;
+		}
 
-    // Fetch image content
-    try {
-        $imageContents = file_get_contents($url);
-        if ($imageContents === false || empty($imageContents)) {
-            throw new \Exception('Empty or inaccessible image.');
-        }
-    } catch (\Exception $e) {
-        Log::error('Failed to download image: ' . $e->getMessage());
-        return null;
-    }
+		// Directory within public directory
+		$productsDirectory = 'storage/products';
 
-    // Extract file details
-    $fileNameWithQuery = basename(parse_url($url, PHP_URL_PATH));
-    $fileName = preg_replace('/\?.*/', '', $fileNameWithQuery);
-    $fileExt = pathinfo($fileName, PATHINFO_EXTENSION) ?: 'jpg'; // Default to JPG if no extension found
-    $fileBaseName = pathinfo($fileName, PATHINFO_FILENAME);
+		// Ensure products directory exists only if it doesn't already
+		$publicProductsPath = public_path($productsDirectory);
+		if (!is_dir($publicProductsPath)) {
+			// Create the directory only if it doesn't exist
+			mkdir($publicProductsPath, 0755, true);
+		}
 
-    // Validate file name
-    if (empty($fileName) || empty($fileExt)) {
-        Log::error('Invalid file name extracted from URL: ' . $url);
-        return null;
-    }
+		// Fetch the image content from the URL
+		$imageContents = file_get_contents($url); // Use without error suppression to capture errors
 
-    // Define S3 path
-    $s3Directory = 'products/';
-    $s3FilePath = $s3Directory . $fileBaseName . '.' . $fileExt;
+		if ($imageContents === false) {
+			Log::error('Failed to download image from URL: ' . $url);
+			return null;
+		}
 
-    // Upload original image to S3
-    try {
-        Storage::disk('s3')->put($s3FilePath, $imageContents, 'public');
-    } catch (\Exception $e) {
-        Log::error('S3 Upload Error: ' . $e->getMessage());
-        return null;
-    }
+		// Sanitize the file name
+		$fileNameWithQuery = basename(parse_url($url, PHP_URL_PATH));
+		$fileName = preg_replace('/\?.*/', '', $fileNameWithQuery); // Remove query parameters
+		$fileBaseName = pathinfo($fileName, PATHINFO_FILENAME); // Get base name without extension
 
-    // Process and upload resized versions (Thumb, Medium, Large)
-    try {
-        $imageInfo = getimagesizefromstring($imageContents);
-        if (!$imageInfo) {
-            throw new \Exception('Failed to get image details.');
-        }
+		// Save the original image
+		$filePath = $publicProductsPath . '/' . $fileName;
+		if (file_put_contents($filePath, $imageContents) === false) {
+			Log::error('Failed to write image to file: ' . $filePath);
+			return null;
+		}
 
-        $mimeType = $imageInfo['mime'];
+		// Get the MIME type of the image
+		$imageInfo = getimagesize($filePath);
+		if (!$imageInfo) {
+			Log::error('Failed to get image size for path: ' . $filePath);
+			return null;
+		}
+		$mimeType = $imageInfo['mime'];
+		Log::info('MIME type of the image: ' . $mimeType); // Log the MIME type
 
-        // Determine the correct image create function
-        $imageCreateFunction = match ($mimeType) {
-            'image/jpeg' => 'imagecreatefromjpeg',
-            'image/png' => 'imagecreatefrompng',
-            'image/gif' => 'imagecreatefromgif',
-            'image/webp' => 'imagecreatefromwebp',
-            default => null,
-        };
+		// Define the image creation function based on MIME type
+		$imageCreateFunction = null;
+		$imageSaveFunction = null;
 
-        if (!$imageCreateFunction || !function_exists($imageCreateFunction)) {
-            throw new \Exception('Unsupported image type: ' . $mimeType);
-        }
+		switch ($mimeType) {
+			case 'image/jpeg':
+			$imageCreateFunction = 'imagecreatefromjpeg';
+			$imageSaveFunction = 'imagejpeg';
+			break;
+			case 'image/jpg':
+			$imageCreateFunction = 'imagecreatefromjpg';
+			$imageSaveFunction = 'imagejpg';
+			break;
+			case 'image/webp':
+			$imageCreateFunction = 'imagecreatefromwebp';
+			$imageSaveFunction = 'imagewebp';
+			break;
+			case 'image/png':
+			$imageCreateFunction = 'imagecreatefrompng';
+			$imageSaveFunction = 'imagepng';
+			break;
+			case 'image/gif':
+			$imageCreateFunction = 'imagecreatefromgif';
+			$imageSaveFunction = 'imagegif';
+			break;
+			default:
+			Log::error('Unsupported image type: ' . $mimeType);
+			return null;
+		}
 
-        $src = $imageCreateFunction(imagecreatefromstring($imageContents));
+		foreach (['thumb' => [150, 150], 'medium' => [300, 300], 'large' => [790, 510]] as $key => $dimensions) {
+			[$width, $height] = $dimensions;
 
-        foreach (['thumb' => [150, 150], 'medium' => [300, 300], 'large' => [790, 510]] as $key => $dimensions) {
-            [$width, $height] = $dimensions;
+			// Load the original image
+			$src = $imageCreateFunction($filePath);
+			if (!$src) {
+				Log::error('Failed to load image from path: ' . $filePath);
+				continue;
+			}
 
-            // Create a new blank image
-            $dst = imagecreatetruecolor($width, $height);
-            imagecopyresampled($dst, $src, 0, 0, 0, 0, $width, $height, imagesx($src), imagesy($src));
+			// Create a new true color image with the new dimensions
+			$dst = imagecreatetruecolor($width, $height);
+			if (!$dst) {
+				Log::error('Failed to create true color image for size: ' . $key);
+				continue;
+			}
 
-            // Save resized image to a temporary file
-            $tempResizedPath = tempnam(sys_get_temp_dir(), 'resized') . '.' . $fileExt;
-            imagejpeg($dst, $tempResizedPath, 90); // Change to `imagepng` or others based on type
+			// Resample the original image into the new image
+			if (!imagecopyresampled($dst, $src, 0, 0, 0, 0, $width, $height, imagesx($src), imagesy($src))) {
+				Log::error('Failed to resample image for size: ' . $key);
+			}
 
-            // Upload resized image to S3
-            $resizedS3Path = $s3Directory . $fileBaseName . '-' . $width . 'x' . $height . '.' . $fileExt;
-            Storage::disk('s3')->put($resizedS3Path, file_get_contents($tempResizedPath), 'public');
+			// Save the resized image
+			$resizedImagePath = $publicProductsPath . '/' . $fileBaseName . '-' . $width . 'x' . $height . '.webp';
+			if (!$imageSaveFunction($dst, $resizedImagePath)) {
+				Log::error('Failed to save resized image at path: ' . $resizedImagePath);
+			} else {
+				Log::info('Saved resized image at path: ' . $resizedImagePath);
+			}
 
-            // Cleanup
-            imagedestroy($dst);
-            unlink($tempResizedPath);
-        }
+			// Free up memory
+			imagedestroy($src);
+			imagedestroy($dst);
+		}
 
-        imagedestroy($src);
-    } catch (\Exception $e) {
-        Log::error('Resizing Error: ' . $e->getMessage());
-    }
+		// Generate the URL for the saved image
+		return url('storage/products/' . $fileName);
+	}
 
-    // Return original S3 image URL
-    return Storage::disk('s3')->url($s3FilePath);
-}
+
 
  
 	/**
