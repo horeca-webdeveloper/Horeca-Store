@@ -522,6 +522,7 @@ class CategoryController extends Controller
 		})->pluck('specification_name')->all();
 
 		$specifications = Specification::whereIn('product_id', $categoryProductIds)->whereIn('spec_name', $categorySpecificationNames)->get();
+        $filters = [];
 		if ($specifications->count()) {
 			$filters = collect($specifications)->groupBy('spec_name')->map(function ($group, $specName) {
 				$values = $group->pluck('spec_value')->unique()->toArray();
