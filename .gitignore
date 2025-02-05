@@ -62,6 +62,7 @@ resources/docs
 /storage/installed
 /storage/temp
 public/storage/products/*
+public/storage/*
 
 /lang/*
 !/lang/en
@@ -75,4 +76,3 @@ storage/framework/laravel-excel/
 
 storage/framework/maintenance.php
 storage/cache_keys.json
-public/storage/*

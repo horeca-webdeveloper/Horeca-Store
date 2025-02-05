@@ -15,6 +15,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Exception, Throwable;
+use Illuminate\Support\Facades\Storage;
 
 use Botble\Ecommerce\Models\Brand;
 use Botble\ACL\Models\User;
@@ -29,8 +30,6 @@ use Botble\Ecommerce\Models\Discount;
 use Botble\Ecommerce\Models\DiscountProduct;
 use App\Models\TransactionLog;
 use Botble\Ecommerce\Models\UnitOfMeasurement;
-
-use Botble\Ecommerce\Services\StoreProductTagService;
 
 class ImportProductJob implements ShouldQueue
 {
@@ -672,138 +671,528 @@ class ImportProductJob implements ShouldQueue
 
 	protected function getImageURLs(array $images): array
 	{
-		$images = array_values(array_filter($images));
+		// Ensure images are properly formatted and split if needed
+		$images = array_values(array_filter(
+			array_map('trim', preg_split('/\s*,\s*/', implode(',', $images)))
+		));
+
+		Log::info('Image URLs before processing: ' . json_encode($images));
 
 		foreach ($images as $key => $image) {
-			$images[$key] = str_replace(RvMedia::getUploadURL() . '/', '', trim($image));
+			$cleanImage = str_replace(RvMedia::getUploadURL() . '/', '', $image);
 
-			if (Str::startsWith($images[$key], ['http://', 'https://'])) {
-				$images[$key] = $this->uploadImageFromURL($images[$key]);
+			Log::info("Processing Image $key: " . $cleanImage);
+
+			// Check if the image is an external URL and needs to be uploaded
+			if (Str::startsWith($cleanImage, ['http://', 'https://'])) {
+				$cleanImage = $this->uploadImageFromURL($cleanImage);
 			}
+
+			$images[$key] = $cleanImage;
 		}
 
+		Log::info('Final Processed Images: ' . json_encode($images));
 		return $images;
 	}
 
+	// protected function uploadImageFromURL(?string $url): ?string
+	// {
+	// 	$s3Disk = Storage::disk('s3');
+	// 	// Check if URL is valid
+	// 	if (!filter_var($url, FILTER_VALIDATE_URL)) {
+	// 		Log::error('Invalid URL provided: ' . $url);
+	// 		return null;
+	// 	}
+
+	// 	// Fetch the image content from the URL
+	// 	$imageContents = file_get_contents($url);
+	// 	if ($imageContents === false || empty($imageContents)) {
+	// 		Log::error('Failed to download image from URL or content is empty: ' . $url);
+	// 		return null;
+	// 	}
+
+	// 	// Sanitize the file name
+	// 	$fileNameWithQuery = basename(parse_url($url, PHP_URL_PATH));
+	// 	$fileName = preg_replace('/\?.*/', '', $fileNameWithQuery);
+	// 	$fileBaseName = pathinfo($fileName, PATHINFO_FILENAME);
+
+	// 	// Ensure file name is valid
+	// 	if (empty($fileName)) {
+	// 		Log::error('Invalid file name extracted from URL: ' . $url);
+	// 		return null;
+	// 	}
+
+	// 	// Define the S3 path
+	// 	$s3FilePath = 'products/'.$fileBaseName.'.webp';
+
+	// 	// Upload the original file to S3
+	// 	try {
+	// 		$s3Disk->put($s3FilePath, $imageContents);
+	// 		return $s3Disk->url($s3FilePath);
+	// 	} catch (\Exception $e) {
+	// 		Log::error('S3 Upload Error: ' . $e->getMessage());
+	// 		return null;
+	// 	}
+	// }
+
 	protected function uploadImageFromURL(?string $url): ?string
 	{
-		// Check if URL is valid
+		$s3Disk = Storage::disk('s3');
+
+		// Validate URL
 		if (!filter_var($url, FILTER_VALIDATE_URL)) {
 			Log::error('Invalid URL provided: ' . $url);
 			return null;
 		}
 
-		// Directory within public directory
-		$productsDirectory = 'storage/products';
-
-		// Ensure products directory exists only if it doesn't already
-		$publicProductsPath = public_path($productsDirectory);
-		if (!is_dir($publicProductsPath)) {
-			// Create the directory only if it doesn't exist
-			mkdir($publicProductsPath, 0755, true);
-		}
-
-		// Fetch the image content from the URL
-		$imageContents = file_get_contents($url); // Use without error suppression to capture errors
-
-		if ($imageContents === false) {
-			Log::error('Failed to download image from URL: ' . $url);
+		// Fetch image content
+		$imageContents = file_get_contents($url);
+		if ($imageContents === false || empty($imageContents)) {
+			Log::error('Failed to download image from URL or content is empty: ' . $url);
 			return null;
 		}
 
-		// Sanitize the file name
+		// Sanitize file name
 		$fileNameWithQuery = basename(parse_url($url, PHP_URL_PATH));
-		$fileName = preg_replace('/\?.*/', '', $fileNameWithQuery); // Remove query parameters
-		$fileBaseName = pathinfo($fileName, PATHINFO_FILENAME); // Get base name without extension
+		$fileName = preg_replace('/\?.*/', '', $fileNameWithQuery);
+		$fileBaseName = pathinfo($fileName, PATHINFO_FILENAME);
+		$fileExtension = 'webp'; // Convert all to WebP
 
-		// Save the original image
-		$filePath = $publicProductsPath . '/' . $fileName;
-		if (file_put_contents($filePath, $imageContents) === false) {
-			Log::error('Failed to write image to file: ' . $filePath);
+		if (empty($fileBaseName)) {
+			Log::error('Invalid file name extracted from URL: ' . $url);
 			return null;
 		}
 
-		// Get the MIME type of the image
-		$imageInfo = getimagesize($filePath);
-		if (!$imageInfo) {
-			Log::error('Failed to get image size for path: ' . $filePath);
+		// Define sizes
+		$sizes = [
+			'thumb' => [150, 150],
+			'medium' => [300, 300],
+			'large' => [790, 510]
+		];
+
+		$imageUrl = '';
+
+		try {
+			// Create image resource from content
+			$image = imagecreatefromstring($imageContents);
+			if (!$image) {
+				Log::error('Failed to create image from URL: ' . $url);
+				return null;
+			}
+
+			// Save original image
+			$originalPath = env('STORAGE_ENV')."/products/{$fileBaseName}.{$fileExtension}";
+			ob_start();
+			imagewebp($image);
+			$originalData = ob_get_clean();
+			$s3Disk->put($originalPath, $originalData);
+			$imageUrl = $s3Disk->url($originalPath);
+
+			// Resize and save images
+			foreach ($sizes as $sizeName => [$width, $height]) {
+				$resizedImage = $this->resizeImageGD($image, $width, $height);
+				if (!$resizedImage) {
+					continue;
+				}
+
+				$resizedPath = env('STORAGE_ENV')."/products/{$fileBaseName}-{$width}x{$height}.{$fileExtension}";
+				ob_start();
+				imagewebp($resizedImage);
+				$resizedData = ob_get_clean();
+				$s3Disk->put($resizedPath, $resizedData);
+				// $imageUrls[$sizeName] = $s3Disk->url($resizedPath);
+			}
+
+			imagedestroy($image);
+			Log::info('Uploaded Images: ' . $imageUrl);
+			return $imageUrl;
+		} catch (\Exception $e) {
+			Log::error('S3 Upload Error: ' . $e->getMessage());
 			return null;
 		}
-		$mimeType = $imageInfo['mime'];
-		Log::info('MIME type of the image: ' . $mimeType); // Log the MIME type
-
-		// Define the image creation function based on MIME type
-		$imageCreateFunction = null;
-		$imageSaveFunction = null;
-
-		switch ($mimeType) {
-			case 'image/jpeg':
-			$imageCreateFunction = 'imagecreatefromjpeg';
-			$imageSaveFunction = 'imagejpeg';
-			break;
-			case 'image/jpg':
-			$imageCreateFunction = 'imagecreatefromjpg';
-			$imageSaveFunction = 'imagejpg';
-			break;
-			case 'image/webp':
-			$imageCreateFunction = 'imagecreatefromwebp';
-			$imageSaveFunction = 'imagewebp';
-			break;
-			case 'image/png':
-			$imageCreateFunction = 'imagecreatefrompng';
-			$imageSaveFunction = 'imagepng';
-			break;
-			case 'image/gif':
-			$imageCreateFunction = 'imagecreatefromgif';
-			$imageSaveFunction = 'imagegif';
-			break;
-			default:
-			Log::error('Unsupported image type: ' . $mimeType);
-			return null;
-		}
-
-		foreach (['thumb' => [150, 150], 'medium' => [300, 300], 'large' => [790, 510]] as $key => $dimensions) {
-			[$width, $height] = $dimensions;
-
-			// Load the original image
-			$src = $imageCreateFunction($filePath);
-			if (!$src) {
-				Log::error('Failed to load image from path: ' . $filePath);
-				continue;
-			}
-
-			// Create a new true color image with the new dimensions
-			$dst = imagecreatetruecolor($width, $height);
-			if (!$dst) {
-				Log::error('Failed to create true color image for size: ' . $key);
-				continue;
-			}
-
-			// Resample the original image into the new image
-			if (!imagecopyresampled($dst, $src, 0, 0, 0, 0, $width, $height, imagesx($src), imagesy($src))) {
-				Log::error('Failed to resample image for size: ' . $key);
-			}
-
-			// Save the resized image
-			$resizedImagePath = $publicProductsPath . '/' . $fileBaseName . '-' . $width . 'x' . $height . '.webp';
-			if (!$imageSaveFunction($dst, $resizedImagePath)) {
-				Log::error('Failed to save resized image at path: ' . $resizedImagePath);
-			} else {
-				Log::info('Saved resized image at path: ' . $resizedImagePath);
-			}
-
-			// Free up memory
-			imagedestroy($src);
-			imagedestroy($dst);
-		}
-
-		// Generate the URL for the saved image
-		return url('storage/products/' . $fileName);
 	}
 
 
 
  
+	/**
+	 * Resize image using GD Library
+	 */
+	// protected function resizeImageGD($image, $newWidth, $newHeight)
+	// {
+	// 	$width = imagesx($image);
+	// 	$height = imagesy($image);
+
+	// 	// Calculate aspect ratio
+	// 	$aspectRatio = $width / $height;
+	// 	if ($newWidth / $newHeight > $aspectRatio) {
+	// 		$newWidth = $newHeight * $aspectRatio;
+	// 	} else {
+	// 		$newHeight = $newWidth / $aspectRatio;
+	// 	}
+
+	// 	// Create new image canvas
+	// 	$resizedImage = imagecreatetruecolor($newWidth, $newHeight);
+	// 	imagealphablending($resizedImage, false);
+	// 	imagesavealpha($resizedImage, true);
+	// 	$transparent = imagecolorallocatealpha($resizedImage, 255, 255, 255, 127);
+	// 	imagefill($resizedImage, 0, 0, $transparent);
+
+	// 	// Resize the image
+	// 	imagecopyresampled($resizedImage, $image, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+	// 	return $resizedImage;
+	// }
+
+	protected function resizeImageGD($image, $newWidth, $newHeight)
+	{
+		$width = imagesx($image);
+		$height = imagesy($image);
+
+		// Create new image canvas with exact width & height
+		$resizedImage = imagecreatetruecolor($newWidth, $newHeight);
+		imagealphablending($resizedImage, false);
+		imagesavealpha($resizedImage, true);
+		$transparent = imagecolorallocatealpha($resizedImage, 255, 255, 255, 127);
+		imagefill($resizedImage, 0, 0, $transparent);
+
+		// Force resize without aspect ratio (stretching)
+		imagecopyresampled($resizedImage, $image, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+
+		return $resizedImage;
+	}
+
+	// protected function uploadImageFromURL(?string $url): ?string
+	// {
+	// 	// Check if URL is valid
+	// 	if (!filter_var($url, FILTER_VALIDATE_URL)) {
+	// 		Log::error('Invalid URL provided: ' . $url);
+	// 		return null;
+	// 	}
+
+	// 	// Directory within public directory
+	// 	$productsDirectory = 'storage/products';
+
+	// 	// Ensure products directory exists only if it doesn't already
+	// 	$publicProductsPath = public_path($productsDirectory);
+	// 	if (!is_dir($publicProductsPath)) {
+	// 		// Create the directory only if it doesn't exist
+	// 		mkdir($publicProductsPath, 0755, true);
+	// 	}
+
+	// 	// Fetch the image content from the URL
+	// 	$imageContents = file_get_contents($url); // Use without error suppression to capture errors
+
+	// 	if ($imageContents === false) {
+	// 		Log::error('Failed to download image from URL: ' . $url);
+	// 		return null;
+	// 	}
+
+	// 	// Sanitize the file name
+	// 	$fileNameWithQuery = basename(parse_url($url, PHP_URL_PATH));
+	// 	$fileName = preg_replace('/\?.*/', '', $fileNameWithQuery); // Remove query parameters
+	// 	$fileBaseName = pathinfo($fileName, PATHINFO_FILENAME); // Get base name without extension
+
+	// 	// Save the original image
+	// 	$filePath = $publicProductsPath . '/' . $fileName;
+	// 	if (file_put_contents($filePath, $imageContents) === false) {
+	// 		Log::error('Failed to write image to file: ' . $filePath);
+	// 		return null;
+	// 	}
+
+	// 	// Get the MIME type of the image
+	// 	$imageInfo = getimagesize($filePath);
+	// 	if (!$imageInfo) {
+	// 		Log::error('Failed to get image size for path: ' . $filePath);
+	// 		return null;
+	// 	}
+	// 	$mimeType = $imageInfo['mime'];
+	// 	Log::info('MIME type of the image: ' . $mimeType); // Log the MIME type
+
+	// 	// Define the image creation function based on MIME type
+	// 	$imageCreateFunction = null;
+	// 	$imageSaveFunction = null;
+
+	// 	switch ($mimeType) {
+	// 		case 'image/jpeg':
+	// 		$imageCreateFunction = 'imagecreatefromjpeg';
+	// 		$imageSaveFunction = 'imagejpeg';
+	// 		break;
+	// 		case 'image/jpg':
+	// 		$imageCreateFunction = 'imagecreatefromjpg';
+	// 		$imageSaveFunction = 'imagejpg';
+	// 		break;
+	// 		case 'image/webp':
+	// 		$imageCreateFunction = 'imagecreatefromwebp';
+	// 		$imageSaveFunction = 'imagewebp';
+	// 		break;
+	// 		case 'image/png':
+	// 		$imageCreateFunction = 'imagecreatefrompng';
+	// 		$imageSaveFunction = 'imagepng';
+	// 		break;
+	// 		case 'image/gif':
+	// 		$imageCreateFunction = 'imagecreatefromgif';
+	// 		$imageSaveFunction = 'imagegif';
+	// 		break;
+	// 		default:
+	// 		Log::error('Unsupported image type: ' . $mimeType);
+	// 		return null;
+	// 	}
+
+	// 	foreach (['thumb' => [150, 150], 'medium' => [300, 300], 'large' => [790, 510]] as $key => $dimensions) {
+	// 		[$width, $height] = $dimensions;
+
+	// 		// Load the original image
+	// 		$src = $imageCreateFunction($filePath);
+	// 		if (!$src) {
+	// 			Log::error('Failed to load image from path: ' . $filePath);
+	// 			continue;
+	// 		}
+
+	// 		// Create a new true color image with the new dimensions
+	// 		$dst = imagecreatetruecolor($width, $height);
+	// 		if (!$dst) {
+	// 			Log::error('Failed to create true color image for size: ' . $key);
+	// 			continue;
+	// 		}
+
+	// 		// Resample the original image into the new image
+	// 		if (!imagecopyresampled($dst, $src, 0, 0, 0, 0, $width, $height, imagesx($src), imagesy($src))) {
+	// 			Log::error('Failed to resample image for size: ' . $key);
+	// 		}
+
+	// 		// Save the resized image
+	// 		$resizedImagePath = $publicProductsPath . '/' . $fileBaseName . '-' . $width . 'x' . $height . '.webp';
+	// 		if (!$imageSaveFunction($dst, $resizedImagePath)) {
+	// 			Log::error('Failed to save resized image at path: ' . $resizedImagePath);
+	// 		} else {
+	// 			Log::info('Saved resized image at path: ' . $resizedImagePath);
+	// 		}
+
+	// 		// Free up memory
+	// 		imagedestroy($src);
+	// 		imagedestroy($dst);
+	// 	}
+
+	// 	// Generate the URL for the saved image
+	// 	return url('storage/products/' . $fileName);
+	// }
+
+	// protected function uploadImageFromURL(?string $url): ?string
+	// {
+	// 	// Check if URL is valid
+	// 	if (!filter_var($url, FILTER_VALIDATE_URL)) {
+	// 		Log::error('Invalid URL provided: ' . $url);
+	// 		return null;
+	// 	}
+
+	// 	// Fetch the image content from the URL
+	// 	$imageContents = file_get_contents($url);
+	// 	if ($imageContents === false || empty($imageContents)) {
+	// 		Log::error('Failed to download image from URL or content is empty: ' . $url);
+	// 		return null;
+	// 	}
+
+	// 	// Sanitize the file name
+	// 	$fileNameWithQuery = basename(parse_url($url, PHP_URL_PATH));
+	// 	$fileName = preg_replace('/\?.*/', '', $fileNameWithQuery);
+	// 	$fileBaseName = pathinfo($fileName, PATHINFO_FILENAME);
+
+	// 	// Ensure file name is valid
+	// 	if (empty($fileName)) {
+	// 		Log::error('Invalid file name extracted from URL: ' . $url);
+	// 		return null;
+	// 	}
+
+	// 	// Define the S3 path
+	// 	$s3Directory = 'products/';
+	// 	$s3FilePath = $s3Directory . $fileName;
+
+	// 	// Detect MIME type
+	// 	$tempPath = tempnam(sys_get_temp_dir(), 'img');
+	// 	file_put_contents($tempPath, $imageContents);
+	// 	$mimeType = mime_content_type($tempPath);
+	// 	if (!$mimeType) {
+	// 		Log::error('Failed to detect MIME type for: ' . $fileName);
+	// 		unlink($tempPath);
+	// 		return null;
+	// 	}
+
+	// 	// Upload the original file to S3
+	// 	try {
+	// 		Storage::disk('s3')->putFile($s3FilePath, $tempPath, 'public');
+	// 	} catch (\Exception $e) {
+	// 		Log::error('S3 Upload Error: ' . $e->getMessage());
+	// 		unlink($tempPath);
+	// 		return null;
+	// 	}
+
+	// 	unlink($tempPath);
+
+	// 	// Process and upload resized images
+	// 	$imageInfo = getimagesizefromstring($imageContents);
+	// 	if (!$imageInfo) {
+	// 		Log::error('Failed to get image size for URL: ' . $url);
+	// 		return null;
+	// 	}
+
+	// 	$mimeType = $imageInfo['mime'];
+	// 	$imageCreateFunction = match ($mimeType) {
+	// 		'image/jpeg' => 'imagecreatefromjpeg',
+	// 		'image/webp' => 'imagecreatefromwebp',
+	// 		'image/png' => 'imagecreatefrompng',
+	// 		'image/gif' => 'imagecreatefromgif',
+	// 		default => null,
+	// 	};
+
+	// 	$imageSaveFunction = 'imagewebp';
+
+	// 	if (!$imageCreateFunction) {
+	// 		Log::error('Unsupported image type: ' . $mimeType);
+	// 		return null;
+	// 	}
+
+	// 	foreach (['thumb' => [150, 150], 'medium' => [300, 300], 'large' => [790, 510]] as $key => $dimensions) {
+	// 		[$width, $height] = $dimensions;
+
+	// 		$src = imagecreatefromstring($imageContents);
+	// 		if (!$src) {
+	// 			Log::error('Failed to create image resource.');
+	// 			continue;
+	// 		}
+
+	// 		$dst = imagecreatetruecolor($width, $height);
+	// 		if (!$dst) {
+	// 			Log::error('Failed to create true color image for size: ' . $key);
+	// 			imagedestroy($src);
+	// 			continue;
+	// 		}
+
+	// 		imagecopyresampled($dst, $src, 0, 0, 0, 0, $width, $height, imagesx($src), imagesy($src));
+
+	// 		$tempResizedPath = tempnam(sys_get_temp_dir(), 'resized') . '.webp';
+	// 		$imageSaveFunction($dst, $tempResizedPath);
+
+	// 		$resizedS3Path = $s3Directory . $fileBaseName . '-' . $width . 'x' . $height . '.webp';
+	// 		Storage::disk('s3')->put($resizedS3Path, file_get_contents($tempResizedPath), 'public');
+
+	// 		imagedestroy($src);
+	// 		imagedestroy($dst);
+	// 		unlink($tempResizedPath);
+	// 	}
+
+	// 	return Storage::disk('s3')->url($s3FilePath);
+	// }
+
+	// protected function uploadImageFromURL(?string $url): ?string
+	// {
+	// 	// Check if URL is valid
+	// 	if (!filter_var($url, FILTER_VALIDATE_URL)) {
+	// 		Log::error('Invalid URL provided: ' . $url);
+	// 		return null;
+	// 	}
+
+	// 	// Fetch the image content from the URL
+	// 	$imageContents = file_get_contents($url);
+	// 	if ($imageContents === false) {
+	// 		Log::error('Failed to download image from URL: ' . $url);
+	// 		return null;
+	// 	}
+
+	// 	// Sanitize the file name
+	// 	$fileNameWithQuery = basename(parse_url($url, PHP_URL_PATH));
+	// 	$fileName = preg_replace('/\?.*/', '', $fileNameWithQuery);
+	// 	$fileBaseName = pathinfo($fileName, PATHINFO_FILENAME);
+
+	// 	// Define the S3 path
+	// 	$s3Directory = 'products/';
+	// 	$s3FilePath = $s3Directory . $fileName;
+
+	// 	// for test case
+	// 	if (!Storage::disk('s3')->put('products/test.txt', 'This is test content')) {
+	// 		Log::error('aws not working');
+	// 		return null;
+	// 	}else {
+	// 		$url = Storage::disk('s3')->url('products/test.txt');
+	// 		Log::info('This is my url:'.$url);
+	// 	}
+
+	// 	// Upload the original file to S3
+	// 	if (!Storage::disk('s3')->put($s3FilePath, $imageContents, 'public')) {
+	// 		Log::error('Failed to upload image to S3: ' . $s3FilePath);
+	// 		return null;
+	// 	}
+
+	// 	// Get the MIME type of the image
+	// 	$tempFilePath = tempnam(sys_get_temp_dir(), 'img');
+	// 	file_put_contents($tempFilePath, $imageContents);
+	// 	$imageInfo = getimagesize($tempFilePath);
+	// 	unlink($tempFilePath);
+
+	// 	if (!$imageInfo) {
+	// 		Log::error('Failed to get image size for URL: ' . $url);
+	// 		return null;
+	// 	}
+
+	// 	$mimeType = $imageInfo['mime'];
+	// 	$imageCreateFunction = null;
+	// 	$imageSaveFunction = null;
+
+	// 	switch ($mimeType) {
+	// 		case 'image/jpeg':
+	// 			$imageCreateFunction = 'imagecreatefromjpeg';
+	// 			$imageSaveFunction = 'imagejpeg';
+	// 			break;
+	// 		case 'image/webp':
+	// 			$imageCreateFunction = 'imagecreatefromwebp';
+	// 			$imageSaveFunction = 'imagewebp';
+	// 			break;
+	// 		case 'image/png':
+	// 			$imageCreateFunction = 'imagecreatefrompng';
+	// 			$imageSaveFunction = 'imagepng';
+	// 			break;
+	// 		case 'image/gif':
+	// 			$imageCreateFunction = 'imagecreatefromgif';
+	// 			$imageSaveFunction = 'imagegif';
+	// 			break;
+	// 		default:
+	// 			Log::error('Unsupported image type: ' . $mimeType);
+	// 			return null;
+	// 	}
+
+	// 	// Process and upload resized images
+	// 	foreach (['thumb' => [150, 150], 'medium' => [300, 300], 'large' => [790, 510]] as $key => $dimensions) {
+	// 		[$width, $height] = $dimensions;
+
+	// 		$src = $imageCreateFunction(imagecreatefromstring($imageContents));
+	// 		if (!$src) {
+	// 			Log::error('Failed to create image resource.');
+	// 			continue;
+	// 		}
+
+	// 		$dst = imagecreatetruecolor($width, $height);
+	// 		if (!$dst) {
+	// 			Log::error('Failed to create true color image for size: ' . $key);
+	// 			continue;
+	// 		}
+
+	// 		imagecopyresampled($dst, $src, 0, 0, 0, 0, $width, $height, imagesx($src), imagesy($src));
+
+	// 		// Convert all resized images to WebP format
+	// 		$tempResizedPath = tempnam(sys_get_temp_dir(), 'resized') . '.webp';
+	// 		$imageSaveFunction($dst, $tempResizedPath);
+
+	// 		$resizedS3Path = $s3Directory . $fileBaseName . '-' . $width . 'x' . $height . '.webp';
+	// 		Storage::disk('s3')->put($resizedS3Path, file_get_contents($tempResizedPath), 'public');
+
+	// 		imagedestroy($src);
+	// 		imagedestroy($dst);
+	// 		unlink($tempResizedPath);
+	// 	}
+
+	// 	// Return the public URL of the uploaded image
+	// 	return Storage::disk('s3')->url($s3FilePath);
+	// }
+
 	/**
 	 * Handle a job failure.
 	 */
