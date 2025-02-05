@@ -812,6 +812,9 @@ class ImportProductJob implements ShouldQueue
 		}
 	}
 
+
+
+ 
 	/**
 	 * Resize image using GD Library
 	 */

@@ -47,6 +47,7 @@ use App\Http\Controllers\API\SquarePaymentController;
 	Route::post('ecommerce/temp-products-status/approve', [TempProductStatusController::class, 'approveChanges'])->name('temp-products.approve');
 
 	Route::get('admin/ecommerce/category-product-filter', [CategoryProductTypeController::class, 'index'])->name('categoryFilter.index');
+	Route::get('admin/ecommerce/test-aws', [CategoryProductTypeController::class, 'test_aws'])->name('categoryFilter.test_aws');
 	Route::get('admin/ecommerce/category-product-filter/{id}/edit', [CategoryProductTypeController::class, 'edit'])->name('categoryFilter.edit');
 	Route::put('admin/ecommerce/category-product-filter/{id}', [CategoryProductTypeController::class, 'update'])->name('categoryFilter.update');
 // });

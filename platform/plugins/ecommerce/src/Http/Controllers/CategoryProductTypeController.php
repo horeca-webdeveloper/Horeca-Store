@@ -4,10 +4,11 @@ namespace Botble\Ecommerce\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-
+use Aws\S3\S3Client;
 use Botble\Ecommerce\Models\ProductTypes;
 use Botble\Ecommerce\Models\ProductCategory;
 use Botble\Ecommerce\Models\CategorySpecification;
+use Illuminate\Support\Facades\Storage;
 
 class CategoryProductTypeController extends BaseController
 {
@@ -55,6 +56,7 @@ class CategoryProductTypeController extends BaseController
 		// $productTypes = ProductTypes::all(['id', 'name']);
 		$specificationTypes = ['At a Glance', 'Comparison', 'Filters'];
 		$specificationNames = CategorySpecification::pluck('specification_name')->uniqueStrict()->toArray();
+		$specificationNames = array_values($specificationNames); 
 		// Pass the data to the edit view
 		// return view('plugins/ecommerce::category-product-type.edit', compact('category', 'productTypes'));
 		return view('plugins/ecommerce::category-product-type.edit', compact('category', 'specificationTypes', 'specificationNames'));
@@ -95,4 +97,39 @@ class CategoryProductTypeController extends BaseController
 		return redirect()->route('categoryFilter.index', ['search' => $search, 'page' => $page])
 		->with('success', 'Category updated successfully.');
 	}
+
+		public function test_aws() {
+			// $s3Client = new S3Client([
+			// 	'region'  => env('AWS_DEFAULT_REGION'),
+			// 	'version' => 'latest',
+			// 	'credentials' => [
+			// 		'key'    => env('AWS_ACCESS_KEY_ID'),
+			// 		'secret' => env('AWS_SECRET_ACCESS_KEY'),
+			// 	],
+			// ]);
+			
+			// try {
+			// 	$result = $s3Client->listBuckets();
+			// 	dd($result); // Should return list of buckets if everything is correct
+			// } catch (\Aws\Exception\AwsException $e) {
+			// 	dd($e->getMessage()); // Catch any errors from AWS SDK
+			// }
+			
+			
+			// // Store a file on S3
+			$put = Storage::disk('s3')->put('filename.txt', 'File content');
+			// dd($put);
+			
+			// Retrieve a file from S3
+			 $file = Storage::disk('s3')->get('filename.txt');
+			
+			// Generate a URL for the file
+			 $url = Storage::disk('s3')->url('filename.txt');
+			
+			 dd($file);
+
+		}
+
+
 }
+
