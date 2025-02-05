@@ -496,12 +496,14 @@ class CategoryController extends Controller
 		$categoryProducts = $categoryProducts->paginate($perPage);
 	
 		$modifiedProducts = $categoryProducts->getCollection()->map(function ($product) {
-			$product->currency_title = $product->currency
-				? ($product->currency->is_prefix_symbol
-					? $product->currency->title . ' ' . $product->price
-					: $product->price . ' ' . $product->currency->title)
-				: $product->price;
+			// $product->currency_title = $product->currency
+			// 	? ($product->currency->is_prefix_symbol
+			// 		? $product->currency->title . ' ' . $product->price
+			// 		: $product->price . ' ' . $product->currency->title)
+			// 	: $product->price;
 	
+			$product->currency_title = $product->currency ? $product->currency->title : '';
+
 			$product->avg_rating = $product->reviews->count() > 0
 				? $product->reviews->avg('star')
 				: null;
