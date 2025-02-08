@@ -465,7 +465,7 @@ class CategoryController extends Controller
 			], 400);
 		}
 
-		// Get sort parameter sd
+		// Get sort parameter sdsd
 		$sortBy = $request->input('sort_by', 'created_at');
 		if (!in_array($sortBy, ['created_at', 'price', 'name'])) {
 			$sortBy = 'created_at';
