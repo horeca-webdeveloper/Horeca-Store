@@ -439,16 +439,16 @@ class CategoryController extends Controller
 			'applied_filters' => 'nullable|array',
 			'price_order' => 'nullable|in:high_to_low,low_to_high', // Add price order validation
 		]);
-	
+
 		if ($validator->fails()) {
 			return response()->json([
 				'success' => false,
 				'message' => $validator->errors()
 			], 400);
 		}
-	
+
 		$perPage = $request->get('per_page', 10); // Default pagination
-	
+
 		$category = ProductCategory::find($request->category_id);
 		if (!$category) {
 			return response()->json([
@@ -456,7 +456,7 @@ class CategoryController extends Controller
 				'message' => 'Category does not exist.'
 			], 400);
 		}
-	
+
 		$categoryProductIds = $category->products->pluck('id')->all();
 		if (!$categoryProductIds) {
 			return response()->json([
@@ -464,92 +464,94 @@ class CategoryController extends Controller
 				'message' => 'No product exist for this category.'
 			], 400);
 		}
-	
-		$categoryProducts = Product::select('id', 'name', 'images', 'sku', 'price', 'sale_price', 'refund', 'delivery_days', 'currency_id')
-									->whereIn('id', $categoryProductIds)
-									->with(['currency', 'reviews', 'specifications']);
-	
-		// Apply applied filters
+
+		// Get sort parameter
+		$sortBy = $request->input('sort_by', 'created_at');
+		if (!in_array($sortBy, ['created_at', 'price', 'name'])) {
+			$sortBy = 'created_at';
+		}
+		$sortByType = $request->input('sort_by_type', 'desc');
+		if (!in_array($sortByType, ['asc', 'desc'])) {
+			$sortByType = 'desc';
+		}
+
+		$categoryProducts = Product::select( 'id', 'name', 'images', 'sku', 'price', 'sale_price', 'refund', 'delivery_days', 'currency_id')->whereIn('id', $categoryProductIds)->with(['currency', 'reviews', 'specifications']);
 		if ($request->applied_filters) {
 			foreach ($request->applied_filters as $appliedFilter) {
 				$categoryProducts->whereHas('specifications', function($query) use ($appliedFilter) {
 					$query->where('spec_name', $appliedFilter['specification_name']);
-	
-					if ($appliedFilter['specification_type'] == 'fixed') {
+
+					if ($appliedFilter['specification_type']=='fixed') {
 						$query->where('spec_value', $appliedFilter['specification_value']);
-					} elseif ($appliedFilter['specification_type'] == 'range') {
+					} elseif ($appliedFilter['specification_type']=='range') {
 						$query->whereBetween('spec_value', [$appliedFilter['specification_value']['start'], $appliedFilter['specification_value']['end']]);
 					}
 				});
 			}
 		}
-	
-		// Apply price sorting if 'price_order' is specified
-		if ($request->price_order) {
-			if ($request->price_order == 'high_to_low') {
-				$categoryProducts->orderByRaw("COALESCE(sale_price, price) DESC");
-			} elseif ($request->price_order == 'low_to_high') {
-				$categoryProducts->orderByRaw("COALESCE(sale_price, price) ASC");
-			}
-		}
-	
+        if ($sortBy == 'price') {
+            $categoryProducts = $categoryProducts->orderByRaw("COALESCE(sale_price, price) $sortByType");
+        } else {
+            $categoryProducts = $categoryProducts->orderBy($sortBy, $sortByType);
+        }
+
 		$categoryProducts = $categoryProducts->paginate($perPage);
-	
+
 		$modifiedProducts = $categoryProducts->getCollection()->map(function ($product) {
 			// $product->currency_title = $product->currency
 			// 	? ($product->currency->is_prefix_symbol
 			// 		? $product->currency->title . ' ' . $product->price
 			// 		: $product->price . ' ' . $product->currency->title)
 			// 	: $product->price;
-	
+
 			$product->currency_title = $product->currency ? $product->currency->title : '';
 
 			$product->avg_rating = $product->reviews->count() > 0
 				? $product->reviews->avg('star')
 				: null;
-	
+
 			$product->specifications = $product->specifications->map(function ($spec) {
 				return [
 					'spec_name' => $spec->spec_name,
 					'spec_value' => $spec->spec_value,
 				];
 			});
-	
+
 			unset($product->currency, $product->reviews, $product->specifications);
-	
+
 			$imagePaths = is_array($product->images) ? $product->images : [];
 			$product->images = array_map(function ($imagePath) {
 				return preg_match('/^(http|https):\/\//', $imagePath)
 					? $imagePath
 					: asset('storage/' . $imagePath);
 			}, $imagePaths);
-	
+
 			return $product;
 		});
-	
+
 		$categoryProducts->setCollection($modifiedProducts);
-	
+
 		$categorySpecificationNames = $category->specifications
 			->filter(function ($spec) {
 				return strpos($spec['specification_type'], 'Filters') !== false;
 			})
 			->pluck('specification_name')->all();
-	
+
 		$specifications = Specification::whereIn('product_id', $categoryProductIds)->whereIn('spec_name', $categorySpecificationNames)->get();
 		$filters = [];
 		if ($specifications->count()) {
 			$filters = collect($specifications)->groupBy('spec_name')->map(function ($group, $specName) {
 				$values = $group->pluck('spec_value')->unique()->toArray();
-	
+
 				// Check if all values are numeric
 				if (count($values) > 2 && collect($values)->every(fn($val) => is_numeric($val))) {
 					// Convert values to integers
 					$numericValues = collect($values)->map(fn($val) => (int) $val)->sort()->values();
-	
+
 					// Define the number of ranges (minimum 2, maximum 5)
 					$totalRanges = min(max(2, ceil(count($numericValues) / 2)), 5);
 					$chunkSize = ceil(count($numericValues) / $totalRanges);
-	
+
 					// Create range filters
 					$ranges = $numericValues->chunk($chunkSize)->map(function ($chunk) {
 						return [
@@ -557,7 +559,7 @@ class CategoryController extends Controller
 							'max' => $chunk->last(),
 						];
 					})->values()->toArray();
-	
+
 					return [
 						'specification_name' => $specName,
 						'specification_type' => 'range',
@@ -577,14 +579,14 @@ class CategoryController extends Controller
 		} else {
 			$filters = [];
 		}
-	
+
 		return response()->json([
 			'success' => true,
 			'filters' => $filters,
 			'products' => $categoryProducts,
 		], 200);
 	}
-	
+
 	// public function getSpecificationFilters(Request $request)
 	// {
 	// 	$validator = Validator::make($request->all(), [
