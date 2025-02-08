@@ -1391,7 +1391,7 @@ class ProductApiController extends Controller
                     // Fetch brand IDs based on names
                     $brandIds = Brand::whereIn('name', $brandNames)->pluck('id');
 
-                    // Apply the filter using brand IDs
+                    // Apply the filter using brand IDs sd
                     $query->whereIn('brand_id', $brandIds);
                 } else {
                     // If it's a single name, convert it into an array

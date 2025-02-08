@@ -724,6 +724,6 @@ class CategoryController extends Controller
 	// 		'success' => true,
 	// 		'filters' => $filters,
 	// 		'products' => $categoryProducts,
-	// 	], 200);
+	// 	], 200); dsdasd sd
 	// }
 }
