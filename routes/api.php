@@ -69,7 +69,6 @@ Route::get('/categories-menu', [CategoryMenuController::class, 'getCategoriesWit
  Route::get('/popular-posts', [PopularPostsController::class, 'index']);
 
 
-Route::get('/order-tracking', [OrderTrackingController::class, 'trackOrder']);
 
 Route::middleware(['auth:sanctum'])->prefix('addresses')->group(function () {
     Route::get('/', [AddressController::class, 'index']);
@@ -78,10 +77,12 @@ Route::middleware(['auth:sanctum'])->prefix('addresses')->group(function () {
     Route::delete('/{id}', [AddressController::class, 'destroy']);
  Route::post('/update-default-address', [AddressController::class, 'updateDefaultAddress']);
 
+
+
 });
 Route::post('/upload-product-documents', [ProductController::class, 'uploadDocuments']);
 
-
+Route::middleware('auth:sanctum')->get('/order-tracking', [OrderTrackingController::class, 'trackOrder']);
 
 Route::get('/countries', [CountryController::class, 'index']);
 Route::get('/countries/{id}', [CountryController::class, 'show']);
