@@ -29,7 +29,7 @@ class CategoryMenuController extends Controller
     }
 
     /**
-     * Build a hierarchical category tree.
+     * Build a hierarchical category treee.
      */
     // private function buildCategoryTree($categories, $parentId = 0)
     // {
