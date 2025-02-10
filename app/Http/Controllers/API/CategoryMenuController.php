@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Botble\Ecommerce\Models\ProductCategory;
+use RvMedia;
 
 class CategoryMenuController extends Controller
 {
@@ -30,26 +31,50 @@ class CategoryMenuController extends Controller
     /**
      * Build a hierarchical category tree.
      */
+    // private function buildCategoryTree($categories, $parentId = 0)
+    // {
+    //     $tree = [];
+
+    //     foreach ($categories as $category) {
+    //         if ($category->parent_id == $parentId) {
+    //             // Add children recursively
+    //             $children = $this->buildCategoryTree($categories, $category->id);
+
+    //             $tree[] = [
+    //                 'id' => $category->id,
+    //                 'name' => $category->name,
+    //                 'slug' => $category->slug,
+    //                 'parent_id' => $category->parent_id,
+    //                 'productCount' => $category->productCount,
+    //                 'children' => $children,
+    //             ];
+    //         }
+    //     }
+
+    //     return $tree;
+    // }
+
     private function buildCategoryTree($categories, $parentId = 0)
-    {
-        $tree = [];
+{
+    $tree = [];
 
-        foreach ($categories as $category) {
-            if ($category->parent_id == $parentId) {
-                // Add children recursively
-                $children = $this->buildCategoryTree($categories, $category->id);
+    foreach ($categories as $category) {
+        if ($category->parent_id == $parentId) {
+            // Add children recursively
+            $children = $this->buildCategoryTree($categories, $category->id);
 
-                $tree[] = [
-                    'id' => $category->id,
-                    'name' => $category->name,
-                    'slug' => $category->slug,
-                    'parent_id' => $category->parent_id,
-                    'productCount' => $category->productCount,
-                    'children' => $children,
-                ];
-            }
+            $tree[] = [
+                'id' => $category->id,
+                'name' => $category->name,
+                'slug' => $category->slug,
+                'parent_id' => $category->parent_id,
+                'productCount' => $category->productCount,
+                'image' => RvMedia::getImageUrl($category->image), // Get full image URL
+                'children' => $children,
+            ];
         }
-
-        return $tree;
     }
+
+    return $tree;
+}
 }
