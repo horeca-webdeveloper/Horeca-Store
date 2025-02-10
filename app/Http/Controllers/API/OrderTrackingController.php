@@ -14,62 +14,218 @@ use Botble\Ecommerce\Models\Order;
 
 class OrderTrackingController extends Controller
 {
+	// public function trackOrder(Request $request): JsonResponse
+	// {
+	// 	// Authenticate using Bearer token
+	// 	if (!Auth::check()) {
+	// 		return response()->json(['message' => __('Unauthorized')], 401);
+	// 	}
+
+	// 	if (!EcommerceHelper::isOrderTrackingEnabled()) {
+	// 		return response()->json(['message' => __('Order tracking is disabled')], 403);
+	// 	}
+
+	// 	$code = $request->input('order_id');
+
+	// 	// Query the order by order code
+	// 	$query = Order::query()
+	// 	->where(function ($query) use ($code) {
+	// 		$query
+	// 		->where('code', $code)
+	// 		->orWhere('code', '#' . $code);
+	// 	})
+	// 	->with(['address', 'products', 'shipment']);
+
+	// 	// Ensure we're only using the authenticated user
+	// 	$userId = Auth::user()->id;
+	// 	$query->where('user_id', $userId);
+
+	// 	$order = $query->first();
+	// 	dd($order);
+
+	// 	if (!$order) {
+	// 		return response()->json(['message' => __('Order not found')], 404);
+	// 	}
+
+	// 	$order->load('payment');
+
+	// 	$shipment = $order->shipment;
+	// 	$shipmentStatus = $shipment ? $shipment->status : __('No shipment information available');
+
+	// 	$statuses = [
+	// 		'not_approved',
+	// 		'approved',
+	// 		'pending',
+	// 		'arrange_shipment',
+	// 		'ready_to_be_shipped_out',
+	// 		'picking',
+	// 		'delay_picking',
+	// 		'picked',
+	// 		'not_picked',
+	// 		'delivering',
+	// 		'delivered',
+	// 		'not_delivered',
+	// 		'audited',
+	// 		'canceled',
+	// 	];
+
+	// 	return response()->json([
+	// 		'message' => __('Order found'),
+	// 		'shipment_status' => $shipmentStatus,
+	// 		'data' => $order,
+	// 		'all_statuses' => $statuses,
+	// 	]);
+	// }
+
 	public function trackOrder(Request $request): JsonResponse
 	{
-		// dd('called');
-		// if (!EcommerceHelper::isOrderTrackingEnabled()) {
-		//     return response()->json(['message' => __('Order tracking is disabled')], 403);
-		// }
+		$validator = Validator::make($request->all(), [
+			'order_id' => 'required|integer',
+		]);
 
-		$code = $request->input('order_id');
-
-		// Query the order by order code
-		$query = Order::query()
-		->where(function ($query) use ($code) {
-			$query
-			->where('code', $code)
-			->orWhere('code', '#' . $code);
-		})
-		->with(['address', 'products', 'shipment']);
-
-		// Ensure we're only using the authenticated user
-		$userId = Auth::user()->id;
-		$query->where('user_id', $userId);
-
-		$order = $query->first();
-		dd($order);
-
-		if (!$order) {
-			return response()->json(['message' => __('Order not found')], 404);
+		if ($validator->fails()) {
+			return response()->json([
+				'success' => false,
+				'message' => $validator->errors()
+			], 400);
 		}
 
-		$order->load('payment');
+		$code = $request->input('order_id');
+		$order = Order::with(['address', 'products', 'shipment', 'payment'])
+		->where(function ($query) use ($code) {
+			$query->where('code', $code)->orWhere('code', '#' . $code);
+		})
+		->where('user_id', auth()->id())
+		->first();
 
-		$shipment = $order->shipment;
-		$shipmentStatus = $shipment ? $shipment->status : __('No shipment information available');
+		if (!$order) {
+			return response()->json([
+				'success' => false,
+				'message' => __('Order not found')
+			], 404);
+		}
 
-		$statuses = [
+		// dd($order->toArray(), $order->shipment->status->getValue());
+
+		/* Mapping shipping status */
+		$shipment_status = $order->shipment ? [
+			'value' => $order->shipment->status->getValue() ?? null,
+			'label' => ucfirst(str_replace('_', ' ', $order->shipment->status->getValue() ?? ''))
+		] : [
+			'value' => null,
+			'label' => ''
+		];
+
+		/* Mapping order status */
+		$order_status = [
+			'value' => $order->status->getValue() ?? null,
+			'label' => ucfirst(str_replace('_', ' ', $order->status->getValue() ?? ''))
+		];
+
+		/* Mapping shipping method */
+		$shipping_method = [
+			'value' => $order->shipping_method->getValue() ?? null,
+			'label' => ucfirst(str_replace('_', ' ', $order->shipping_method->getValue() ?? ''))
+		];
+
+		/* Mapping products */
+		$products = $order->products->map(function ($product) {
+			return [
+				'id' => $product->id,
+				'order_id' => $product->order_id,
+				'qty' => $product->qty,
+				'price' => $product->price,
+				'tax_amount' => $product->tax_amount,
+				'product_id' => $product->product_id,
+				'product_name' => $product->product_name,
+				'product_image' => asset('storage/products/' . $product->product_image),
+				'weight' => $product->weight,
+				'restock_quantity' => $product->restock_quantity,
+				'created_at' => $product->created_at,
+				'updated_at' => $product->updated_at,
+			];
+		});
+
+		/* Mapping payment_channel */
+		$paymentChannel = [
+			'value' => $order->payment->payment_channel->getValue() ?? null,
+			'label' => match ($order->payment->payment_channel->getValue() ?? '') {
+				'cod' => 'Cash on delivery (COD)',
+				'bank_transfer' => match (env('APP_SITE_ENV')) {
+					'us' => 'Online (Square)',
+					'uae' => 'Online (Stripe)',
+					default => 'Bank Transfer',
+				},
+				default => null,
+			},
+		];
+
+		/* Mapping payment details */
+		$payment = [
+			'id' => $order->payment->id ?? null,
+			'currency' => $order->payment->currency ?? null,
+			'user_id' => $order->payment->user_id ?? null,
+			'payment_channel' => $paymentChannel,
+			'description' => $order->payment->description ?? null,
+			'amount' => $order->payment->amount ?? null,
+			'order_id' => $order->payment->order_id ?? null,
+			'status' => [
+				'value' => $order->payment->status->getValue() ?? null,
+				'label' => ucfirst(str_replace('_', ' ', $order->payment->status->getValue() ?? ''))
+			],
+			'payment_type' => $order->payment->payment_type ?? null,
+			'customer_id' => $order->payment->customer_id ?? null,
+			'refunded_amount' => $order->payment->refunded_amount ?? null,
+			'refund_note' => $order->payment->refund_note ?? null,
+			'created_at' => $order->payment->created_at ?? null,
+			'updated_at' => $order->payment->updated_at ?? null,
+			'customer_type' => $order->payment->customer_type ?? null,
+			'metadata' => $order->payment->metadata ?? null,
+		];
+
+		$all_statuses = [
+			'pending',
 			'not_approved',
 			'approved',
-			'pending',
-			'arrange_shipment',
 			'ready_to_be_shipped_out',
 			'picking',
-			'delay_picking',
-			'picked',
-			'not_picked',
-			'delivering',
-			'delivered',
-			'not_delivered',
-			'audited',
-			'canceled',
+			'delivered'
 		];
 
 		return response()->json([
-			'message' => __('Order found'),
-			'shipment_status' => $shipmentStatus,
-			'data' => $order,
-			'all_statuses' => $statuses,
+			'message' => 'Order found',
+			'shipment_status' => $shipment_status,
+			'data' => [
+				'id' => $order->id,
+				'code' => $order->code,
+				'user_id' => $order->user_id,
+				'shipping_option' => $order->shipping_option,
+				'shipping_method' => $shipping_method,
+				'status' => $order_status,
+				'amount' => $order->amount,
+				'tax_amount' => $order->tax_amount,
+				'shipping_amount' => $order->shipping_amount,
+				'coupon_code' => $order->coupon_code,
+				'discount_amount' => $order->discount_amount,
+				'sub_total' => $order->sub_total,
+				'is_confirmed' => $order->is_confirmed,
+				'is_finished' => $order->is_finished,
+				'cancellation_reason' => $order->cancellation_reason,
+				'cancellation_reason_description' => $order->cancellation_reason_description,
+				'completed_at' => $order->completed_at,
+				'token' => request()->bearerToken(),
+				'payment_id' => $order->payment_id,
+				'created_at' => $order->created_at,
+				'updated_at' => $order->updated_at,
+				'store_id' => $order->store_id,
+				'label' => $paymentChannel['label'],
+				'address' => [
+					'order_id' => $order->id
+				],
+				'products' => $products,
+				'payment' => $payment,
+			],
+			'all_statuses' => $all_statuses
 		]);
 	}
 }
