@@ -80,7 +80,7 @@ class OrderTrackingController extends Controller
 	public function trackOrder(Request $request): JsonResponse
 	{
 		$validator = Validator::make($request->all(), [
-			'order_id' => 'required|integer',
+			'order_id' => 'required',
 		]);
 
 		if ($validator->fails()) {
@@ -133,6 +133,7 @@ class OrderTrackingController extends Controller
 			return [
 				'id' => $product->id,
 				'order_id' => $product->order_id,
+				'sku' => $product->product->sku ?? null,
 				'qty' => $product->qty,
 				'price' => $product->price,
 				'tax_amount' => $product->tax_amount,
@@ -225,7 +226,9 @@ class OrderTrackingController extends Controller
 				'products' => $products,
 				'payment' => $payment,
 			],
-			'all_statuses' => $all_statuses
+			'all_statuses' => $all_statuses,
+			'shipping_address' => $order->shippingAddress ?? [],
+			'billing_address' => $order->billingAddress ?? [],
 		]);
 	}
 }
