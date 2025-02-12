@@ -112,8 +112,8 @@ class OrderTrackingController extends Controller
 			'value' => $order->shipment->status->getValue() ?? null,
 			'label' => ucfirst(str_replace('_', ' ', $order->shipment->status->getValue() ?? ''))
 		] : [
-			'value' => null,
-			'label' => ''
+			'value' => 'pending',
+			'label' => 'pending'
 		];
 
 		/* Mapping order status */
@@ -188,14 +188,23 @@ class OrderTrackingController extends Controller
 			'metadata' => $order->payment->metadata ?? null,
 		];
 
+		// $all_statuses = [
+		// 	'pending',
+		// 	'not_approved',
+		// 	'approved',
+		// 	'ready_to_be_shipped_out',
+		// 	'picking',
+		// 	'delivered'
+		// ];
 		$all_statuses = [
-			'pending',
-			'not_approved',
-			'approved',
-			'ready_to_be_shipped_out',
-			'picking',
-			'delivered'
+			'pending' => 'Pending',
+			'not_approved' => 'Not Approved',
+			'approved' => 'Approved',
+			'ready_to_be_shipped_out' => 'Ready to be Shipped Out',
+			'picking' => 'Picking',
+			'delivered' => 'Delivered',
 		];
+		
 
 		return response()->json([
 			'message' => 'Order found',
