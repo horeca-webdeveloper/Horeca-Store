@@ -255,6 +255,9 @@ class SearchApiController extends Controller
                 return [
                     'id' => $product->id,
                     'name' => $product->name,
+                    'image' => $this->getFullImageUrl($product->image),
+                    'price' => $product->price,
+                    'sale_price' => $product->sale_price,
                     'slug' => optional($product->slugable)->key, // Fetch slug from morph relation
                 ];
             });
@@ -269,6 +272,8 @@ class SearchApiController extends Controller
                             'name' => $product->name,
                             'slug' => optional($product->slugable)->key,
                             'image' => $this->getFullImageUrl($product->image),
+                            'price' => $product->price,
+                            'sale_price' => $product->sale_price,
                         ];
                     }),
                 ];
@@ -284,6 +289,8 @@ class SearchApiController extends Controller
                             'name' => $product->name,
                             'slug' => optional($product->slugable)->key,
                             'image' => $this->getFullImageUrl($product->image),
+                            'price' => $product->price,
+                            'sale_price' => $product->sale_price,
                         ];
                     }),
                 ];
@@ -301,7 +308,10 @@ class SearchApiController extends Controller
                     return [
                         'id' => $product->id,
                         'name' => $product->name,
+                        'image' => $this->getFullImageUrl($product->image),
                         'slug' => optional($product->slugable)->key,
+                        'price' => $product->price,
+                        'sale_price' => $product->sale_price,
                     ];
                 });
     
@@ -322,6 +332,8 @@ class SearchApiController extends Controller
                                 'name' => $product->name,
                                 'slug' => optional($product->slugable)->key,
                                 'image' => $this->getFullImageUrl($product->image),
+                                'price' => $product->price,
+                                'sale_price' => $product->sale_price,
                             ];
                         }),
                     ];
@@ -344,6 +356,8 @@ class SearchApiController extends Controller
                                 'name' => $product->name,
                                 'slug' => optional($product->slugable)->key,
                                 'image' => $this->getFullImageUrl($product->image),
+                                'price' => $product->price,
+                                'sale_price' => $product->sale_price,
                             ];
                         }),
                     ];
