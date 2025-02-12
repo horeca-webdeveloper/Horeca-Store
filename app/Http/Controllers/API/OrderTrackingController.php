@@ -127,6 +127,13 @@ class OrderTrackingController extends Controller
 			'value' => $order->shipping_method->getValue() ?? null,
 			'label' => ucfirst(str_replace('_', ' ', $order->shipping_method->getValue() ?? ''))
 		];
+		if (filter_var($product->product_image, FILTER_VALIDATE_URL)) {
+			$imageUrl = $product->product_image; // Use the full URL directly
+		} else {
+			$imageUrl = RvMedia::getImageUrl($product->product_image); // Generate full URL using RvMedia
+		}
+		
+		
 
 		/* Mapping products */
 		$products = $order->products->map(function ($product) {
@@ -139,7 +146,8 @@ class OrderTrackingController extends Controller
 				'tax_amount' => $product->tax_amount,
 				'product_id' => $product->product_id,
 				'product_name' => $product->product_name,
-				'product_image' => asset('storage/products/' . $product->product_image),
+				// Add to the response
+				'product_image' => $imageUrl,
 				'weight' => $product->weight,
 				'restock_quantity' => $product->restock_quantity,
 				'created_at' => $product->created_at,
