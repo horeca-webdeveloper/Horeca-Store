@@ -105,14 +105,16 @@ class Order extends BaseModel
     {
         return $this
             ->hasOne(OrderAddress::class, 'order_id')
-            ->where('type', OrderAddressTypeEnum::SHIPPING);
+            ->where('type', OrderAddressTypeEnum::SHIPPING)
+            ->withDefault();
     }
 
     public function billingAddress(): HasOne
     {
         return $this
             ->hasOne(OrderAddress::class, 'order_id')
-            ->where('type', OrderAddressTypeEnum::BILLING);
+            ->where('type', OrderAddressTypeEnum::BILLING)
+            ->withDefault();
     }
 
     public function referral(): HasOne
