@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers\API;
-
+use RvMedia;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Botble\Base\Events\BeforeEditContentEvent;
@@ -162,6 +162,11 @@ class ProductApiController extends Controller
                             $baseUrl = (strpos($image, 'storage/products/') === 0) ? url('storage/products/') : url('storage/');
                             return $baseUrl . '/' . ltrim($image, '/');
                         });
+
+                        $product->video_path = filter_var($product->video_path, FILTER_VALIDATE_URL) 
+                        ? $product->video_path 
+                        : RvMedia::getImageUrl('videos/' . ltrim($product->video_path, '/'), null, false);
+
 
                         // Add review and stock details
                         $totalReviews = $product->reviews->count();
@@ -461,6 +466,9 @@ class ProductApiController extends Controller
                             $baseUrl = (strpos($image, 'storage/products/') === 0) ? url('storage/products/') : url('storage/');
                             return $baseUrl . '/' . ltrim($image, '/');
                         });
+                        $product->video_path = filter_var($product->video_path, FILTER_VALIDATE_URL) 
+                        ? $product->video_path 
+                        : RvMedia::getImageUrl('videos/' . ltrim($product->video_path, '/'), null, false);
 
                         // Add review and stock details
                         $totalReviews = $product->reviews->count();
@@ -782,6 +790,10 @@ class ProductApiController extends Controller
                 return filter_var($image, FILTER_VALIDATE_URL) ? $image : url('storage/' . ltrim($image, '/'));
             });
 
+            $product->video_path = filter_var($product->video_path, FILTER_VALIDATE_URL) 
+            ? $product->video_path 
+            : RvMedia::getImageUrl('videos/' . ltrim($product->video_path, '/'), null, false);
+
             $totalReviews = $product->reviews->count();
             $avgRating = $totalReviews > 0 ? $product->reviews->avg('star') : null;
             $quantity = $product->quantity ?? 0;
@@ -1072,6 +1084,10 @@ class ProductApiController extends Controller
                             $product->images = collect($product->images)->map(function ($image) {
                                 return filter_var($image, FILTER_VALIDATE_URL) ? $image : url('storage/' . ltrim($image, '/'));
                             });
+
+                            $product->video_path = filter_var($product->video_path, FILTER_VALIDATE_URL) 
+                            ? $product->video_path 
+                            : RvMedia::getImageUrl('videos/' . ltrim($product->video_path, '/'), null, false);
 
                             $totalReviews = $product->reviews->count();
                             $avgRating = $totalReviews > 0 ? $product->reviews->avg('star') : null;
