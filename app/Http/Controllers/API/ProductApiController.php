@@ -169,7 +169,7 @@ class ProductApiController extends Controller
                             if (filter_var($video, FILTER_VALIDATE_URL)) {
                                 return $video; // If it's already a full URL, return it.
                             }
-                            return url('storage/videos/' . ltrim($video, '/')); // Manually construct the full URL
+                            return url('storage/' . ltrim($video, '/')); // Manually construct the full URL
                         });
 
 
@@ -477,7 +477,7 @@ class ProductApiController extends Controller
                             if (filter_var($video, FILTER_VALIDATE_URL)) {
                                 return $video; // If it's already a full URL, return it.
                             }
-                            return url('storage/videos/' . ltrim($video, '/')); // Manually construct the full URL
+                            return url('storage/' . ltrim($video, '/')); // Manually construct the full URL
                         });
 
                         // Add review and stock details
@@ -806,7 +806,7 @@ class ProductApiController extends Controller
                 if (filter_var($video, FILTER_VALIDATE_URL)) {
                     return $video; // If it's already a full URL, return it.
                 }
-                return url('storage/videos/' . ltrim($video, '/')); // Manually construct the full URL
+                return url('storage/' . ltrim($video, '/')); // Manually construct the full URL
             });
 
             $totalReviews = $product->reviews->count();
@@ -1106,7 +1106,7 @@ class ProductApiController extends Controller
                                 if (filter_var($video, FILTER_VALIDATE_URL)) {
                                     return $video; // If it's already a full URL, return it.
                                 }
-                                return url('storage/videos/' . ltrim($video, '/')); // Manually construct the full URL
+                                return url('storage/' . ltrim($video, '/')); // Manually construct the full URL
                             });
 
                             $totalReviews = $product->reviews->count();
