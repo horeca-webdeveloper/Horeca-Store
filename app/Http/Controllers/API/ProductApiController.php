@@ -163,9 +163,14 @@ class ProductApiController extends Controller
                             return $baseUrl . '/' . ltrim($image, '/');
                         });
 
-                        $product->video_path = filter_var($product->video_path, FILTER_VALIDATE_URL) 
-                        ? $product->video_path 
-                        : RvMedia::getImageUrl('videos/' . ltrim($product->video_path, '/'), null, false);
+                        $videoPaths = json_decode($product->video_path, true); // Decode JSON to array
+
+                        $product->video_path = collect($videoPaths)->map(function ($video) {
+                            if (filter_var($video, FILTER_VALIDATE_URL)) {
+                                return $video; // If it's already a full URL, return it.
+                            }
+                            return url('storage/videos/' . ltrim($video, '/')); // Manually construct the full URL
+                        });
 
 
                         // Add review and stock details
@@ -466,9 +471,14 @@ class ProductApiController extends Controller
                             $baseUrl = (strpos($image, 'storage/products/') === 0) ? url('storage/products/') : url('storage/');
                             return $baseUrl . '/' . ltrim($image, '/');
                         });
-                        $product->video_path = filter_var($product->video_path, FILTER_VALIDATE_URL) 
-                        ? $product->video_path 
-                        : RvMedia::getImageUrl('videos/' . ltrim($product->video_path, '/'), null, false);
+                        $videoPaths = json_decode($product->video_path, true); // Decode JSON to array
+
+                        $product->video_path = collect($videoPaths)->map(function ($video) {
+                            if (filter_var($video, FILTER_VALIDATE_URL)) {
+                                return $video; // If it's already a full URL, return it.
+                            }
+                            return url('storage/videos/' . ltrim($video, '/')); // Manually construct the full URL
+                        });
 
                         // Add review and stock details
                         $totalReviews = $product->reviews->count();
@@ -790,9 +800,14 @@ class ProductApiController extends Controller
                 return filter_var($image, FILTER_VALIDATE_URL) ? $image : url('storage/' . ltrim($image, '/'));
             });
 
-            $product->video_path = filter_var($product->video_path, FILTER_VALIDATE_URL) 
-            ? $product->video_path 
-            : RvMedia::getImageUrl('videos/' . ltrim($product->video_path, '/'), null, false);
+            $videoPaths = json_decode($product->video_path, true); // Decode JSON to array
+
+            $product->video_path = collect($videoPaths)->map(function ($video) {
+                if (filter_var($video, FILTER_VALIDATE_URL)) {
+                    return $video; // If it's already a full URL, return it.
+                }
+                return url('storage/videos/' . ltrim($video, '/')); // Manually construct the full URL
+            });
 
             $totalReviews = $product->reviews->count();
             $avgRating = $totalReviews > 0 ? $product->reviews->avg('star') : null;
@@ -1085,9 +1100,14 @@ class ProductApiController extends Controller
                                 return filter_var($image, FILTER_VALIDATE_URL) ? $image : url('storage/' . ltrim($image, '/'));
                             });
 
-                            $product->video_path = filter_var($product->video_path, FILTER_VALIDATE_URL) 
-                            ? $product->video_path 
-                            : RvMedia::getImageUrl('videos/' . ltrim($product->video_path, '/'), null, false);
+                            $videoPaths = json_decode($product->video_path, true); // Decode JSON to array
+
+                            $product->video_path = collect($videoPaths)->map(function ($video) {
+                                if (filter_var($video, FILTER_VALIDATE_URL)) {
+                                    return $video; // If it's already a full URL, return it.
+                                }
+                                return url('storage/videos/' . ltrim($video, '/')); // Manually construct the full URL
+                            });
 
                             $totalReviews = $product->reviews->count();
                             $avgRating = $totalReviews > 0 ? $product->reviews->avg('star') : null;
