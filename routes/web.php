@@ -50,6 +50,10 @@ use App\Http\Controllers\API\SquarePaymentController;
 	Route::get('admin/ecommerce/test-aws', [CategoryProductTypeController::class, 'test_aws'])->name('categoryFilter.test_aws');
 	Route::get('admin/ecommerce/category-product-filter/{id}/edit', [CategoryProductTypeController::class, 'edit'])->name('categoryFilter.edit');
 	Route::put('admin/ecommerce/category-product-filter/{id}', [CategoryProductTypeController::class, 'update'])->name('categoryFilter.update');
+
+	Route::get('admin/ecommerce/copy-products-to-s3', [CategoryProductTypeController::class, 'copyProductsToS3']);
+
+
 // });
 
 	// Define route for showing the upload form
@@ -107,4 +111,3 @@ use App\Http\Controllers\API\SquarePaymentController;
 
 	// Define the route to handle form submission
 	Route::post('admin/ecommerce/store-shipment', [EliteShipmentController::class, 'store'])->name('eliteshipment.store');
-
