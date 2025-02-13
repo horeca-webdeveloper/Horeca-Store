@@ -112,8 +112,8 @@ class OrderTrackingController extends Controller
 			'value' => $order->shipment->status->getValue() ?? null,
 			'label' => ucfirst(str_replace('_', ' ', $order->shipment->status->getValue() ?? ''))
 		] : [
-			'value' => null,
-			'label' => ''
+			'value' => 'pending',
+			'label' => 'pending'
 		];
 
 		/* Mapping order status */
@@ -127,18 +127,23 @@ class OrderTrackingController extends Controller
 			'value' => $order->shipping_method->getValue() ?? null,
 			'label' => ucfirst(str_replace('_', ' ', $order->shipping_method->getValue() ?? ''))
 		];
+		
 
 		/* Mapping products */
 		$products = $order->products->map(function ($product) {
 			return [
 				'id' => $product->id,
 				'order_id' => $product->order_id,
+				'sku' => $product->product->sku ?? null,
 				'qty' => $product->qty,
 				'price' => $product->price,
 				'tax_amount' => $product->tax_amount,
 				'product_id' => $product->product_id,
 				'product_name' => $product->product_name,
-				'product_image' => asset('storage/products/' . $product->product_image),
+				// 'product_image' => asset('storage/products/' . $product->product_image),
+				'product_image' => filter_var($product->product_image, FILTER_VALIDATE_URL) 
+            ? $product->product_image 
+            : RvMedia::getImageUrl($product->product_image),
 				'weight' => $product->weight,
 				'restock_quantity' => $product->restock_quantity,
 				'created_at' => $product->created_at,
@@ -183,14 +188,23 @@ class OrderTrackingController extends Controller
 			'metadata' => $order->payment->metadata ?? null,
 		];
 
+		// $all_statuses = [
+		// 	'pending',
+		// 	'not_approved',
+		// 	'approved',
+		// 	'ready_to_be_shipped_out',
+		// 	'picking',
+		// 	'delivered'
+		// ];
 		$all_statuses = [
-			'pending',
-			'not_approved',
-			'approved',
-			'ready_to_be_shipped_out',
-			'picking',
-			'delivered'
+			'pending' => 'Pending',
+			'not_approved' => 'Not Approved',
+			'approved' => 'Approved',
+			'ready_to_be_shipped_out' => 'Ready to be Shipped Out',
+			'picking' => 'Picking',
+			'delivered' => 'Delivered',
 		];
+		
 
 		return response()->json([
 			'message' => 'Order found',
@@ -225,7 +239,9 @@ class OrderTrackingController extends Controller
 				'products' => $products,
 				'payment' => $payment,
 			],
-			'all_statuses' => $all_statuses
+			'all_statuses' => $all_statuses,
+			'shipping_address' => $order->shippingAddress ?? [],
+			'billing_address' => $order->billingAddress ?? [],
 		]);
 	}
 }
