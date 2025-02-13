@@ -55,11 +55,30 @@ class CategoryProductTypeController extends BaseController
 		// Fetch all available product types for the multi-select
 		// $productTypes = ProductTypes::all(['id', 'name']);
 		$specificationTypes = ['At a Glance', 'Comparison', 'Filters'];
-		$specificationNames = CategorySpecification::pluck('specification_name')->uniqueStrict()->toArray();
-		$specificationNames = array_values($specificationNames); 
+
+
+		$specificationNameVals = CategorySpecification::get(['specification_name', 'specification_values', 'unit'])
+		->groupBy('specification_name')
+		->map(function ($items) {
+			return collect($items)
+			->sortByDesc(fn($item) => substr_count($item->specification_values, '|'))
+			->first();
+		})->toArray();
+		$specificationNameVals = array_values($specificationNameVals);
+
+		// ->mapWithKeys(fn($item) => [$item->specification_name => array_unique(explode('|', $item->specification_values))]);
+		// ->mapWithKeys(fn($item) => [$item->specification_name => $item->specification_values])->toArray();
+
+		// dd($specificationNameVals);
+
+
+
+
+		// $specificationNames = CategorySpecification::pluck('specification_name')->uniqueStrict()->toArray();
+		// $specificationNames = array_values($specificationNames);
 		// Pass the data to the edit view
 		// return view('plugins/ecommerce::category-product-type.edit', compact('category', 'productTypes'));
-		return view('plugins/ecommerce::category-product-type.edit', compact('category', 'specificationTypes', 'specificationNames'));
+		return view('plugins/ecommerce::category-product-type.edit', compact('category', 'specificationTypes', 'specificationNameVals'));
 	}
 
 	/**
@@ -81,8 +100,10 @@ class CategoryProductTypeController extends BaseController
 				$exists = $category->specifications()->where('specification_name', $specification['name'])->exists();
 				if (!$exists) {
 					$category->specifications()->create([
+						'is_fixed' => isset($specification['is_fixed']) && $specification['is_fixed']==1 ? 1 : 0,
 						'specification_type' => isset($specification['specification_type']) ? implode(',', $specification['specification_type']) : '',
 						'specification_name' => $specification['name'],
+						'unit' => $specification['unit'],
 						'specification_values' => implode('|', array_unique(array_filter($specification['vals'], fn($val) => !is_null($val))))
 					]);
 				}
@@ -98,7 +119,7 @@ class CategoryProductTypeController extends BaseController
 		->with('success', 'Category updated successfully.');
 	}
 
-		public function test_aws() {
+	public function test_aws() {
 			// $s3Client = new S3Client([
 			// 	'region'  => env('AWS_DEFAULT_REGION'),
 			// 	'version' => 'latest',
@@ -107,28 +128,28 @@ class CategoryProductTypeController extends BaseController
 			// 		'secret' => env('AWS_SECRET_ACCESS_KEY'),
 			// 	],
 			// ]);
-			
+
 			// try {
 			// 	$result = $s3Client->listBuckets();
 			// 	dd($result); // Should return list of buckets if everything is correct
 			// } catch (\Aws\Exception\AwsException $e) {
 			// 	dd($e->getMessage()); // Catch any errors from AWS SDK
 			// }
-			
-			
-			// // Store a file on S3
-			$put = Storage::disk('s3')->put('filename.txt', 'File content');
-			// dd($put);
-			
-			// Retrieve a file from S3
-			 $file = Storage::disk('s3')->get('filename.txt');
-			
-			// Generate a URL for the file
-			 $url = Storage::disk('s3')->url('filename.txt');
-			
-			 dd($file);
 
-		}
+
+			// // Store a file on S3
+		$put = Storage::disk('s3')->put('filename.txt', 'File content');
+			// dd($put);
+
+			// Retrieve a file from S3
+		$file = Storage::disk('s3')->get('filename.txt');
+
+			// Generate a URL for the file
+		$url = Storage::disk('s3')->url('filename.txt');
+
+		dd($file);
+
+	}
 
 
 }
