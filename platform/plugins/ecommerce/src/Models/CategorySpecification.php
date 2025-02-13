@@ -11,6 +11,8 @@ class CategorySpecification extends Model
 		'specification_type',
 		'specification_name',
 		'specification_values',
+		'is_fixed',
+		'unit',
 		'created_by',
 		'updated_by'
 	];
