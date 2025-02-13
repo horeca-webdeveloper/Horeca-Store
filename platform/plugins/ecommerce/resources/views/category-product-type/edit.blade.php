@@ -33,7 +33,7 @@
 		<div id="specification-container">
 			<div class="row">
 				<div class="col-md-1 justify-content-end text-end">
-					<label for="specifications">Is Fixed</label>
+					<label for="specifications">List</label>
 				</div>
 				<div class="col-md-2">
 					<label for="specifications">Specification Type</label>
