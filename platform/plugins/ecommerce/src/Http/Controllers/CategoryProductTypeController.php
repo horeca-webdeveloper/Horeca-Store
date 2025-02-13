@@ -36,7 +36,7 @@ class CategoryProductTypeController extends BaseController
 				$q->where('id', $search)
 				->orWhere('name', 'like', '%' . $search . '%');
 			});
-		})
+		})->orderBy('id', 'desc')
 		->paginate(20)
 		->through(function ($category) {
 			return [

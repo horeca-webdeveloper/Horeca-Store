@@ -163,7 +163,6 @@
 								type="checkbox"
 								name="specifications[{{$i}}][is_fixed]"
 								value="1"
-								checked
 							/>
 						</div>
 						<div class="col-md-2">
@@ -351,7 +350,6 @@
 							type="checkbox"
 							name="specifications[${index}][is_fixed]"
 							value="1"
-							checked
 						/>
 					</div>
 					<div class="col-md-2">
