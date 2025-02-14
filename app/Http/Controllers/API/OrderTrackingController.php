@@ -244,4 +244,66 @@ class OrderTrackingController extends Controller
 			'billing_address' => $order->billingAddress ?? [],
 		]);
 	}
+
+
+	public function trackOrdercard(Request $request): JsonResponse
+{
+    $validator = Validator::make($request->all(), [
+        'order_id' => 'sometimes|required_without:email',
+        'email' => 'sometimes|required_without:order_id|email',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'success' => false,
+            'message' => $validator->errors()
+        ], 400);
+    }
+
+    $query = Order::with(['address', 'products', 'shipment', 'payment']);
+
+    if ($request->has('order_id')) {
+        $code = $request->input('order_id');
+        $query->where(function ($q) use ($code) {
+            $q->where('code', $code)->orWhere('code', '#' . $code);
+        });
+    }
+
+    if ($request->has('email')) {
+        $email = $request->input('email');
+        $query->whereHas('address', function ($q) use ($email) {
+            $q->where('email', $email);
+        });
+    }
+
+    $order = $query->first();
+
+    if (!$order) {
+        return response()->json([
+            'success' => false,
+            'message' => __('Order not found')
+        ], 404);
+    }
+
+    return response()->json([
+        'message' => 'Order found',
+        'order' => [
+            'id' => $order->id,
+            'code' => $order->code,
+            'status' => $order->status->getValue(),
+            'amount' => $order->amount,
+            'products' => $order->products->map(function ($product) {
+                return [
+                    'id' => $product->id,
+                    'name' => $product->product_name,
+                    'price' => $product->price,
+                    'image' => RvMedia::getImageUrl($product->product_image),
+                ];
+            }),
+            'shipping_address' => $order->shippingAddress ?? [],
+            'billing_address' => $order->billingAddress ?? [],
+        ]
+    ]);
+}
+
 }
