@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\JsonResponse;
 use Botble\Ecommerce\Facades\EcommerceHelper;
-
+use RvMedia;
 use Illuminate\Support\Facades\Auth;
 
 use Botble\Ecommerce\Models\Order;
