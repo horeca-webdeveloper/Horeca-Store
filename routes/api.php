@@ -84,7 +84,7 @@ Route::post('/upload-product-documents', [ProductController::class, 'uploadDocum
 
 Route::middleware('auth:sanctum')->get('/order-tracking', [OrderTrackingController::class, 'trackOrder']);
 
-Route::get('/order-track-guest', [OrderTrackingController::class, 'trackOrdercard']);
+Route::post('/order-track-guest', [OrderTrackingController::class, 'trackOrdercard']);
 
 Route::get('/countries', [CountryController::class, 'index']);
 Route::get('/countries/{id}', [CountryController::class, 'show']);
