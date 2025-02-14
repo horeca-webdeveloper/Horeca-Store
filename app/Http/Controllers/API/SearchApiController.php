@@ -266,6 +266,7 @@ class SearchApiController extends Controller
                 return [
                     'id' => $category->id,
                     'name' => $category->name,
+                    'slug' => optional($category->slugable)->key, // Fetch slug from morph relation
                     'products' => $category->products()->inRandomOrder()->take(3)->with('slugable')->get()->map(function ($product) {
                         return [
                             'id' => $product->id,
@@ -283,6 +284,8 @@ class SearchApiController extends Controller
                 return [
                     'id' => $brand->id,
                     'name' => $brand->name,
+                    'slug' => optional($brand->slugable)->key, // Fetch slug from morph relation
+
                     'products' => $brand->products()->inRandomOrder()->take(3)->with('slugable')->get()->map(function ($product) {
                         return [
                             'id' => $product->id,
@@ -371,6 +374,32 @@ class SearchApiController extends Controller
         ]);
     }
     
+    public function searchCategories(Request $request)
+    {
+        $query = $request->input('query');
+
+        if (empty($query)) {
+            return response()->json(['categories' => []]);
+        }
+
+        $categories = Productcategory::where('name', 'LIKE', "%{$query}%")
+            ->orWhereHas('slugable', function ($q) use ($query) {
+                $q->where('key', 'LIKE', "%{$query}%");
+            })
+            ->take(10)
+            ->with('slugable')
+            ->get()
+            ->map(function ($category) {
+                return [
+                    'id' => $category->id,
+                    'name' => $category->name,
+                    'slug' => optional($category->slugable)->key,
+                ];
+            });
+
+        return response()->json(['categories' => $categories]);
+    }
+
 
     // private function getFullImageUrl($imagePath)
     // {
