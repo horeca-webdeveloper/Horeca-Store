@@ -8,58 +8,114 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
+    
     steps:
+      # Step 1: Checkout the repository
       - name: Checkout repository
         uses: actions/checkout@v2
-
+      
+      # Step 2: Set up PHP environment
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+      
+      # Step 3: Install Composer dependencies
+      - name: Install dependencies
+        run: composer install --no-dev
+      
+      # Step 4: Set up AWS CLI
       - name: Set up AWS CLI
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Deploy to EC2
+      
+      # Step 5: Debug and deployment
+      - name: Add SSH key and deploy to EC2
         run: |
+          # Setup SSH
           mkdir -p ~/.ssh
           echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-
+          
+          # Disable strict host key checking
           echo "Host *" > ~/.ssh/config
           echo "  StrictHostKeyChecking no" >> ~/.ssh/config
           echo "  UserKnownHostsFile=/dev/null" >> ~/.ssh/config
-
+          
+          # Deploy to EC2
           ssh -i ~/.ssh/id_ed25519 ubuntu@${{ secrets.AWS_INSTANCE_IP }} << 'EOF'
-            cd /var/www/html/Horeca-Store
-
-            # Take full ownership of the directory
-            sudo chown -R ubuntu:ubuntu .
-            sudo chmod -R 755 .
-
-            # Ensure git can operate
-            sudo -u ubuntu git config --global --add safe.directory /var/www/html/Horeca-Store
+            # Navigate to project directory
+            cd /var/www/html/UAE_HORECA_LARAVEL
             
-            # Pull changes as ubuntu user
-            sudo -u ubuntu git fetch origin main
-            sudo -u ubuntu git reset --hard origin/main
-
-            # Reset permissions comprehensively
-            sudo chown -R www-data:ubuntu .
-            sudo chmod -R 775 .
-
-            # Ensure Laravel directories exist
-            mkdir -p storage/framework/cache
-            mkdir -p storage/framework/sessions
-            mkdir -p storage/framework/views
-            mkdir -p storage/logs
-            mkdir -p bootstrap/cache
-
-            # Set specific permissions for Laravel directories
-            sudo chown -R www-data:ubuntu storage bootstrap/cache
+            # Fix Git ownership issue
+            sudo git config --global --add safe.directory /var/www/html/UAE_HORECA_LARAVEL
+            sudo git config --global --add safe.directory '*'
+            
+            # Debug information
+            echo "Current directory: $(pwd)"
+            echo "Git status before pull:"
+            sudo git status
+            
+            # Fix permissions before git operations
+            sudo chown -R ubuntu:ubuntu .
+            sudo find . -type f -exec chmod 644 {} \;
+            sudo find . -type d -exec chmod 755 {} \;
+            
+            # Fetch and reset to origin/main
+            git fetch origin main
+            git reset --hard origin/main
+            
+            # Show git status after pull
+            echo "Git status after pull:"
+            git status
+            
+            # Fix permissions for web server
+            sudo chown -R www-data:www-data .
+            
+            # Ensure storage directories exist and are writable
+            sudo mkdir -p storage/framework/cache
+            sudo mkdir -p storage/framework/sessions
+            sudo mkdir -p storage/framework/views
+            sudo mkdir -p storage/logs
+            sudo mkdir -p bootstrap/cache
+            
+            # Set proper permissions for storage and bootstrap/cache
+            sudo chown -R www-data:www-data storage bootstrap/cache
             sudo chmod -R 775 storage bootstrap/cache
+            
+            # Install dependencies and optimize
+            sudo -u www-data composer install --no-dev --optimize-autoloader
+            
+            # Clear all caches
+            sudo php artisan cache:clear
+            sudo php artisan config:clear
+            sudo php artisan view:clear
+            sudo php artisan route:clear
+            
+            # Run migrations
+            sudo php artisan migrate --force
+            
+            # Optimize
+            sudo php artisan optimize
+            
+            # Show deployment completion message
+            echo "Deployment completed successfully!"
+            
+            # Show latest commits
+            echo "Latest commits:"
+            git log -3 --oneline
+          EOF
 
-            # Composer dependencies
-            # composer install --no-interaction --prefer-dist --optimize-autoloader
-            composer update square/square
+      # Step 6: Verify deployment
+      - name: Verify deployment
+        run: |
+          ssh -i ~/.ssh/id_ed25519 ubuntu@${{ secrets.AWS_INSTANCE_IP }} << 'EOF'
+            cd /var/www/html/UAE_HORECA_LARAVEL
+            echo "Application version:"
+            sudo php artisan --version
+            echo "Current git commit:"
+            git rev-parse HEAD
           EOF
