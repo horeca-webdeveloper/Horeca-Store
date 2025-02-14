@@ -118,6 +118,7 @@ Route::get('/payment/success', [PaymentApiController::class, 'paymentSuccess'])-
 Route::get('/payment/cancel', [PaymentApiController::class, 'paymentCancel'])->name('payment.cancel');
 
 Route::get('/search', [SearchApiController::class, 'search']);
+Route::get('/search-categories', [SearchApiController::class, 'searchCategories']);
 
 
 Route::get('/location', [LocationController::class, 'getLocation']);
