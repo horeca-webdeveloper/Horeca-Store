@@ -270,26 +270,26 @@ public function getAllHomeBrandProducts(Request $request)
                         // "sale_price" => $product->sale_price ?? null,
                         // "rating" => $product->reviews()->avg('star') ?? null,
                         // "in_wishlist" => in_array($product->id, $wishlistIds),
-                        'name' => $Product->name,
-                        'sku' => $Product->sku,
-                        'price' => $Product->price,
-                        'sale_price' => $Product->sale_price,
-                        'best_delivery_date' => $Product->best_delivery_date,
-                        'total_reviews' => $Product->reviews->count(),
-                        'avg_rating' => $Product->reviews->count() > 0 ? $Product->reviews->avg('star') : null,
-                        'left_stock' => $Product->left_stock ?? 0,
-                        'currency' => $Product->currency->title ?? 'USD',
-                        'in_wishlist' => $Product->in_wishlist ?? false,
-                        'images' => collect($Product->images)->map(function ($image) {
+                        'name' => $product->name,
+                        'sku' => $product->sku,
+                        'price' => $product->price,
+                        'sale_price' => $product->sale_price,
+                        'best_delivery_date' => $product->best_delivery_date,
+                        'total_reviews' => $product->reviews->count(),
+                        'avg_rating' => $product->reviews->count() > 0 ? $product->reviews->avg('star') : null,
+                        'left_stock' => $product->left_stock ?? 0,
+                        'currency' => $product->currency->title ?? 'USD',
+                        'in_wishlist' => $product->in_wishlist ?? false,
+                        'images' => collect($product->images)->map(function ($image) {
                             if (filter_var($image, FILTER_VALIDATE_URL)) {
                                 return $image;
                             }
                             $baseUrl = (strpos($image, 'storage/products/') === 0) ? url('storage/products/') : url('storage/');
                             return $baseUrl . '/' . ltrim($image, '/');
                         })->toArray(),
-                        'original_price' => $Product->price,
-                        'front_sale_price' => $Product->price,
-                        'best_price' => $Product->price,
+                        'original_price' => $product->price,
+                        'front_sale_price' => $product->price,
+                        'best_price' => $product->price,
                     ];
                 }),
             ];
