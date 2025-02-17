@@ -127,16 +127,4 @@ class ProductSpecificationController extends BaseController
 		/* Download file */
 		$this->excel->downloadFile('abc.xlsx', $spreadsheet);
 	}
-
-	/**
-	 * Display the specified resource.
-	 */
-	public function show($transactionLogId)
-	{
-		/* parent::breadcrumb()->add('Import Products', route('tools.data-synchronize.import.products.import')); */
-		$log = TransactionLog::find($transactionLogId);
-
-		return view('plugins/ecommerce::product-import.show', compact('log'));
-
-	}
 }
