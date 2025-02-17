@@ -3,6 +3,7 @@
 return [
     'name' => 'Products',
     'import_products' => 'Import Products',
+    'export_product_specification' => 'Export Product Specification',
     'description' => 'View and update your products settings',
     'create' => 'New product',
     'create_product_type' => [

@@ -832,8 +832,18 @@ class EcommerceServiceProvider extends ServiceProvider
                 ])
 
                 ->registerItem([
-                    'id' => 'cms-plugins-upload-documents',
+                    'id' => 'cms-plugins-export-product-specifications',
                     'priority' => 500,
+                    'parent_id' => 'cms-plugins-ecommerce',
+                    'name' => 'Export Product Specifications',
+                    'icon' => 'ti ti-tag',
+                    'url' => fn () => route('productSpecifications.import'),
+                    'permissions' => ['export_product_specifications.index'],
+                ])
+
+                ->registerItem([
+                    'id' => 'cms-plugins-upload-documents',
+                    'priority' => 600,
                     'parent_id' => 'cms-plugins-ecommerce',
                     'name' => 'Upload Product Documents',
                     'icon' => 'ti ti-upload',
