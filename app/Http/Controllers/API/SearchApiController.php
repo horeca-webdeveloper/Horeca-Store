@@ -401,6 +401,7 @@ class SearchApiController extends Controller
     }
 
 
+
     // private function getFullImageUrl($imagePath)
     // {
     //     if (!$imagePath) {
