@@ -687,6 +687,7 @@ private function calculateTotalAmount(array $products, float $sub_total): float
 //         'data' => $orders
 //     ], 200);
 // }
+
 public function index(Request $request)
 {
     $query = Order::where('user_id', $request->user()->id);
@@ -710,8 +711,8 @@ public function index(Request $request)
         });
     }
 
-    // Retrieve orders
-    $orders = $query->orderBy('created_at', 'desc')->get();
+    // Paginate the orders (5 per page)
+    $orders = $query->orderBy('created_at', 'desc')->paginate(5);
 
     // If no orders are found, return a message with success false
     if ($orders->isEmpty()) {
@@ -722,7 +723,7 @@ public function index(Request $request)
     }
 
     // Transform each order to include its associated products and payment channel
-    $orders->transform(function ($order) {
+    $orders->getCollection()->transform(function ($order) {
         $products = DB::table('ec_order_product')
             ->join('ec_products', 'ec_order_product.product_id', '=', 'ec_products.id')
             ->where('ec_order_product.order_id', $order->id)
@@ -737,30 +738,23 @@ public function index(Request $request)
             )
             ->get()
             ->map(function ($product) {
-                // Decode the images field if it's JSON-encoded and process the URLs
+                // Decode and process images
                 if ($product->images) {
                     $images = json_decode($product->images, true);
 
                     if (is_array($images)) {
-                        // Use array_map to process each image URL
                         $images = array_map(function ($image) {
-                            // If the image URL already starts with http or https, don't modify it
                             if (!preg_match('/^https?:\/\//', $image)) {
-                                // Check if the path starts with 'storage/' or 'storage/products/'
                                 if (strpos($image, 'storage/') === 0 || strpos($image, 'storage/products/') === 0) {
-                                    // Prepend the base URL using asset() for local storage paths
-                                    $image = asset('storage/' . ltrim($image, 'storage/'));  // Handle the path correctly
+                                    $image = asset('storage/' . ltrim($image, 'storage/'));
                                 } else {
-                                    // Handle the case where the image is neither a URL nor in storage/
-                                    // (e.g., if it's a relative path or file name)
-                                    $image = asset('storage/products/' . $image);  // Prepend base URL for default product storage path
+                                    $image = asset('storage/products/' . $image);
                                 }
                             }
-                            return $image;  // Return the modified image URL
+                            return $image;
                         }, $images);
                     }
 
-                    // Assign the processed images back to the product
                     $product->images = $images;
                 }
 
@@ -770,7 +764,7 @@ public function index(Request $request)
         // Retrieve the payment channel for the order
         $paymentChannel = DB::table('payments')
             ->where('order_id', $order->id)
-            ->value('payment_channel'); // Get the single column value
+            ->value('payment_channel');
 
         // Attach the products and payment channel to the order
         $order->setAttribute('products', $products);
@@ -779,12 +773,123 @@ public function index(Request $request)
         return $order;
     });
 
-    // Return all orders with their product details and payment channel as a JSON response
+    // Return paginated orders with metadata
     return response()->json([
         'success' => true,
-        'data' => $orders
+        'data' => $orders->items(), // Orders data
+        'pagination' => [
+            'current_page' => $orders->currentPage(),
+            'last_page' => $orders->lastPage(),
+            'per_page' => $orders->perPage(),
+            'total' => $orders->total(),
+            'links' => [
+                'first' => $orders->url(1),
+                'last' => $orders->url($orders->lastPage()),
+                'prev' => $orders->previousPageUrl(),
+                'next' => $orders->nextPageUrl(),
+            ]
+        ]
     ], 200);
 }
+
+// public function index(Request $request)
+// {
+//     $query = Order::where('user_id', $request->user()->id);
+
+//     // If a search term is provided, add it to the query
+//     if ($request->has('search') && $request->search != '') {
+//         $search = $request->search;
+
+//         $query->where(function ($q) use ($search) {
+//             // Search by order ID or order code
+//             $q->where('id', 'like', '%' . $search . '%')
+//               ->orWhere('code', 'like', '%' . $search . '%') // Search by order code
+//               // Search by product name (joins ec_order_product and ec_products tables)
+//               ->orWhereExists(function ($query) use ($search) {
+//                   $query->select(DB::raw(1))
+//                         ->from('ec_order_product')
+//                         ->join('ec_products', 'ec_order_product.product_id', '=', 'ec_products.id')
+//                         ->whereRaw('ec_order_product.order_id = ec_orders.id')
+//                         ->where('ec_products.name', 'like', '%' . $search . '%');
+//               });
+//         });
+//     }
+
+//     // Retrieve orders
+//     $orders = $query->orderBy('created_at', 'desc')->get();
+
+//     // If no orders are found, return a message with success false
+//     if ($orders->isEmpty()) {
+//         return response()->json([
+//             'success' => false,
+//             'message' => 'No orders found'
+//         ], 200);
+//     }
+
+//     // Transform each order to include its associated products and payment channel
+//     $orders->transform(function ($order) {
+//         $products = DB::table('ec_order_product')
+//             ->join('ec_products', 'ec_order_product.product_id', '=', 'ec_products.id')
+//             ->where('ec_order_product.order_id', $order->id)
+//             ->select(
+//                 'ec_products.id as product_id',
+//                 'ec_products.name',
+//                 'ec_products.sale_price',
+//                 'ec_products.delivery_days',
+//                 'ec_products.images',
+//                 'ec_order_product.price',
+//                 'ec_order_product.qty'
+//             )
+//             ->get()
+//             ->map(function ($product) {
+//                 // Decode the images field if it's JSON-encoded and process the URLs
+//                 if ($product->images) {
+//                     $images = json_decode($product->images, true);
+
+//                     if (is_array($images)) {
+//                         // Use array_map to process each image URL
+//                         $images = array_map(function ($image) {
+//                             // If the image URL already starts with http or https, don't modify it
+//                             if (!preg_match('/^https?:\/\//', $image)) {
+//                                 // Check if the path starts with 'storage/' or 'storage/products/'
+//                                 if (strpos($image, 'storage/') === 0 || strpos($image, 'storage/products/') === 0) {
+//                                     // Prepend the base URL using asset() for local storage paths
+//                                     $image = asset('storage/' . ltrim($image, 'storage/'));  // Handle the path correctly
+//                                 } else {
+//                                     // Handle the case where the image is neither a URL nor in storage/
+//                                     // (e.g., if it's a relative path or file name)
+//                                     $image = asset('storage/products/' . $image);  // Prepend base URL for default product storage path
+//                                 }
+//                             }
+//                             return $image;  // Return the modified image URL
+//                         }, $images);
+//                     }
+
+//                     // Assign the processed images back to the product
+//                     $product->images = $images;
+//                 }
+
+//                 return $product;
+//             });
+
+//         // Retrieve the payment channel for the order
+//         $paymentChannel = DB::table('payments')
+//             ->where('order_id', $order->id)
+//             ->value('payment_channel'); // Get the single column value
+
+//         // Attach the products and payment channel to the order
+//         $order->setAttribute('products', $products);
+//         $order->setAttribute('payment_channel', $paymentChannel);
+
+//         return $order;
+//     });
+
+//     // Return all orders with their product details and payment channel as a JSON response
+//     return response()->json([
+//         'success' => true,
+//         'data' => $orders
+//     ], 200);
+// }
 
 
 

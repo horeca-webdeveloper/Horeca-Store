@@ -108,7 +108,7 @@ Route::middleware('auth:sanctum')->post('/remove-from-save-for-later', [SaveForL
 
 
 Route::middleware('auth:sanctum')->get('/customer/coupons', [CustomerCouponApiController::class, 'getCustomerCoupons']);
-
+Route::middleware('auth:sanctum')->get('/customer/search-coupon', [CustomerCouponApiController::class, 'searchCustomerCoupons']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('recently-viewed', [RecentlyViewedProductController::class, 'addToRecent']);

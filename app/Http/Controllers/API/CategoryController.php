@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
-
+use Botble\Ecommerce\Models\Brand;
 use Botble\Ecommerce\Models\Product;
 use Botble\Ecommerce\Models\ProductCategory;
 use Botble\Ecommerce\Models\Specification;
@@ -580,10 +580,13 @@ class CategoryController extends Controller
 			$filters = [];
 		}
 
+		$brands = Brand::select('id', 'name')->get();
+
 		return response()->json([
 			'success' => true,
 			'filters' => $filters,
 			'products' => $categoryProducts,
+			'brands' => $brands,
 		], 200);
 	}
 
