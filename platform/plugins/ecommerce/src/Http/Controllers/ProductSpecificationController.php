@@ -68,6 +68,8 @@ class ProductSpecificationController extends BaseController
 			session()->put('error', implode(', ', $validator->errors()->all()));
 			return back();
 		}
+		$fileName = "$request->category Products $request->range_from-$request->range_to.xlsx";
+		$fileName = strtolower(str_replace(' ', '_', trim($fileName)));
 
 		/* Fetch leaf categories based on super parent category name */
 		$leafCategories = ProductCategory::getLeafCategoriesBySuperParentName($request->category);
@@ -125,6 +127,6 @@ class ProductSpecificationController extends BaseController
 		}
 
 		/* Download file */
-		$this->excel->downloadFile('abc.xlsx', $spreadsheet);
+		$this->excel->downloadFile($fileName, $spreadsheet);
 	}
 }
