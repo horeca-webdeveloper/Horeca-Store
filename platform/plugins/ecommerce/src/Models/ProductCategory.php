@@ -21,152 +21,175 @@ use Illuminate\Support\Str;
 
 class ProductCategory extends BaseModel implements HasTreeCategoryContract
 {
-    use HasTreeCategory;
+	use HasTreeCategory;
 
-    protected $table = 'ec_product_categories';
+	protected $table = 'ec_product_categories';
 
-    protected $fillable = [
-        'name',
-        'parent_id',
-        'description',
-        'order',
-        'status',
-        'image',
-        'is_featured',
-        'icon',
-        'icon_image',
-        'slug',
-    ];
+	protected $fillable = [
+		'name',
+		'parent_id',
+		'description',
+		'order',
+		'status',
+		'image',
+		'is_featured',
+		'icon',
+		'icon_image',
+		'slug',
+	];
 
-    protected $casts = [
-        'status' => BaseStatusEnum::class,
-    ];
+	protected $casts = [
+		'status' => BaseStatusEnum::class,
+	];
 
-    protected static function booted(): void
-    {
-        static::deleted(function (ProductCategory $category) {
-            $category->products()->detach();
+	protected static function booted(): void
+	{
+		static::deleted(function (ProductCategory $category) {
+			$category->products()->detach();
 
-            $category->children()->each(fn (ProductCategory $child) => $child->delete());
+			$category->children()->each(fn (ProductCategory $child) => $child->delete());
 
-            $category->brands()->detach();
-            $category->productAttributeSets()->detach();
-        });
+			$category->brands()->detach();
+			$category->productAttributeSets()->detach();
+		});
 
-        static::saved(function () {
-            (new CacheService(app('cache'), ProductCategory::class))->flush();
-        });
-    }
+		static::saved(function () {
+			(new CacheService(app('cache'), ProductCategory::class))->flush();
+		});
+	}
 
-    public function products(): BelongsToMany
-    {
-        return $this
-            ->belongsToMany(
-                Product::class,
-                'ec_product_category_product',
-                'category_id',
-                'product_id'
-            )
-            ->where('is_variation', 0);
-    }
+	public function products(): BelongsToMany
+	{
+		return $this
+		->belongsToMany(
+			Product::class,
+			'ec_product_category_product',
+			'category_id',
+			'product_id'
+		)
+		->where('is_variation', 0);
+	}
 
-    public function parent(): BelongsTo
-    {
-        return $this
-            ->belongsTo(ProductCategory::class, 'parent_id')
-            ->whereNot('parent_id', $this->getKey())
-            ->withDefault();
-    }
+	public function parent(): BelongsTo
+	{
+		return $this
+		->belongsTo(ProductCategory::class, 'parent_id')
+		->whereNot('parent_id', $this->getKey())
+		->withDefault();
+	}
 
-    public function children(): HasMany
-    {
-        return $this
-            ->hasMany(ProductCategory::class, 'parent_id')
-            ->whereNot('id', $this->getKey());
-    }
+	public function children(): HasMany
+	{
+		return $this
+		->hasMany(ProductCategory::class, 'parent_id')
+		->whereNot('id', $this->getKey());
+	}
 
-    public function childrens(): HasMany
-    {
-        return $this->hasMany(ProductCategory::class, 'parent_id')
-            ->select(['id', 'name', 'parent_id'])
-            ->with('childrens'); // Recursive loading
-    }
+	public function childrens(): HasMany
+	{
+		return $this->hasMany(ProductCategory::class, 'parent_id')
+		->select(['id', 'name', 'parent_id'])
+			->with('childrens'); // Recursive loading
+		}
 
-    public function activeChildren(): HasMany
-    {
-        return $this
-            ->children()
-            ->wherePublished()
-            ->orderBy('order')
-            ->with(['slugable', 'activeChildren']);
-    }
+		public function activeChildren(): HasMany
+		{
+			return $this
+			->children()
+			->wherePublished()
+			->orderBy('order')
+			->with(['slugable', 'activeChildren']);
+		}
 
-    public function brands(): MorphToMany
-    {
-        return $this->morphedByMany(Brand::class, 'reference', 'ec_product_categorizables', 'category_id');
-    }
+		public function brands(): MorphToMany
+		{
+			return $this->morphedByMany(Brand::class, 'reference', 'ec_product_categorizables', 'category_id');
+		}
 
-    public function productAttributeSets(): MorphToMany
-    {
-        return $this->morphedByMany(ProductAttributeSet::class, 'reference', 'ec_product_categorizables', 'category_id');
-    }
+		public function productAttributeSets(): MorphToMany
+		{
+			return $this->morphedByMany(ProductAttributeSet::class, 'reference', 'ec_product_categorizables', 'category_id');
+		}
 
-    protected function parents(): Attribute
-    {
-        return Attribute::get(function (): Collection {
-            $parents = collect();
+		protected function parents(): Attribute
+		{
+			return Attribute::get(function (): Collection {
+				$parents = collect();
 
-            $parent = $this->parent;
+				$parent = $this->parent;
 
-            while ($parent->id) {
-                $parents->push($parent);
-                $parent = $parent->parent;
-            }
+				while ($parent->id) {
+					$parents->push($parent);
+					$parent = $parent->parent;
+				}
 
-            return $parents;
-        });
-    }
+				return $parents;
+			});
+		}
 
-    protected function badgeWithCount(): Attribute
-    {
-        return Attribute::get(function (): HtmlString {
-            $link = route('products.index', [
-                'filter_table_id' => strtolower(Str::slug(Str::snake(ProductTable::class))),
-                'class' => Product::class,
-                'filter_columns' => ['category'],
-                'filter_operators' => ['='],
-                'filter_values' => [$this->id],
-            ]);
+		protected function badgeWithCount(): Attribute
+		{
+			return Attribute::get(function (): HtmlString {
+				$link = route('products.index', [
+					'filter_table_id' => strtolower(Str::slug(Str::snake(ProductTable::class))),
+					'class' => Product::class,
+					'filter_columns' => ['category'],
+					'filter_operators' => ['='],
+					'filter_values' => [$this->id],
+				]);
 
-            return Html::link($link, sprintf('(%s)', $this->products_count), [
-                'data-bs-toggle' => 'tooltip',
-                'data-bs-original-title' => trans('plugins/ecommerce::product-categories.total_products', ['total' => $this->products_count]),
-            ]);
-        });
-    }
+				return Html::link($link, sprintf('(%s)', $this->products_count), [
+					'data-bs-toggle' => 'tooltip',
+					'data-bs-original-title' => trans('plugins/ecommerce::product-categories.total_products', ['total' => $this->products_count]),
+				]);
+			});
+		}
 
-    protected function iconHtml(): Attribute
-    {
-        return Attribute::get(function (): ?HtmlString {
-            if ($this->icon_image) {
-                return RvMedia::image($this->icon_image, attributes: ['alt' => $this->name]);
-            }
+		protected function iconHtml(): Attribute
+		{
+			return Attribute::get(function (): ?HtmlString {
+				if ($this->icon_image) {
+					return RvMedia::image($this->icon_image, attributes: ['alt' => $this->name]);
+				}
 
-            if ($this->icon) {
-                return Html::tag('i', '', $this->icon);
-            }
+				if ($this->icon) {
+					return Html::tag('i', '', $this->icon);
+				}
 
-            return null;
-        });
-    }
+				return null;
+			});
+		}
 
-    public function productTypes()
-    {
-        return $this->belongsToMany(ProductTypes::class, 'category_product_types', 'category_id', 'product_type_id');
-    }
+		public function productTypes()
+		{
+			return $this->belongsToMany(ProductTypes::class, 'category_product_types', 'category_id', 'product_type_id');
+		}
 
-    public function specifications()
-    {
-        return $this->hasMany(CategorySpecification::class, 'category_id')->orderBy('id');
-    }
-}
+		public function specifications()
+		{
+			return $this->hasMany(CategorySpecification::class, 'category_id')->orderBy('id');
+		}
+
+		public static function getLeafCategoriesBySuperParentName($superParentName)
+		{
+			$superParent = self::where('name', $superParentName)->first();
+
+			if (!$superParent) {
+				return collect();
+			}
+
+			return self::getLeafCategories($superParent);
+		}
+
+		private static function getLeafCategories($category)
+		{
+			if ($category->childrens->isEmpty()) {
+				return collect([$category]);
+			}
+
+			return $category->childrens->flatMap(function ($child) {
+				return self::getLeafCategories($child);
+			});
+		}
+
+	}

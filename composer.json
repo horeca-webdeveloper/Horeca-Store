@@ -33,6 +33,7 @@
         "laravel/sanctum": "^3.3",
         "laravel/tinker": "^2.9",
         "league/flysystem-aws-s3-v3": "^3.29",
+        "phpoffice/phpspreadsheet": "^2.1",
         "predis/predis": "^2.2",
         "square/square": "^39.1",
         "wikimedia/composer-merge-plugin": "^2.1"
