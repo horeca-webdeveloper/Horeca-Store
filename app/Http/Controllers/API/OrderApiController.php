@@ -688,6 +688,7 @@ private function calculateTotalAmount(array $products, float $sub_total): float
 //     ], 200);
 // }
 
+
 public function index(Request $request)
 {
     $query = Order::where('user_id', $request->user()->id);
@@ -773,6 +774,33 @@ public function index(Request $request)
         return $order;
     });
 
+    // Generate pagination links in the required format
+    $links = [];
+
+    // Previous Page Link
+    $links[] = [
+        'url' => $orders->previousPageUrl(),
+        'label' => '&laquo; Previous',
+        'active' => false
+    ];
+
+    // Page Number Links
+    for ($i = 1; $i <= $orders->lastPage(); $i++) {
+        $links[] = [
+            'url' => $orders->url($i),
+            'label' => (string) $i,
+            'active' => $i === $orders->currentPage()
+        ];
+    }
+
+    // Next Page Link
+    $links[] = [
+        'url' => $orders->nextPageUrl(),
+        'label' => 'Next &raquo;',
+        'active' => false
+    ];
+
+    // Return the JSON response
     return response()->json([
         'success' => true,
         'data' => $orders->items(), // Orders data
@@ -781,17 +809,115 @@ public function index(Request $request)
             'last_page' => $orders->lastPage(),
             'per_page' => $orders->perPage(),
             'total' => $orders->total(),
-            'links' => collect($orders->links())->map(function ($link) {
-                return [
-                    'url' => $link['url'],
-                    'label' => strip_tags($link['label']), // Remove HTML tags like "<a>" or symbols
-                    'active' => $link['active'],
-                ];
-            })->toArray(),
+            'links' => $links
         ]
     ], 200);
-    
 }
+
+// public function index(Request $request)
+// {
+//     $query = Order::where('user_id', $request->user()->id);
+
+//     // If a search term is provided, add it to the query
+//     if ($request->has('search') && $request->search != '') {
+//         $search = $request->search;
+
+//         $query->where(function ($q) use ($search) {
+//             // Search by order ID or order code
+//             $q->where('id', 'like', '%' . $search . '%')
+//               ->orWhere('code', 'like', '%' . $search . '%') // Search by order code
+//               // Search by product name (joins ec_order_product and ec_products tables)
+//               ->orWhereExists(function ($query) use ($search) {
+//                   $query->select(DB::raw(1))
+//                         ->from('ec_order_product')
+//                         ->join('ec_products', 'ec_order_product.product_id', '=', 'ec_products.id')
+//                         ->whereRaw('ec_order_product.order_id = ec_orders.id')
+//                         ->where('ec_products.name', 'like', '%' . $search . '%');
+//               });
+//         });
+//     }
+
+//     // Paginate the orders (5 per page)
+//     $orders = $query->orderBy('created_at', 'desc')->paginate(5);
+
+//     // If no orders are found, return a message with success false
+//     if ($orders->isEmpty()) {
+//         return response()->json([
+//             'success' => false,
+//             'message' => 'No orders found'
+//         ], 200);
+//     }
+
+//     // Transform each order to include its associated products and payment channel
+//     $orders->getCollection()->transform(function ($order) {
+//         $products = DB::table('ec_order_product')
+//             ->join('ec_products', 'ec_order_product.product_id', '=', 'ec_products.id')
+//             ->where('ec_order_product.order_id', $order->id)
+//             ->select(
+//                 'ec_products.id as product_id',
+//                 'ec_products.name',
+//                 'ec_products.sale_price',
+//                 'ec_products.delivery_days',
+//                 'ec_products.images',
+//                 'ec_order_product.price',
+//                 'ec_order_product.qty'
+//             )
+//             ->get()
+//             ->map(function ($product) {
+//                 // Decode and process images
+//                 if ($product->images) {
+//                     $images = json_decode($product->images, true);
+
+//                     if (is_array($images)) {
+//                         $images = array_map(function ($image) {
+//                             if (!preg_match('/^https?:\/\//', $image)) {
+//                                 if (strpos($image, 'storage/') === 0 || strpos($image, 'storage/products/') === 0) {
+//                                     $image = asset('storage/' . ltrim($image, 'storage/'));
+//                                 } else {
+//                                     $image = asset('storage/products/' . $image);
+//                                 }
+//                             }
+//                             return $image;
+//                         }, $images);
+//                     }
+
+//                     $product->images = $images;
+//                 }
+
+//                 return $product;
+//             });
+
+//         // Retrieve the payment channel for the order
+//         $paymentChannel = DB::table('payments')
+//             ->where('order_id', $order->id)
+//             ->value('payment_channel');
+
+//         // Attach the products and payment channel to the order
+//         $order->setAttribute('products', $products);
+//         $order->setAttribute('payment_channel', $paymentChannel);
+
+//         return $order;
+//     });
+
+//     return response()->json([
+//         'success' => true,
+//         'data' => $orders->items(), // Orders data
+//         'pagination' => [
+//             'current_page' => $orders->currentPage(),
+//             'last_page' => $orders->lastPage(),
+//             'per_page' => $orders->perPage(),
+//             'total' => $orders->total(),
+//             'links' => collect($orders->links())->map(function ($link) {
+//                 return [
+//                     'url' => $link['url'],
+//                     'label' => strip_tags($link['label']), // Remove HTML tags like "<a>" or symbols
+//                     'active' => $link['active'],
+//                 ];
+//             })->toArray(),
+//         ]
+//     ], 200);
+    
+// }
 
 // public function index(Request $request)
 // {
