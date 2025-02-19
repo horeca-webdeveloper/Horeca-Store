@@ -186,6 +186,9 @@ class ProductImportController extends BaseController
 				}
 				fclose($handle);
 			}
+			# To delete imported excel file
+			$command = "rm -rf ".$fileNameWithPath;
+			shell_exec($command);
 
 			/* Remove the header row */
 			$header = array_shift($data);
@@ -197,10 +200,6 @@ class ProductImportController extends BaseController
 				$missingCount = count($missingColumns);
 				$message = $missingCount > 1 ? "The uploaded file has an incorrect header. $columns columns are missing." : "The uploaded file has an incorrect header. $columns column is missing.";
 
-				# To delete imported excel file
-				$command = "rm -rf ".$fileNameWithPath;
-				shell_exec($command);
-
 				session()->put('error', $message);
 				return back();
 			}
@@ -208,10 +207,6 @@ class ProductImportController extends BaseController
 			/* Get the total record count */
 			$totalRecords = count($data);
 			if ($totalRecords == 0) {
-				# To delete imported excel file
-				$command = "rm -rf ".$fileNameWithPath;
-				shell_exec($command);
-
 				session()->put('error', "The uploaded CSV file does not contain any records. Please ensure the file has valid data and try again.");
 				return back();
 			}
@@ -240,7 +235,7 @@ class ProductImportController extends BaseController
 				$log->created_at = now();
 				$log->save();
 			})
-			->finally(function (Batch $batch) use ($fileNameWithPath) {
+			->finally(function (Batch $batch) {
 				$log = TransactionLog::where('identifier', $batch->id)->first();
 				TransactionLog::where('id', $log->id)->update([
 					'status' => 'Completed',
@@ -250,9 +245,6 @@ class ProductImportController extends BaseController
 				// if (file_exists($fileNameWithPath)) {
 				// 	unlink($fileNameWithPath);
 				// }
-				# To delete imported excel file
-				$command = "rm -rf ".$fileNameWithPath;
-				shell_exec($command);
 			})
 			->name("Product Import")
 			->dispatch();
