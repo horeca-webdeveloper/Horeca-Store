@@ -60,6 +60,7 @@ use App\Http\Controllers\API\SquarePaymentController;
 
 	Route::get('admin/ecommerce/import-product-attribute', [ProductSpecificationController::class, 'import'])->name('productSpecifications.import');
 	Route::post('admin/ecommerce/import-product-attribute', [ProductSpecificationController::class, 'postImport'])->name('productSpecifications.postImport');
+	Route::get('admin/ecommerce/import-product-attribute/{id}', [ProductImportController::class, 'show'])->name('productSpecifications.view');
 
 
 // });

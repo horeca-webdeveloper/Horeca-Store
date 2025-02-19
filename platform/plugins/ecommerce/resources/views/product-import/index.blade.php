@@ -65,7 +65,7 @@
 
 		<div class="form-group">
 			<label for="fileInput">Upload File:</label>
-			<input class="form-control" type="file" name="upload_file" id="fileInput" class="form-control">
+			<input class="form-control mt-1" type="file" name="upload_file" id="fileInput" class="form-control">
 		</div>
 		<button type="submit" class="btn btn-primary">Upload</button>
 	</form>

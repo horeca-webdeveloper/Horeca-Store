@@ -125,7 +125,7 @@ class ProductSpecificationController extends BaseController
 
 	public function import()
 	{
-		$logs = TransactionLog::all();
+		$logs = TransactionLog::where('module', 'Product Specification')->where('action', 'Import')->get();
 		$this->pageTitle(trans('plugins/ecommerce::products.import_product_specification'));
 		return view('plugins/ecommerce::product-specification.import', compact('logs'));
 	}

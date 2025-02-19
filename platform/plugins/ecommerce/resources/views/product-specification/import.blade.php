@@ -54,13 +54,52 @@
 	@php(session()->forget('error'))
 @endif
 
-<h2>Import Product Specification</h2>
-<form action="{{ route('productSpecifications.postImport') }}" method="POST" enctype="multipart/form-data">
-	@csrf
-	<div class="form-group mb-2">
-		<label for="fileInput">Upload File:</label>
-		<input class="form-control" type="file" name="upload_file" id="fileInput" class="form-control">
-	</div>
-	<button type="submit" class="btn btn-primary">Upload</button>
-</form>
+<div class="container mt-1">
+	<h2>Import Product Specification</h2>
+	<form action="{{ route('productSpecifications.postImport') }}" method="POST" enctype="multipart/form-data">
+		@csrf
+		<div class="form-group mb-2">
+			<label for="fileInput">Upload File:</label>
+			<input class="form-control mt-1" type="file" name="upload_file" id="fileInput" class="form-control">
+		</div>
+		<button type="submit" class="btn btn-primary">Upload</button>
+	</form>
+
+	<h2 class="mt-5">Import Logs</h2>
+	<table class="table table-striped table-bordered mt-3">
+		<thead>
+			<tr>
+				<th>Module</th>
+				<th>Action</th>
+				<th>Identifier</th>
+				<th>Status</th>
+				<th>Created By</th>
+				<th>Created At</th>
+				<th>Action</th>
+			</tr>
+		</thead>
+		<tbody>
+			@foreach($logs as $log)
+			<tr>
+				<td>{{ $log->module }}</td>
+				<td>{{ $log->action }}</td>
+				<td>{{ $log->identifier }}</td>
+				<td><span class="statusStyle" @if($log->status=="Completed") style="background-color: green" @elseif($log->status=="Failed") style="background-color: red" @elseif($log->status=="In-progress") style="background-color: #d7d73f" @endif>{{ $log->status }}</span></td>
+				<td>{{ $log->createdBy->name }}</td>
+				<td>{{ $log->created_at }}</td>
+				<td>
+					<a href="{{ route('productSpecifications.view', $log->id) }}" class="btn btn-sm btn-info">View</a>
+				</td>
+			</tr>
+			@endforeach
+		</tbody>
+	</table>
+</div>
+<style type="text/css">
+	.statusStyle {
+		border-radius: 5px;
+		padding: 5px;
+		color: white;
+	}
+</style>
 @endsection

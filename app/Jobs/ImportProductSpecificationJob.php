@@ -15,6 +15,7 @@ use Throwable;
 
 use Botble\Ecommerce\Models\Product;
 use Botble\Ecommerce\Models\Specification;
+use Botble\Ecommerce\Models\CategorySpecification;
 use App\Models\TransactionLog;
 
 class ImportProductSpecificationJob implements ShouldQueue
@@ -97,8 +98,30 @@ class ImportProductSpecificationJob implements ShouldQueue
 							'spec_name' => $spec,
 							'spec_value' => trim($rowData[$spec]),
 						]);
+
+						/* Get latest category ID */
+						$latestCategoryId = $product->categories()->orderByRaw('COALESCE(ec_product_category_product.created_at, "1970-01-01 00:00:00") DESC')->orderBy('ec_product_category_product.category_id', 'DESC')->value('category_id');
+
+						if ($latestCategoryId) {
+							/* Check existing specification */
+							$categorySpec = CategorySpecification::where('category_id', $latestCategoryId)->where('specification_name', $spec)->first();
+
+							if ($categorySpec) {
+								$existingValues = explode('|', $categorySpec->specification_values);
+								$newValue = trim($rowData[$spec]);
+
+								/* Append new value if it's not already present */
+								if (!in_array($newValue, $existingValues)) {
+									$existingValues[] = $newValue;
+									$categorySpec->update([
+										'specification_values' => implode('|', $existingValues),
+									]);
+								}
+							}
+						}
 					}
 				}
+
 
 				DB::commit();
 				$success++;
