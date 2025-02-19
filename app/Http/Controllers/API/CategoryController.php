@@ -437,6 +437,8 @@ class CategoryController extends Controller
 		$validator = Validator::make($request->all(), [
 			'category_id' => 'required|integer',
 			'applied_filters' => 'nullable|array',
+			'price_min' => 'nullable|numeric|min:0',
+			'price_max' => 'nullable|numeric|min:0',
 			'price_order' => 'nullable|in:high_to_low,low_to_high', // Add price order validation
 		]);
 
@@ -489,6 +491,15 @@ class CategoryController extends Controller
 				});
 			}
 		}
+
+		 // Apply price filter
+		 if ($request->has('price_min') || $request->has('price_max')) {
+			$priceMin = $request->input('price_min', 0);
+			$priceMax = $request->input('price_max', PHP_INT_MAX);
+			$categoryProducts->whereRaw("COALESCE(sale_price, price) BETWEEN ? AND ?", [$priceMin, $priceMax]);
+		}
+
+		
         if ($sortBy == 'price') {
             $categoryProducts = $categoryProducts->orderByRaw("COALESCE(sale_price, price) $sortByType");
         } else {
