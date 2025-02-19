@@ -274,7 +274,7 @@ class ProductImportController extends BaseController
 		} catch(Exception $exception) {
 			# Exception
 			session()->put('error', $exception->getMessage());
-			return redirect('schools')->with('error', $exception->getMessage());
+			return back();
 		}
 	}
 

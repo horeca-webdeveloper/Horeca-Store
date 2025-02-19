@@ -54,8 +54,12 @@ use App\Http\Controllers\API\SquarePaymentController;
 	Route::get('admin/ecommerce/copy-products-to-s3', [CategoryProductTypeController::class, 'copyProductsToS3']);
 
 
-	Route::get('admin/ecommerce/export-product-attribute', [ProductSpecificationController::class, 'index'])->name('productSpecifications.import');
-	Route::post('admin/ecommerce/export-product-attribute', [ProductSpecificationController::class, 'store'])->name('productSpecifications.importPost');
+	Route::get('admin/ecommerce/export-product-attribute', [ProductSpecificationController::class, 'index'])->name('productSpecifications.export');
+	Route::post('admin/ecommerce/export-product-attribute', [ProductSpecificationController::class, 'store'])->name('productSpecifications.exportPost');
+
+
+	Route::get('admin/ecommerce/import-product-attribute', [ProductSpecificationController::class, 'import'])->name('productSpecifications.import');
+	Route::post('admin/ecommerce/import-product-attribute', [ProductSpecificationController::class, 'postImport'])->name('productSpecifications.postImport');
 
 
 // });

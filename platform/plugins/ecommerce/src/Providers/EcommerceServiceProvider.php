@@ -837,8 +837,18 @@ class EcommerceServiceProvider extends ServiceProvider
                     'parent_id' => 'cms-plugins-ecommerce',
                     'name' => 'Export Product Specifications',
                     'icon' => 'ti ti-tag',
-                    'url' => fn () => route('productSpecifications.import'),
+                    'url' => fn () => route('productSpecifications.export'),
                     'permissions' => ['export_product_specifications.index'],
+                ])
+
+                ->registerItem([
+                    'id' => 'cms-plugins-import-product-specifications',
+                    'priority' => 501,
+                    'parent_id' => 'cms-plugins-ecommerce',
+                    'name' => 'Import Product Specifications',
+                    'icon' => 'ti ti-tag',
+                    'url' => fn () => route('productSpecifications.import'),
+                    'permissions' => ['import_product_specifications.index'],
                 ])
 
                 ->registerItem([

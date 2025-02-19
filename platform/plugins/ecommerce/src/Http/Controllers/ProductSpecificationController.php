@@ -11,18 +11,11 @@ use Illuminate\Bus\Batch;
 use Botble\Ecommerce\Models\ProductCategory;
 use Botble\Ecommerce\Models\CategorySpecification;
 
-use Botble\Ecommerce\Models\TempProduct;
 use Botble\Ecommerce\Models\Product;
-use Botble\Ecommerce\Models\UnitOfMeasurement;
-use Botble\Ecommerce\Models\Discount;
-use Botble\Ecommerce\Models\DiscountProduct;
-use Botble\Ecommerce\Models\TempProductComment;
-use Botble\Ecommerce\Models\ProductTypes;
-use Botble\Marketplace\Models\Store;
 use App\Models\TransactionLog;
-use DB, Carbon\Carbon, Validator;
+use Validator;
 
-use App\Jobs\ImportProductJob;
+use App\Jobs\ImportProductSpecificationJob;
 
 use App\Repository\ExcelRepository;
 
@@ -51,7 +44,7 @@ class ProductSpecificationController extends BaseController
 		// $logs = TransactionLog::all();
 		$parentCategories = ProductCategory::where('parent_id', 0)->pluck('name')->all();
 		$this->pageTitle(trans('plugins/ecommerce::products.export_product_specification'));
-		return view('plugins/ecommerce::product-specification.index', compact('parentCategories'));
+		return view('plugins/ecommerce::product-specification.export', compact('parentCategories'));
 	}
 
 	public function store(Request $request)
@@ -128,5 +121,94 @@ class ProductSpecificationController extends BaseController
 
 		/* Download file */
 		$this->excel->downloadFile($fileName, $spreadsheet);
+	}
+
+	public function import()
+	{
+		$logs = TransactionLog::all();
+		$this->pageTitle(trans('plugins/ecommerce::products.import_product_specification'));
+		return view('plugins/ecommerce::product-specification.import', compact('logs'));
+	}
+
+	public function postImport(Request $request)
+	{
+		try {
+			$rules = [
+				'upload_file' => 'required|mimes:xlsx,xls|max:5120'
+			];
+			$validator = Validator::make($request->all(), $rules);
+			if ($validator->fails()) {
+				session()->put('error', implode(', ', $validator->errors()->all()));
+				return back();
+			}
+
+			$mandatoryHeaders = ['ID', 'SKU', 'Name'];
+
+			$file = $request->file('upload_file');
+			$spreadsheet = $this->excel->loadFile($file->getRealPath());
+			$sheet = $spreadsheet->getActiveSheet();
+			$data = $sheet->toArray();
+			$header = array_shift($data);
+
+			/* Check required header */
+			$missingHeaders = array_diff($mandatoryHeaders, $header);
+			if (!empty($missingHeaders)) {
+				return back()->with('error', 'Missing mandatory columns: ' . implode(', ', $missingHeaders));
+			}
+
+			$totalRecords = count($data);
+			if ($totalRecords == 0) {
+				session()->put('error', "The uploaded CSV file does not contain any records. Please ensure the file has valid data and try again.");
+				return back();
+			}
+
+			/* Create batch */
+			$batch = Bus::batch([])
+			->before(function (Batch $batch) use ($totalRecords) {
+				$descArray = [
+					"Total Count" => $totalRecords,
+					"Success Count" => 0,
+					"Failed Count" => 0,
+					"Errors" => []
+				];
+				/* Save transaction log */
+				$log = new TransactionLog();
+				$log->module = "Product Specification";
+				$log->action = "Import";
+				$log->identifier = $batch->id;
+				$log->status = 'In-progress';
+				$log->description = json_encode($descArray, JSON_UNESCAPED_UNICODE);
+				$log->created_by = auth()->id() ?? null;
+				$log->created_at = now();
+				$log->save();
+			})
+			->finally(function (Batch $batch) {
+				$log = TransactionLog::where('identifier', $batch->id)->first();
+				TransactionLog::where('id', $log->id)->update([
+					'status' => 'Completed',
+				]);
+			})
+			->name("Product Specification Import")
+			->dispatch();
+
+			/* Chunk the data into manageable portions (e.g., 100 rows per chunk) */
+			$chunkSize = 100;
+			$chunks = array_chunk($data, $chunkSize);
+
+			foreach ($chunks as $chunk) {
+				$data = [
+					'header' => $header,
+					'chunk' => $chunk
+				];
+				$batch->add(new ImportProductSpecificationJob($data));
+			}
+
+			session()->put('success', 'The import process has been scheduled successfully. Please track it under import log.');
+			return back();
+		} catch(\Exception $exception) {
+			# Exception
+			session()->put('error', $exception->getMessage());
+			return back();
+		}
 	}
 }
