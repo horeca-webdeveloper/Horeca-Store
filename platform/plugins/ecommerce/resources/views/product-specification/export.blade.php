@@ -55,7 +55,7 @@
 @endif
 
 <h2>Export Product Specification</h2>
-<form action="{{ route('productSpecifications.importPost') }}" method="POST" enctype="multipart/form-data">
+<form action="{{ route('productSpecifications.exportPost') }}" method="POST" enctype="multipart/form-data">
 	@csrf
 	<div class="form-group mb-2">
 		<label>Select Category</label>

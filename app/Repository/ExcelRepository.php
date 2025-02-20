@@ -47,7 +47,7 @@ class ExcelRepository
 	 * To Set dropdown in excel export file
 	 * @return Spreadsheet
 	 */
-	public function setDropdown($sheet, $cell, $dropdownVals)
+	public function setDropdown($sheet, $cell, $dropdownVals, $existingVal='')
 	{
 		if (!is_array($dropdownVals) || empty($dropdownVals)) {
 			dd('array issue');
@@ -65,6 +65,10 @@ class ExcelRepository
 		$validation->setError('Please select a value from the dropdown list.');
 
 		$validation->setFormula1('"' . implode(',', $dropdownVals) . '"');
+
+		if ($existingVal !== '' && in_array($existingVal, $dropdownVals, true)) {
+			$sheet->setCellValue($cell, $existingVal);
+		}
 
 		$sheet->getCell($cell)->setDataValidation($validation);
 	}
