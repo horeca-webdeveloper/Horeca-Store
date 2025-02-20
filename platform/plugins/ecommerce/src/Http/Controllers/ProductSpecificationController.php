@@ -220,7 +220,7 @@ class ProductSpecificationController extends BaseController
 		/* parent::breadcrumb()->add('Import Products', route('tools.data-synchronize.import.products.import')); */
 		$log = TransactionLog::find($transactionLogId);
 
-		return view('plugins/ecommerce::product-import.show', compact('log'));
+		return view('plugins/ecommerce::product-specification.show', compact('log'));
 
 	}
 }
