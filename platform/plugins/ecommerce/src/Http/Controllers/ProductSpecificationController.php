@@ -211,4 +211,16 @@ class ProductSpecificationController extends BaseController
 			return back();
 		}
 	}
+
+	/**
+	 * Display the specified resource.
+	 */
+	public function show($transactionLogId)
+	{
+		/* parent::breadcrumb()->add('Import Products', route('tools.data-synchronize.import.products.import')); */
+		$log = TransactionLog::find($transactionLogId);
+
+		return view('plugins/ecommerce::product-import.show', compact('log'));
+
+	}
 }

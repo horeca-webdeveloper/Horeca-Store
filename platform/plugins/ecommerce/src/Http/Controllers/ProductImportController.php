@@ -32,7 +32,7 @@ class ProductImportController extends BaseController
 
 	public function index()
 	{
-		$logs = TransactionLog::where('module', 'Product Specification')->where('action', 'Import')->get();
+		$logs = TransactionLog::where('module', 'Product')->where('action', 'Import')->get();
 		$this->pageTitle(trans('plugins/ecommerce::products.import_products'));
 		return view('plugins/ecommerce::product-import.index', compact('logs'));
 	}
