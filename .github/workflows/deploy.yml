@@ -61,5 +61,5 @@ jobs:
 
             # Composer dependencies
             # composer install --no-interaction --prefer-dist --optimize-autoloader
-            composer update square/square
+           
           EOF

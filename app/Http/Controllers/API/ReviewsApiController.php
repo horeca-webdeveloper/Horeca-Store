@@ -6,55 +6,141 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Botble\Ecommerce\Models\Review;
 use Botble\Ecommerce\Models\Product;
-
+use RvMedia;
 class ReviewsApiController extends Controller
 {
+    // public function getProductReviews(Request $request)
+    // {
+    //     // Log the request for debugging
+    //     \Log::info($request->all());
+
+    //     // Get the product ID from the request
+    //     $productId = $request->input('product_id');
+
+    //     // Calculate the total number of reviews for the product, ignoring filters
+    //     $totalReviews = Review::where('product_id', $productId)->count();
+
+    //     // Start building the query for filtered reviews
+    //     $query = Review::query();
+
+    //     // Apply filters for star ratings
+    //     if ($request->has('star')) {
+    //         $star = $request->input('star');
+    //         $query->where('star', $star);
+    //     }
+
+    //     // Filter by product ID if provided
+    //     if ($request->has('product_id')) {
+    //         // Check if the product exists
+    //         if (!Product::where('id', $productId)->exists()) {
+    //             return response()->json(['success' => false, 'message' => 'Product not found.'], 404);
+    //         }
+
+    //         $query->where('product_id', $productId);
+    //     }
+
+    //     // Filter for highest ratings
+    //     if ($request->has('sort') && $request->input('sort') === 'highest') {
+    //         $query->orderBy('star', 'desc');
+    //     }
+
+    //     // Filter for lowest ratings
+    //     elseif  ($request->has('sort') && $request->input('sort') === 'lowest') {
+    //         $query->orderBy('star', 'asc');
+    //     }
+    //     else {
+    //     $query->orderBy('created_at', 'desc'); // Default to latest first
+    //      }
+    //     // Get reviews with pagination after applying filters
+    //     $reviews = $query->paginate($request->input('per_page', 15));
+
+    //     // Count how many 1, 2, 3, 4, and 5-star reviews for the specific product
+    //     $starCounts = [
+    //         '1_star' => Review::where('star', 1)->where('product_id', $productId)->count(),
+    //         '2_star' => Review::where('star', 2)->where('product_id', $productId)->count(),
+    //         '3_star' => Review::where('star', 3)->where('product_id', $productId)->count(),
+    //         '4_star' => Review::where('star', 4)->where('product_id', $productId)->count(),
+    //         '5_star' => Review::where('star', 5)->where('product_id', $productId)->count(),
+    //     ];
+
+    //     // Calculate average rating
+    //     $averageRating = Review::where('product_id', $productId)->avg('star');
+
+    //     return response()->json([
+    //         'success' => true,
+    //         'data' => [
+    //             'reviews' => $reviews, // Paginated reviews after filters applied
+    //             'total_reviews' => $totalReviews, // Total reviews before any filters
+    //             'star_counts' => $starCounts, // Star breakdown
+    //             'average_rating' => round($averageRating, 2), // Rounded to 2 decimal places
+    //             'product_id' => $productId, // Include product ID in the response
+    //         ],
+    //     ]);
+    // }
+
+
+
     public function getProductReviews(Request $request)
     {
         // Log the request for debugging
         \Log::info($request->all());
-
+    
         // Get the product ID from the request
         $productId = $request->input('product_id');
-
+    
         // Calculate the total number of reviews for the product, ignoring filters
         $totalReviews = Review::where('product_id', $productId)->count();
-
+    
         // Start building the query for filtered reviews
         $query = Review::query();
-
+    
         // Apply filters for star ratings
         if ($request->has('star')) {
             $star = $request->input('star');
             $query->where('star', $star);
         }
-
+    
         // Filter by product ID if provided
         if ($request->has('product_id')) {
-            // Check if the product exists
             if (!Product::where('id', $productId)->exists()) {
                 return response()->json(['success' => false, 'message' => 'Product not found.'], 404);
             }
-
+    
             $query->where('product_id', $productId);
         }
-
-        // Filter for highest ratings
-        if ($request->has('sort') && $request->input('sort') === 'highest') {
-            $query->orderBy('star', 'desc');
+    
+        // Sorting filters
+        if ($request->has('sort')) {
+            if ($request->input('sort') === 'highest') {
+                $query->orderBy('star', 'desc');
+            } elseif ($request->input('sort') === 'lowest') {
+                $query->orderBy('star', 'asc');
+            }
+        } else {
+            $query->orderBy('created_at', 'desc'); // Default to latest first
         }
-
-        // Filter for lowest ratings
-        elseif  ($request->has('sort') && $request->input('sort') === 'lowest') {
-            $query->orderBy('star', 'asc');
-        }
-        else {
-        $query->orderBy('created_at', 'desc'); // Default to latest first
-    }
-        // Get reviews with pagination after applying filters
+    
+        // Get paginated reviews
         $reviews = $query->paginate($request->input('per_page', 15));
-
-        // Count how many 1, 2, 3, 4, and 5-star reviews for the specific product
+    
+        // Transform reviews to ensure images are an array
+        $reviews->getCollection()->transform(function ($review) {
+            // Ensure images are formatted as an array of URLs
+            $imageUrls = [];
+    
+            if (!empty($review->images) && is_array($review->images)) {
+                foreach ($review->images as $key => $imagePath) {
+                    $imageUrls[] = RvMedia::getImageUrl($imagePath);
+                }
+            }
+    
+            // Replace images with a properly formatted array
+            $review->images = $imageUrls;
+    
+            return $review;
+        });
+    
+        // Count reviews per star rating
         $starCounts = [
             '1_star' => Review::where('star', 1)->where('product_id', $productId)->count(),
             '2_star' => Review::where('star', 2)->where('product_id', $productId)->count(),
@@ -62,19 +148,20 @@ class ReviewsApiController extends Controller
             '4_star' => Review::where('star', 4)->where('product_id', $productId)->count(),
             '5_star' => Review::where('star', 5)->where('product_id', $productId)->count(),
         ];
-
+    
         // Calculate average rating
         $averageRating = Review::where('product_id', $productId)->avg('star');
-
+    
         return response()->json([
             'success' => true,
             'data' => [
-                'reviews' => $reviews, // Paginated reviews after filters applied
-                'total_reviews' => $totalReviews, // Total reviews before any filters
-                'star_counts' => $starCounts, // Star breakdown
-                'average_rating' => round($averageRating, 2), // Rounded to 2 decimal places
-                'product_id' => $productId, // Include product ID in the response
+                'reviews' => $reviews,
+                'total_reviews' => $totalReviews,
+                'star_counts' => $starCounts,
+                'average_rating' => round($averageRating, 2),
+                'product_id' => $productId,
             ],
         ]);
     }
+    
 }

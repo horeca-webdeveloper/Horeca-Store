@@ -261,15 +261,35 @@ public function getAllHomeBrandProducts(Request $request)
 
                     return [
                         "id" => $product->id,
-                        "name" => $product->name,
-                        "images" => array_map(function ($image) use ($getImageUrl) {
-                            return $getImageUrl($image);
-                        }, $productImages),
-                        "sku" => $product->sku ?? '',
-                        "price" => $product->price,
-                        "sale_price" => $product->sale_price ?? null,
-                        "rating" => $product->reviews()->avg('star') ?? null,
-                        "in_wishlist" => in_array($product->id, $wishlistIds),
+                        // "name" => $product->name,
+                        // "images" => array_map(function ($image) use ($getImageUrl) {
+                        //     return $getImageUrl($image);
+                        // }, $productImages),
+                        // "sku" => $product->sku ?? '',
+                        // "price" => $product->price,
+                        // "sale_price" => $product->sale_price ?? null,
+                        // "rating" => $product->reviews()->avg('star') ?? null,
+                        // "in_wishlist" => in_array($product->id, $wishlistIds),
+                        'name' => $product->name,
+                        'sku' => $product->sku,
+                        'price' => $product->price,
+                        'sale_price' => $product->sale_price,
+                        'best_delivery_date' => $product->best_delivery_date,
+                        'total_reviews' => $product->reviews->count(),
+                        'avg_rating' => $product->reviews->count() > 0 ? $product->reviews->avg('star') : null,
+                        'left_stock' => $product->left_stock ?? 0,
+                        'currency' => $product->currency->title ?? 'USD',
+                        'in_wishlist' => $product->in_wishlist ?? false,
+                        'images' => collect($product->images)->map(function ($image) {
+                            if (filter_var($image, FILTER_VALIDATE_URL)) {
+                                return $image;
+                            }
+                            $baseUrl = (strpos($image, 'storage/products/') === 0) ? url('storage/products/') : url('storage/');
+                            return $baseUrl . '/' . ltrim($image, '/');
+                        })->toArray(),
+                        'original_price' => $product->price,
+                        'front_sale_price' => $product->price,
+                        'best_price' => $product->price,
                     ];
                 }),
             ];

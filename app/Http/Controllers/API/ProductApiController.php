@@ -588,6 +588,45 @@ class ProductApiController extends Controller
                         //     $product->frequently_bought_together = $frequentlyBoughtProducts;
                         // }
 
+
+
+   if ($product->frequently_bought_together) {
+                                $frequentlyBoughtData = json_decode($product->frequently_bought_together, true);
+                                $frequentlyBoughtSkus = array_column($frequentlyBoughtData, 'value');
+                            
+                                $frequentlyBoughtProducts = Product::whereIn('sku', $frequentlyBoughtSkus)
+                                    ->with('reviews', 'currency')
+                                    ->get();
+                            
+                                $frequentlyBoughtProducts->transform(function ($fbProduct) {
+                                    return [
+                                        'id' => $fbProduct->id,
+                                        'name' => $fbProduct->name,
+                                        'sku' => $fbProduct->sku,
+                                        'price' => $fbProduct->price,
+                                        'sale_price' => $fbProduct->sale_price,
+                                        'best_delivery_date' => $fbProduct->best_delivery_date,
+                                        'total_reviews' => $fbProduct->reviews->count(),
+                                        'avg_rating' => $fbProduct->reviews->count() > 0 ? $fbProduct->reviews->avg('star') : null,
+                                        'left_stock' => $fbProduct->left_stock ?? 0,
+                                        'currency' => $fbProduct->currency->title ?? 'USD',
+                                        'in_wishlist' => $fbProduct->in_wishlist ?? false,
+                                        'images' => collect($fbProduct->images)->map(function ($image) {
+                                            if (filter_var($image, FILTER_VALIDATE_URL)) {
+                                                return $image;
+                                            }
+                                            $baseUrl = (strpos($image, 'storage/products/') === 0) ? url('storage/products/') : url('storage/');
+                                            return $baseUrl . '/' . ltrim($image, '/');
+                                        })->toArray(),
+                                        'original_price' => $fbProduct->price,
+                                        'front_sale_price' => $fbProduct->price,
+                                        'best_price' => $fbProduct->price,
+                                    ];
+                                });
+                            
+                                $product->frequently_bought_together = $frequentlyBoughtProducts;
+                            }
+                            
                         // Handle same SKU products
                         $sameSkuProducts = Product::where('sku', $product->sku)
                             ->where('id', '!=', $product->id)
