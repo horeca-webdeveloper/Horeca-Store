@@ -693,6 +693,11 @@ public function index(Request $request)
 {
     $query = Order::where('user_id', $request->user()->id);
 
+    // Filter by status if "type" parameter is provided
+    if ($request->has('type') && $request->type != '') {
+        $query->where('status', $request->type);
+    }
+
     // If a search term is provided, add it to the query
     if ($request->has('search') && $request->search != '') {
         $search = $request->search;
@@ -700,7 +705,7 @@ public function index(Request $request)
         $query->where(function ($q) use ($search) {
             // Search by order ID or order code
             $q->where('id', 'like', '%' . $search . '%')
-              ->orWhere('code', 'like', '%' . $search . '%') // Search by order code
+              ->orWhere('code', 'like', '%' . $search . '%')
               // Search by product name (joins ec_order_product and ec_products tables)
               ->orWhereExists(function ($query) use ($search) {
                   $query->select(DB::raw(1))
@@ -813,6 +818,7 @@ public function index(Request $request)
         ]
     ], 200);
 }
+
 
 // public function index(Request $request)
 // {
