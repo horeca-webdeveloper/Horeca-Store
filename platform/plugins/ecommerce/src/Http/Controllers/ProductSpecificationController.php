@@ -103,21 +103,27 @@ class ProductSpecificationController extends BaseController
 		/* Populate data */
 		$row = 2;
 		foreach ($products as $product) {
+			$existingSpecs = $product->specifications->pluck('spec_value', 'spec_name')->toArray();
 			$col = 'A';
+
+			/* Set basic product details */
 			$sheet->setCellValue($col++ . $row, $product->id);
 			$sheet->setCellValue($col++ . $row, $product->sku);
 			$sheet->setCellValue($col++ . $row, $product->name);
 
 			foreach ($specNames as $specName) {
+				$existingVal = $existingSpecs[$specName] ?? ''; // Use null coalescing operator
+
 				$cell = $col++ . $row;
-				if ($catSpecs[$specName]['is_fixed'] != 0) {
-					$this->excel->setDropdown($sheet, $cell, $catSpecs[$specName]['specification_values']);
+				if (!empty($catSpecs[$specName]) && $catSpecs[$specName]['is_fixed'] != 0) {
+					$this->excel->setDropdown($sheet, $cell, $catSpecs[$specName]['specification_values'], $existingVal);
 				} else {
-					$sheet->setCellValue($cell, "");
+					$sheet->setCellValue($cell, $existingVal);
 				}
 			}
 			$row++;
 		}
+
 
 		/* Download file */
 		$this->excel->downloadFile($fileName, $spreadsheet);
