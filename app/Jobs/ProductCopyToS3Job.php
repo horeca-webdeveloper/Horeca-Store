@@ -150,6 +150,11 @@ class ProductCopyToS3Job implements ShouldQueue
 				return null;
 			}
 
+			/* Ensure image is in Truecolor format */
+			if (imageistruecolor($image) === false) {
+				imagepalettetotruecolor($image);
+			}
+
 			$originalPath = env('STORAGE_ENV') . "/products/{$fileBaseName}.webp";
 			ob_start();
 			imagewebp($image);
