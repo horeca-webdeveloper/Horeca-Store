@@ -145,6 +145,12 @@ AdminHelper::registerRoutes(function () {
             //     'uses' => 'ProductImportController@show',
             //     'permission' => 'products.index',
             // ]);
+
+            Route::get('product-export', [
+                'as' => 'export',
+                'uses' => 'ProductExportController@index',
+                'permission' => 'products.index',
+            ]);
         });
     });
 
