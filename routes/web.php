@@ -52,6 +52,7 @@ use App\Http\Controllers\API\SquarePaymentController;
 	Route::get('admin/ecommerce/category-product-filter/{id}/edit', [CategoryProductTypeController::class, 'edit'])->name('categoryFilter.edit');
 	Route::put('admin/ecommerce/category-product-filter/{id}', [CategoryProductTypeController::class, 'update'])->name('categoryFilter.update');
 	Route::get('admin/ecommerce/copy-products-to-s3', [CategoryProductTypeController::class, 'copyProductsToS3']);
+	Route::get('admin/ecommerce/products-to-s3', [CategoryProductTypeController::class, 'productCopyToS3']);
 
 
 	Route::get('admin/ecommerce/export-product-attribute', [ProductSpecificationController::class, 'index'])->name('productSpecifications.export');
