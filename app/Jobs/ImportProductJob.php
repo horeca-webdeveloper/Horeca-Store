@@ -781,6 +781,11 @@ class ImportProductJob implements ShouldQueue
 				return null;
 			}
 
+			/* Ensure image is in Truecolor format */
+			if (imageistruecolor($image) === false) {
+				imagepalettetotruecolor($image);
+			}
+
 			// Save original image
 			$originalPath = env('STORAGE_ENV')."/products/{$fileBaseName}.{$fileExtension}";
 			ob_start();
