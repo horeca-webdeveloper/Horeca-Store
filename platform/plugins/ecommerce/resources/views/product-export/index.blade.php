@@ -60,13 +60,13 @@
 		@csrf
 
 		<div class="form-group">
-			<label for="start_id">Start ID</label>
-			<input class="form-control" type="number" name="start_id" id="start_id" class="form-control">
+			<label for="range_from">Range From</label>
+			<input class="form-control mt-1" type="number" name="range_from" id="range_from" class="form-control">
 		</div>
 
 		<div class="form-group">
-			<label for="end_id">End ID</label>
-			<input class="form-control" type="number" name="end_id" id="end_id" class="form-control">
+			<label for="range_to">Range To</label>
+			<input class="form-control mt-1" type="number" name="range_to" id="range_to" class="form-control">
 		</div>
 		<button type="submit" class="btn btn-primary">Submit</button>
 	</form>

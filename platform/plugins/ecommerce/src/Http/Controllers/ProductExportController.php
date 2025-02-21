@@ -32,23 +32,30 @@ class ProductExportController extends BaseController
 
 	public function index()
 	{
-		dd('called');
-		$logs = TransactionLog::all();
+		// dd('called');
+		// $logs = TransactionLog::all();
 		$this->pageTitle(trans('plugins/ecommerce::products.export_products'));
-		return view('plugins/ecommerce::product-export.index', compact('logs'));
+		// return view('plugins/ecommerce::product-export.index', compact('logs'));
+		return view('plugins/ecommerce::product-export.index');
 	}
 
 	public function store(Request $request)
 	{
-		try {
-			$rules = [
-				'upload_file' => 'required|max:5120|mimes:csv,txt'
-			];
-			$validator = Validator::make($request->all(), $rules);
-			if ($validator->fails()) {
-				session()->put('error', implode(', ', $validator->errors()->all()));
-				return back();
-			}
+		/* Validation rules */
+		$rules = [
+			'category' => 'required|string',
+			'range_from' => 'required|integer|min:1',
+			'range_to' => 'required|integer|gte:range_from|max:' . ($request->range_from + 2000),
+		];
+
+		$validator = Validator::make($request->all(), $rules);
+		if ($validator->fails()) {
+			session()->put('error', implode(', ', $validator->errors()->all()));
+			return back();
+		}
+
+		$fileName = "Export Products $request->range_from-$request->range_to.csv";
+		$fileName = strtolower(str_replace(' ', '_', trim($fileName)));
 
 			# Storing file on temp location
 			$file = $request->file('upload_file');
@@ -272,11 +279,11 @@ class ProductExportController extends BaseController
 
 			session()->put('success', 'The import process has been scheduled successfully. Please track it under import log.');
 			return back();
-		} catch(Exception $exception) {
-			# Exception
-			session()->put('error', $exception->getMessage());
-			return redirect('schools')->with('error', $exception->getMessage());
-		}
+		// } catch(Exception $exception) {
+		// 	# Exception
+		// 	session()->put('error', $exception->getMessage());
+		// 	return redirect('schools')->with('error', $exception->getMessage());
+		// }
 	}
 
 	/**
