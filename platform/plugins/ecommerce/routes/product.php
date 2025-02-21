@@ -151,6 +151,17 @@ AdminHelper::registerRoutes(function () {
                 'uses' => 'ProductExportController@index',
                 'permission' => 'products.index',
             ]);
+            // Route::get('export-product-attribute', [
+            //     'as' => 'product_specification_view',
+            //     'uses' => 'ProductSpecificationController@index',
+            //     'permission' => 'products.index',
+            // ]);
+
+            // Route::post('export-product-attribute', [
+            //     'as' => 'export_product_specification',
+            //     'uses' => 'ProductSpecificationController@store',
+            //     'permission' => 'products.index',
+            // ]);
         });
     });
 

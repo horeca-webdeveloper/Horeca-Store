@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers\API;
-
+use RvMedia;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Botble\Base\Events\BeforeEditContentEvent;
@@ -163,6 +163,16 @@ class ProductApiController extends Controller
                             return $baseUrl . '/' . ltrim($image, '/');
                         });
 
+                        $videoPaths = json_decode($product->video_path, true); // Decode JSON to array
+
+                        $product->video_path = collect($videoPaths)->map(function ($video) {
+                            if (filter_var($video, FILTER_VALIDATE_URL)) {
+                                return $video; // If it's already a full URL, return it.
+                            }
+                            return url('storage/' . ltrim($video, '/')); // Manually construct the full URL
+                        });
+
+
                         // Add review and stock details
                         $totalReviews = $product->reviews->count();
                         $avgRating = $totalReviews > 0 ? $product->reviews->avg('star') : null;
@@ -197,42 +207,79 @@ class ProductApiController extends Controller
                         }
 
                         // Handle frequently bought together products
-                        if ($product->frequently_bought_together) {
-                            $frequentlyBoughtData = json_decode($product->frequently_bought_together, true);
-                            $frequentlyBoughtSkus = array_column($frequentlyBoughtData, 'value');
+                            // if ($product->frequently_bought_together) {
+                            //     $frequentlyBoughtData = json_decode($product->frequently_bought_together, true);
+                            //     $frequentlyBoughtSkus = array_column($frequentlyBoughtData, 'value');
 
-                            $frequentlyBoughtProducts = Product::whereIn('sku', $frequentlyBoughtSkus)
-                                ->with('reviews', 'currency')
-                                ->get();
+                            //     $frequentlyBoughtProducts = Product::whereIn('sku', $frequentlyBoughtSkus)
+                            //         ->with('reviews', 'currency')
+                            //         ->get();
 
-                            $frequentlyBoughtProducts->transform(function ($fbProduct) {
-                                $fbProduct->images = collect($fbProduct->images)->map(function ($image) {
-                                    if (filter_var($image, FILTER_VALIDATE_URL)) {
-                                        return $image;
-                                    }
-                                    $baseUrl = (strpos($image, 'storage/products/') === 0) ? url('storage/products/') : url('storage/');
-                                    return $baseUrl . '/' . ltrim($image, '/');
+                            //     $frequentlyBoughtProducts->transform(function ($fbProduct) {
+                            //         $fbProduct->images = collect($fbProduct->images)->map(function ($image) {
+                            //             if (filter_var($image, FILTER_VALIDATE_URL)) {
+                            //                 return $image;
+                            //             }
+                            //             $baseUrl = (strpos($image, 'storage/products/') === 0) ? url('storage/products/') : url('storage/');
+                            //             return $baseUrl . '/' . ltrim($image, '/');
+                            //         });
+
+                            //         $totalReviews = $fbProduct->reviews->count();
+                            //         $avgRating = $totalReviews > 0 ? $fbProduct->reviews->avg('star') : null;
+
+                            //         $fbProduct->total_reviews = $totalReviews;
+                            //         $fbProduct->avg_rating = $avgRating;
+
+                            //         if ($fbProduct->currency) {
+                            //             $fbProduct->currency_title = $fbProduct->currency->is_prefix_symbol
+                            //                 ? $fbProduct->currency->title
+                            //                 : $fbProduct->price . ' ' . $fbProduct->currency->title;
+                            //         } else {
+                            //             $fbProduct->currency_title = $fbProduct->currency->title;
+                            //         }
+
+                            //         return $fbProduct;
+                            //     });
+
+                            //     $product->frequently_bought_together = $frequentlyBoughtProducts;
+                            // }
+                            if ($product->frequently_bought_together) {
+                                $frequentlyBoughtData = json_decode($product->frequently_bought_together, true);
+                                $frequentlyBoughtSkus = array_column($frequentlyBoughtData, 'value');
+                            
+                                $frequentlyBoughtProducts = Product::whereIn('sku', $frequentlyBoughtSkus)
+                                    ->with('reviews', 'currency')
+                                    ->get();
+                            
+                                $frequentlyBoughtProducts->transform(function ($fbProduct) {
+                                    return [
+                                        'id' => $fbProduct->id,
+                                        'name' => $fbProduct->name,
+                                        'sku' => $fbProduct->sku,
+                                        'price' => $fbProduct->price,
+                                        'sale_price' => $fbProduct->sale_price,
+                                        'best_delivery_date' => $fbProduct->best_delivery_date,
+                                        'total_reviews' => $fbProduct->reviews->count(),
+                                        'avg_rating' => $fbProduct->reviews->count() > 0 ? $fbProduct->reviews->avg('star') : null,
+                                        'left_stock' => $fbProduct->left_stock ?? 0,
+                                        'currency' => $fbProduct->currency->title ?? 'USD',
+                                        'in_wishlist' => $fbProduct->in_wishlist ?? false,
+                                        'images' => collect($fbProduct->images)->map(function ($image) {
+                                            if (filter_var($image, FILTER_VALIDATE_URL)) {
+                                                return $image;
+                                            }
+                                            $baseUrl = (strpos($image, 'storage/products/') === 0) ? url('storage/products/') : url('storage/');
+                                            return $baseUrl . '/' . ltrim($image, '/');
+                                        })->toArray(),
+                                        'original_price' => $fbProduct->price,
+                                        'front_sale_price' => $fbProduct->price,
+                                        'best_price' => $fbProduct->price,
+                                    ];
                                 });
-
-                                $totalReviews = $fbProduct->reviews->count();
-                                $avgRating = $totalReviews > 0 ? $fbProduct->reviews->avg('star') : null;
-
-                                $fbProduct->total_reviews = $totalReviews;
-                                $fbProduct->avg_rating = $avgRating;
-
-                                if ($fbProduct->currency) {
-                                    $fbProduct->currency_title = $fbProduct->currency->is_prefix_symbol
-                                        ? $fbProduct->currency->title
-                                        : $fbProduct->price . ' ' . $fbProduct->currency->title;
-                                } else {
-                                    $fbProduct->currency_title = $fbProduct->currency->title;
-                                }
-
-                                return $fbProduct;
-                            });
-
-                            $product->frequently_bought_together = $frequentlyBoughtProducts;
-                        }
+                            
+                                $product->frequently_bought_together = $frequentlyBoughtProducts;
+                            }
+                            
 
                         // Handle same SKU products
                         $sameSkuProducts = Product::where('sku', $product->sku)
@@ -461,6 +508,14 @@ class ProductApiController extends Controller
                             $baseUrl = (strpos($image, 'storage/products/') === 0) ? url('storage/products/') : url('storage/');
                             return $baseUrl . '/' . ltrim($image, '/');
                         });
+                        $videoPaths = json_decode($product->video_path, true); // Decode JSON to array
+
+                        $product->video_path = collect($videoPaths)->map(function ($video) {
+                            if (filter_var($video, FILTER_VALIDATE_URL)) {
+                                return $video; // If it's already a full URL, return it.
+                            }
+                            return url('storage/' . ltrim($video, '/')); // Manually construct the full URL
+                        });
 
                         // Add review and stock details
                         $totalReviews = $product->reviews->count();
@@ -496,43 +551,82 @@ class ProductApiController extends Controller
                         }
 
                         // Handle frequently bought together products
-                        if ($product->frequently_bought_together) {
-                            $frequentlyBoughtData = json_decode($product->frequently_bought_together, true);
-                            $frequentlyBoughtSkus = array_column($frequentlyBoughtData, 'value');
+                        // if ($product->frequently_bought_together) {
+                        //     $frequentlyBoughtData = json_decode($product->frequently_bought_together, true);
+                        //     $frequentlyBoughtSkus = array_column($frequentlyBoughtData, 'value');
 
-                            $frequentlyBoughtProducts = Product::whereIn('sku', $frequentlyBoughtSkus)
-                                ->with('reviews', 'currency')
-                                ->get();
+                        //     $frequentlyBoughtProducts = Product::whereIn('sku', $frequentlyBoughtSkus)
+                        //         ->with('reviews', 'currency')
+                        //         ->get();
 
-                            $frequentlyBoughtProducts->transform(function ($fbProduct) {
-                                $fbProduct->images = collect($fbProduct->images)->map(function ($image) {
-                                    if (filter_var($image, FILTER_VALIDATE_URL)) {
-                                        return $image;
-                                    }
-                                    $baseUrl = (strpos($image, 'storage/products/') === 0) ? url('storage/products/') : url('storage/');
-                                    return $baseUrl . '/' . ltrim($image, '/');
+                        //     $frequentlyBoughtProducts->transform(function ($fbProduct) {
+                        //         $fbProduct->images = collect($fbProduct->images)->map(function ($image) {
+                        //             if (filter_var($image, FILTER_VALIDATE_URL)) {
+                        //                 return $image;
+                        //             }
+                        //             $baseUrl = (strpos($image, 'storage/products/') === 0) ? url('storage/products/') : url('storage/');
+                        //             return $baseUrl . '/' . ltrim($image, '/');
+                        //         });
+
+                        //         $totalReviews = $fbProduct->reviews->count();
+                        //         $avgRating = $totalReviews > 0 ? $fbProduct->reviews->avg('star') : null;
+
+                        //         $fbProduct->total_reviews = $totalReviews;
+                        //         $fbProduct->avg_rating = $avgRating;
+
+                        //         if ($fbProduct->currency) {
+                        //             $fbProduct->currency_title = $fbProduct->currency->is_prefix_symbol
+                        //                 ? $fbProduct->currency->title
+                        //                 : $fbProduct->price . ' ' . $fbProduct->currency->title;
+                        //         } else {
+                        //             $fbProduct->currency_title = $fbProduct->currency->title;
+                        //         }
+
+                        //         return $fbProduct;
+                        //     });
+
+                        //     $product->frequently_bought_together = $frequentlyBoughtProducts;
+                        // }
+
+
+
+   if ($product->frequently_bought_together) {
+                                $frequentlyBoughtData = json_decode($product->frequently_bought_together, true);
+                                $frequentlyBoughtSkus = array_column($frequentlyBoughtData, 'value');
+                            
+                                $frequentlyBoughtProducts = Product::whereIn('sku', $frequentlyBoughtSkus)
+                                    ->with('reviews', 'currency')
+                                    ->get();
+                            
+                                $frequentlyBoughtProducts->transform(function ($fbProduct) {
+                                    return [
+                                        'id' => $fbProduct->id,
+                                        'name' => $fbProduct->name,
+                                        'sku' => $fbProduct->sku,
+                                        'price' => $fbProduct->price,
+                                        'sale_price' => $fbProduct->sale_price,
+                                        'best_delivery_date' => $fbProduct->best_delivery_date,
+                                        'total_reviews' => $fbProduct->reviews->count(),
+                                        'avg_rating' => $fbProduct->reviews->count() > 0 ? $fbProduct->reviews->avg('star') : null,
+                                        'left_stock' => $fbProduct->left_stock ?? 0,
+                                        'currency' => $fbProduct->currency->title ?? 'USD',
+                                        'in_wishlist' => $fbProduct->in_wishlist ?? false,
+                                        'images' => collect($fbProduct->images)->map(function ($image) {
+                                            if (filter_var($image, FILTER_VALIDATE_URL)) {
+                                                return $image;
+                                            }
+                                            $baseUrl = (strpos($image, 'storage/products/') === 0) ? url('storage/products/') : url('storage/');
+                                            return $baseUrl . '/' . ltrim($image, '/');
+                                        })->toArray(),
+                                        'original_price' => $fbProduct->price,
+                                        'front_sale_price' => $fbProduct->price,
+                                        'best_price' => $fbProduct->price,
+                                    ];
                                 });
-
-                                $totalReviews = $fbProduct->reviews->count();
-                                $avgRating = $totalReviews > 0 ? $fbProduct->reviews->avg('star') : null;
-
-                                $fbProduct->total_reviews = $totalReviews;
-                                $fbProduct->avg_rating = $avgRating;
-
-                                if ($fbProduct->currency) {
-                                    $fbProduct->currency_title = $fbProduct->currency->is_prefix_symbol
-                                        ? $fbProduct->currency->title
-                                        : $fbProduct->price . ' ' . $fbProduct->currency->title;
-                                } else {
-                                    $fbProduct->currency_title = $fbProduct->currency->title;
-                                }
-
-                                return $fbProduct;
-                            });
-
-                            $product->frequently_bought_together = $frequentlyBoughtProducts;
-                        }
-
+                            
+                                $product->frequently_bought_together = $frequentlyBoughtProducts;
+                            }
+                            
                         // Handle same SKU products
                         $sameSkuProducts = Product::where('sku', $product->sku)
                             ->where('id', '!=', $product->id)
@@ -780,6 +874,15 @@ class ProductApiController extends Controller
             // Select only required fields for the response
             $product->images = collect($product->images)->map(function ($image) {
                 return filter_var($image, FILTER_VALIDATE_URL) ? $image : url('storage/' . ltrim($image, '/'));
+            });
+
+            $videoPaths = json_decode($product->video_path, true); // Decode JSON to array
+
+            $product->video_path = collect($videoPaths)->map(function ($video) {
+                if (filter_var($video, FILTER_VALIDATE_URL)) {
+                    return $video; // If it's already a full URL, return it.
+                }
+                return url('storage/' . ltrim($video, '/')); // Manually construct the full URL
             });
 
             $totalReviews = $product->reviews->count();
@@ -1071,6 +1174,15 @@ class ProductApiController extends Controller
                             // Select only required fields for the response
                             $product->images = collect($product->images)->map(function ($image) {
                                 return filter_var($image, FILTER_VALIDATE_URL) ? $image : url('storage/' . ltrim($image, '/'));
+                            });
+
+                            $videoPaths = json_decode($product->video_path, true); // Decode JSON to array
+
+                            $product->video_path = collect($videoPaths)->map(function ($video) {
+                                if (filter_var($video, FILTER_VALIDATE_URL)) {
+                                    return $video; // If it's already a full URL, return it.
+                                }
+                                return url('storage/' . ltrim($video, '/')); // Manually construct the full URL
                             });
 
                             $totalReviews = $product->reviews->count();

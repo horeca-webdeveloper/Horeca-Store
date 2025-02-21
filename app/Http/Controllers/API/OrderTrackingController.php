@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\JsonResponse;
 use Botble\Ecommerce\Facades\EcommerceHelper;
-
+use RvMedia;
 use Illuminate\Support\Facades\Auth;
 
 use Botble\Ecommerce\Models\Order;
@@ -80,7 +80,7 @@ class OrderTrackingController extends Controller
 	public function trackOrder(Request $request): JsonResponse
 	{
 		$validator = Validator::make($request->all(), [
-			'order_id' => 'required|integer',
+			'order_id' => 'required',
 		]);
 
 		if ($validator->fails()) {
@@ -112,8 +112,8 @@ class OrderTrackingController extends Controller
 			'value' => $order->shipment->status->getValue() ?? null,
 			'label' => ucfirst(str_replace('_', ' ', $order->shipment->status->getValue() ?? ''))
 		] : [
-			'value' => null,
-			'label' => ''
+			'value' => 'pending',
+			'label' => 'pending'
 		];
 
 		/* Mapping order status */
@@ -127,18 +127,23 @@ class OrderTrackingController extends Controller
 			'value' => $order->shipping_method->getValue() ?? null,
 			'label' => ucfirst(str_replace('_', ' ', $order->shipping_method->getValue() ?? ''))
 		];
+		
 
 		/* Mapping products */
 		$products = $order->products->map(function ($product) {
 			return [
 				'id' => $product->id,
 				'order_id' => $product->order_id,
+				'sku' => $product->product->sku ?? null,
 				'qty' => $product->qty,
 				'price' => $product->price,
 				'tax_amount' => $product->tax_amount,
 				'product_id' => $product->product_id,
 				'product_name' => $product->product_name,
-				'product_image' => asset('storage/products/' . $product->product_image),
+				// 'product_image' => asset('storage/products/' . $product->product_image),
+				'product_image' => filter_var($product->product_image, FILTER_VALIDATE_URL) 
+            ? $product->product_image 
+            : RvMedia::getImageUrl($product->product_image),
 				'weight' => $product->weight,
 				'restock_quantity' => $product->restock_quantity,
 				'created_at' => $product->created_at,
@@ -183,14 +188,23 @@ class OrderTrackingController extends Controller
 			'metadata' => $order->payment->metadata ?? null,
 		];
 
+		// $all_statuses = [
+		// 	'pending',
+		// 	'not_approved',
+		// 	'approved',
+		// 	'ready_to_be_shipped_out',
+		// 	'picking',
+		// 	'delivered'
+		// ];
 		$all_statuses = [
-			'pending',
-			'not_approved',
-			'approved',
-			'ready_to_be_shipped_out',
-			'picking',
-			'delivered'
+			'pending' => 'Pending',
+			'not_approved' => 'Not Approved',
+			'approved' => 'Approved',
+			'ready_to_be_shipped_out' => 'Ready to be Shipped Out',
+			'picking' => 'Picking',
+			'delivered' => 'Delivered',
 		];
+		
 
 		return response()->json([
 			'message' => 'Order found',
@@ -225,7 +239,71 @@ class OrderTrackingController extends Controller
 				'products' => $products,
 				'payment' => $payment,
 			],
-			'all_statuses' => $all_statuses
+			'all_statuses' => $all_statuses,
+			'shipping_address' => $order->shippingAddress ?? [],
+			'billing_address' => $order->billingAddress ?? [],
 		]);
 	}
+
+
+	public function trackOrdercard(Request $request): JsonResponse
+{
+    $validator = Validator::make($request->all(), [
+        'order_id' => 'sometimes|required_without:email',
+        'email' => 'sometimes|required_without:order_id|email',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'success' => false,
+            'message' => $validator->errors()
+        ], 400);
+    }
+
+    $query = Order::with(['address', 'products', 'shipment', 'payment']);
+
+    if ($request->has('order_id')) {
+        $code = $request->input('order_id');
+        $query->where(function ($q) use ($code) {
+            $q->where('code', $code)->orWhere('code', '#' . $code);
+        });
+    }
+
+    if ($request->has('email')) {
+        $email = $request->input('email');
+        $query->whereHas('address', function ($q) use ($email) {
+            $q->where('email', $email);
+        });
+    }
+
+    $order = $query->first();
+
+    if (!$order) {
+        return response()->json([
+            'success' => false,
+            'message' => __('Order not found')
+        ], 404);
+    }
+
+    return response()->json([
+        'message' => 'Order found',
+        'order' => [
+            'id' => $order->id,
+            'code' => $order->code,
+            'status' => $order->status->getValue(),
+            'amount' => $order->amount,
+            'products' => $order->products->map(function ($product) {
+                return [
+                    'id' => $product->id,
+                    'name' => $product->product_name,
+                    'price' => $product->price,
+                    'image' => RvMedia::getImageUrl($product->product_image),
+                ];
+            }),
+            'shipping_address' => $order->shippingAddress ?? [],
+            'billing_address' => $order->billingAddress ?? [],
+        ]
+    ]);
+}
+
 }

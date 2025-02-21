@@ -23,6 +23,16 @@ return [
     'parent_flag' => 'plugins.ecommerce',
    ],
    [
+    'name' => 'Export Product Specifications',
+    'flag' => 'export_product_specifications.index',
+    'parent_flag' => 'plugins.ecommerce',
+   ],
+   [
+    'name' => 'Import Product Specifications',
+    'flag' => 'import_product_specifications.index',
+    'parent_flag' => 'plugins.ecommerce',
+   ],
+   [
     'name' => 'Upload Product Documents',
     'flag' => 'ecommerce::partials.upload-documents',
     'parent_flag' => 'plugins.ecommerce',

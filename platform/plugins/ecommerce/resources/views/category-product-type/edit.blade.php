@@ -32,28 +32,35 @@
 		<!-- Specifications -->
 		<div id="specification-container">
 			<div class="row">
+				<div class="col-md-1 justify-content-end text-end">
+					<label for="specifications">List</label>
+				</div>
 				<div class="col-md-2">
 					<label for="specifications">Specification Type</label>
 				</div>
-				<div class="col-md-3">
+				<div class="col-md-2">
 					<label for="specifications">Specification Name</label>
 				</div>
-				<div class="col-md-7">
+				<div class="col-md-1">
+					<label for="unit">Unit</label>
+				</div>
+				<div class="col-md-6">
 					<label for="specifications">Specification Values</label>
 				</div>
 			</div>
 			@foreach ($category->specifications as $index => $specification)
 				<div class="specification-group mt-3">
 					<div class="row">
-						{{-- <div class="col-md-1 justify-content-end text-end"> --}}
-						<div class="col-md-2">
-							{{-- <input
+						<div class="col-md-1 justify-content-end text-end">
+							<input
 								class="mt-2"
 								type="checkbox"
-								name="specifications[{{$index}}][is_checked]"
+								name="specifications[{{$index}}][is_fixed]"
 								value="1"
-								{{ $specification->is_checked ? 'checked' : '' }}
-							/> --}}
+								{{ $specification->is_fixed ? 'checked' : '' }}
+							/>
+						</div>
+						<div class="col-md-2">
 							@php
 								$selectedSpecificationTypes = explode(",", $specification->specification_type);
 							@endphp
@@ -66,17 +73,22 @@
 							</select>
 						</div>
 
-						<div class="col-md-3">
+						<div class="col-md-2">
 							<select name="specifications[{{$index}}][name]" class="form-control select2 specNames">
-								@foreach ($specificationNames as $name)
+								@foreach ($specificationNameVals as $vals)
 									<option value="">Select</option>
-									<option value="{{ $name }}" {{ $name==$specification->specification_name ? 'selected' : '' }}>
-										{{ $name }}
+									<option value="{{ $vals['specification_name'] }}" {{ $vals['specification_name']==$specification->specification_name ? 'selected' : '' }} data-vals="{{$vals['specification_values']}}" data-unit="{{$vals['unit']}}">
+										{{ $vals['specification_name'] }}
 									</option>
 								@endforeach
 							</select>
 						</div>
-						<div class="col-md-7">
+
+						<div class="col-md-1">
+							<input class="form-control" id="specification_unit_{{$index}}" type="text" name="specifications[{{$index}}][unit]" placeholder="Unit" value="{{$specification->unit}}">
+						</div>
+
+						<div class="col-md-6">
 							<div class="row specification-values" id="specification_value_{{$index}}">
 								@php($specVals = $specification->specification_values ? explode("|", $specification->specification_values) : [])
 								@foreach ($specVals as $index2 => $specVal)
@@ -145,14 +157,15 @@
 			@for ($i = $category->specifications->count(); $i < 3; $i++)
 				<div class="specification-group mt-3">
 					<div class="row">
-						<div class="col-md-2">
-						{{-- <div class="col-md-1 justify-content-end text-end"> --}}
-							{{-- <input
+						<div class="col-md-1 justify-content-end text-end">
+							<input
 								class="mt-2"
 								type="checkbox"
-								name="specifications[{{$i}}][is_checked]"
+								name="specifications[{{$i}}][is_fixed]"
 								value="1"
-							/> --}}
+							/>
+						</div>
+						<div class="col-md-2">
 							<select name="specifications[{{$i}}][specification_type][]" class="form-control select2 specTypes" multiple>
 								@foreach ($specificationTypes as $type)
 									<option value="{{ $type }}">
@@ -161,24 +174,22 @@
 								@endforeach
 							</select>
 						</div>
-						<div class="col-md-3">
-							{{-- <input
-								type="text"
-								name="specifications[{{$i}}][name]"
-								class="form-control"
-								placeholder="Specification {{ $i + 1 }}"
-							/> --}}
-
+						<div class="col-md-2">
 							<select name="specifications[{{$i}}][name]" class="form-control select2 specNames">
-								@foreach ($specificationNames as $name)
+								@foreach ($specificationNameVals as $vals)
 									<option value="">Select</option>
-									<option value="{{ $name }}">
-										{{ $name }}
+									<option value="{{ $vals['specification_name'] }}" data-vals="{{$vals['specification_values']}}" data-unit="{{$vals['unit']}}">
+										{{ $vals['specification_name'] }}
 									</option>
 								@endforeach
 							</select>
 						</div>
-						<div class="col-md-7">
+
+						<div class="col-md-1">
+							<input class="form-control" id="specification_unit_{{$i}}" type="text" name="specifications[{{$i}}][unit]" placeholder="Unit">
+						</div>
+
+						<div class="col-md-6">
 							<div class="row specification-values" id="specification_value_{{$i}}">
 								@for ($j = 0; $j < 5; $j++)
 									<div class="col-md-2 mb-2">
@@ -243,7 +254,67 @@
 					newOption: true
 				};
 			}
+		}).on('select2:select', function(e) {
+			var selectedOption = e.params.data;
+			if (!selectedOption.newOption) {
+				var selectedValue = selectedOption.id;
+				var $selectedOption = $('option[value="' + selectedValue + '"]');
+				var dataVals = $selectedOption.data('vals');
+				var dataUnit = $selectedOption.data('unit') || '';
+
+				if (!dataVals) return;
+
+				var valuesArray = dataVals.split('|');
+				var index = $(this).closest('.col-md-2').find('select').attr('name').match(/\[(\d+)\]\[name\]/)[1];
+
+				var valuesContainer = document.getElementById(`specification_value_${index}`);
+				var unitField = document.getElementById(`specification_unit_${index}`);
+
+				if (!valuesContainer) return;
+
+				if (unitField) {
+					unitField.value = dataUnit;
+				}
+
+				$(valuesContainer).find('input[type="text"]').val('');
+
+				$(valuesContainer).find('.col-md-2.mb-2:not(:lt(5))').remove();
+
+				valuesArray.forEach((val, idx) => {
+					if (idx < 5) {
+						$(valuesContainer).find('input[type="text"]').eq(idx).val(val);
+					} else {
+						const newValue = document.createElement('div');
+						newValue.classList.add('col-md-2', 'mb-2');
+						newValue.innerHTML = `
+							<input type="text" name="specifications[${index}][vals][]" class="form-control" value="${val}" placeholder="Value ${idx + 1}" />
+						`;
+						valuesContainer.appendChild(newValue);
+					}
+				});
+
+				var currentInputCount = $(valuesContainer).find('input[type="text"]').length;
+				for (var i = currentInputCount; i < 5; i++) {
+					const emptyValue = document.createElement('div');
+					emptyValue.classList.add('col-md-2', 'mb-2');
+					emptyValue.innerHTML = `
+						<input type="text" name="specifications[${index}][vals][]" class="form-control" placeholder="Value ${i + 1}" />
+					`;
+					valuesContainer.appendChild(emptyValue);
+				}
+			}
+		}).on('select2:clear', function(e) {
+			var index = $(this).closest('.col-md-2').find('select').attr('name').match(/\[(\d+)\]\[name\]/)[1];
+
+			document.getElementById(`specification_unit_${index}`).value = '';
+
+			var valuesContainer = document.getElementById(`specification_value_${index}`);
+			if (!valuesContainer) return;
+
+			$(valuesContainer).find('input[type="text"]').val('');
+			$(valuesContainer).find('.col-md-2.mb-2:not(:lt(5))').remove();
 		});
+
 
 		const specificationContainer = document.getElementById('specification-container');
 		const addSpecificationButton = document.getElementById('add-specification');
@@ -259,30 +330,43 @@
 
 			// Assuming `specificationTypes` is passed to JavaScript as a global variable or fetched via an API
 			const specificationTypes = {!! json_encode($specificationTypes) !!};
-			const specNames = {!! json_encode($specificationNames) !!};
+			const specNames = {!! json_encode($specificationNameVals) !!};
 
 			// Create the options for the specification_type dropdown
 			const specificationTypeOptions = specificationTypes.map((type) => {
 				return `<option value="${type}">${type}</option>`;
 			}).join('');
 
-			const specNameOptions = specNames.map((name) => {
-				return `<option value="${name}">${name}</option>`;
+			const specNameOptions = specNames.map(vals => {
+				return `<option value="${vals.specification_name}" data-vals="${vals.specification_values}" data-unit="${vals.unit || ''}">
+					${vals.specification_name}
+				</option>`;
 			}).join('');
 			newSpecification.innerHTML = `
 				<div class="row">
+					<div class="col-md-1 justify-content-end text-end">
+						<input
+							class="mt-2"
+							type="checkbox"
+							name="specifications[${index}][is_fixed]"
+							value="1"
+						/>
+					</div>
 					<div class="col-md-2">
 						<select name="specifications[${index}][specification_type][]" class="form-control select2" id="specification_type_${index}" multiple>
 							${specificationTypeOptions}
 						</select>
 					</div>
-					<div class="col-md-3">
+					<div class="col-md-2">
 						<select name="specifications[${index}][name]" class="form-control select2 specNames" id="specification_name_${index}">
 							<option value="" selected>Select</option>
 							${specNameOptions}
 						</select>
 					</div>
-					<div class="col-md-7">
+					<div class="col-md-1">
+						<input class="form-control" type="text" id="specification_unit_${index}" name="specifications[${index}][unit]" placeholder="Unit">
+					</div>
+					<div class="col-md-6">
 						<div class="row specification-values" id="specification_value_${index}">
 							${Array.from({ length: 5 })
 								.map((_, j) => `
@@ -342,6 +426,65 @@
 						newOption: true
 					};
 				}
+			}).on('select2:select', function(e) {
+				var selectedOption = e.params.data;
+				if (!selectedOption.newOption) {
+					var selectedValue = selectedOption.id;
+					var $selectedOption = $('option[value="' + selectedValue + '"]');
+					var dataVals = $selectedOption.data('vals');
+					var dataUnit = $selectedOption.data('unit') || '';
+
+					if (!dataVals) return;
+
+					var valuesArray = dataVals.split('|');
+					var index = $(this).closest('.col-md-2').find('select').attr('name').match(/\[(\d+)\]\[name\]/)[1];
+
+					var valuesContainer = document.getElementById(`specification_value_${index}`);
+					var unitField = document.getElementById(`specification_unit_${index}`);
+
+					if (!valuesContainer) return;
+
+					if (unitField) {
+						unitField.value = dataUnit;
+					}
+
+					$(valuesContainer).find('input[type="text"]').val('');
+
+					$(valuesContainer).find('.col-md-2.mb-2:not(:lt(5))').remove();
+
+					valuesArray.forEach((val, idx) => {
+						if (idx < 5) {
+							$(valuesContainer).find('input[type="text"]').eq(idx).val(val);
+						} else {
+							const newValue = document.createElement('div');
+							newValue.classList.add('col-md-2', 'mb-2');
+							newValue.innerHTML = `
+								<input type="text" name="specifications[${index}][vals][]" class="form-control" value="${val}" placeholder="Value ${idx + 1}" />
+							`;
+							valuesContainer.appendChild(newValue);
+						}
+					});
+
+					var currentInputCount = $(valuesContainer).find('input[type="text"]').length;
+					for (var i = currentInputCount; i < 5; i++) {
+						const emptyValue = document.createElement('div');
+						emptyValue.classList.add('col-md-2', 'mb-2');
+						emptyValue.innerHTML = `
+							<input type="text" name="specifications[${index}][vals][]" class="form-control" placeholder="Value ${i + 1}" />
+						`;
+						valuesContainer.appendChild(emptyValue);
+					}
+				}
+			}).on('select2:clear', function(e) {
+				var index = $(this).closest('.col-md-2').find('select').attr('name').match(/\[(\d+)\]\[name\]/)[1];
+
+				document.getElementById(`specification_unit_${index}`).value = '';
+
+				var valuesContainer = document.getElementById(`specification_value_${index}`);
+				if (!valuesContainer) return;
+
+				$(valuesContainer).find('input[type="text"]').val('');
+				$(valuesContainer).find('.col-md-2.mb-2:not(:lt(5))').remove();
 			});
 
 			// Attach event listeners to new buttons

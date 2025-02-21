@@ -84,6 +84,8 @@ Route::post('/upload-product-documents', [ProductController::class, 'uploadDocum
 
 Route::middleware('auth:sanctum')->get('/order-tracking', [OrderTrackingController::class, 'trackOrder']);
 
+Route::post('/order-track-guest', [OrderTrackingController::class, 'trackOrdercard']);
+
 Route::get('/countries', [CountryController::class, 'index']);
 Route::get('/countries/{id}', [CountryController::class, 'show']);
 
@@ -106,7 +108,7 @@ Route::middleware('auth:sanctum')->post('/remove-from-save-for-later', [SaveForL
 
 
 Route::middleware('auth:sanctum')->get('/customer/coupons', [CustomerCouponApiController::class, 'getCustomerCoupons']);
-
+Route::middleware('auth:sanctum')->get('/customer/search-coupon', [CustomerCouponApiController::class, 'searchCustomerCoupons']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('recently-viewed', [RecentlyViewedProductController::class, 'addToRecent']);
@@ -118,6 +120,7 @@ Route::get('/payment/success', [PaymentApiController::class, 'paymentSuccess'])-
 Route::get('/payment/cancel', [PaymentApiController::class, 'paymentCancel'])->name('payment.cancel');
 
 Route::get('/search', [SearchApiController::class, 'search']);
+Route::get('/search-categories', [SearchApiController::class, 'searchCategories']);
 
 
 Route::get('/location', [LocationController::class, 'getLocation']);

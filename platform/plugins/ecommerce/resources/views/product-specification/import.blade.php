@@ -55,15 +55,10 @@
 @endif
 
 <div class="container mt-1">
-	<h2>Product Import</h2>
-	<div class="mb-3">
-		<label class="label-field">{{ __("Download Template") }}</label>
-		<a href="{{ asset('templates/product-import-template.csv') }}"><button class="button-set"><i class="fa fa-download"></i> {{ __("Download") }}</button></a>
-	</div>
-	<form action="{{ route('tools.data-synchronize.import.products.upload') }}" method="POST" enctype="multipart/form-data">
+	<h2>Import Product Specification</h2>
+	<form action="{{ route('productSpecifications.postImport') }}" method="POST" enctype="multipart/form-data">
 		@csrf
-
-		<div class="form-group">
+		<div class="form-group mb-2">
 			<label for="fileInput">Upload File:</label>
 			<input class="form-control mt-1" type="file" name="upload_file" id="fileInput" class="form-control">
 		</div>
@@ -93,7 +88,7 @@
 				<td>{{ $log->createdBy->name }}</td>
 				<td>{{ $log->created_at }}</td>
 				<td>
-					<a href="{{ route('tools.data-synchronize.import.products.import_view', $log->id) }}" class="btn btn-sm btn-info">View</a>
+					<a href="{{ route('productSpecifications.view', $log->id) }}" class="btn btn-sm btn-info">View</a>
 				</td>
 			</tr>
 			@endforeach
