@@ -34,6 +34,7 @@ use Botble\Ecommerce\Models\UnitOfMeasurement;
 class ImportProductJob implements ShouldQueue
 {
 	use Dispatchable, InteractsWithQueue, Queueable, SerializesModels, Batchable;
+	public $timeout = 43200;
 
 	protected $header;
 	protected $chunk;
@@ -814,7 +815,7 @@ class ImportProductJob implements ShouldQueue
 
 
 
- 
+
 	/**
 	 * Resize image using GD Library
 	 */

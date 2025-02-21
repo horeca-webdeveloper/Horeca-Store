@@ -11,6 +11,7 @@ class TransactionLog extends Model
 		'module',
 		'action',
 		'identifier',
+		'status',
 		'change_obj',
 		'description',
 		'created_by',
