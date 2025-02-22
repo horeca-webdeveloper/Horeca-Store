@@ -8,14 +8,21 @@ use Botble\Ecommerce\Models\ProductTypes;
 use Botble\Ecommerce\Models\Product;
 use Botble\Ecommerce\Models\ProductCategory;
 use Botble\Ecommerce\Models\CategorySpecification;
+use App\Models\TransactionLog;
+
+use Illuminate\Support\Facades\Bus;
+use Illuminate\Bus\Batch;
 
 use App\Jobs\ProductCopyToS3Job;
 
-// use Aws\S3\S3Client;
-// use Illuminate\Support\Facades\Storage;
-// use Illuminate\Support\Facades\Log;
-// use Illuminate\Support\Str;
-// use Botble\Media\Facades\RvMedia;
+use Aws\S3\S3Client;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use Botble\Media\Facades\RvMedia;
+
+
+use Illuminate\Support\Facades\Http;
 
 class CategoryProductTypeController extends BaseController
 {
@@ -157,12 +164,45 @@ class CategoryProductTypeController extends BaseController
 
 	public function copyProductsToS3()
 	{
-		ProductCopyToS3Job::dispatch();
+		$totalRecords = Product::query()
+		->whereNotNull('images')
+		->where('images', 'like', '["http%')
+		->where('images', 'not like', '["https:\\\\/\\\\/horecastore-s3-storage%')
+		->count();
+
+		$batch = Bus::batch([])->before(function (Batch $batch) use ($totalRecords) {
+			$log = TransactionLog::create([
+				'module' => "Product",
+				'action' => "Convert to S3",
+				'identifier' => $batch->id,
+				'status' => 'In-progress',
+				'description' => json_encode([
+					"Total Count" => $totalRecords,
+					"Success Count" => 0,
+					"Failed Count" => 0,
+					"Errors" => []
+				], JSON_UNESCAPED_UNICODE),
+				'created_by' => auth()->id(),
+				'created_at' => now(),
+			]);
+		})
+		->finally(function (Batch $batch) {
+			TransactionLog::where('identifier', $batch->id)->update(['status' => 'Completed']);
+		})
+		->name("Product Convert to S3")
+		->dispatch();
+
+		$batchSize = 500;
+		for ($i = 0; $i < $totalRecords; $i += $batchSize) {
+			$batch->add(new ProductCopyToS3Job($i, $batchSize));
+		}
+
 		return response()->json(['message' => 'Job dispatched successfully.']);
 	}
 
 	// public function productCopyToS3()
 	// {
+
 	// 	$s3Client = new S3Client([
 	// 		'region'  => env('AWS_DEFAULT_REGION'),
 	// 		'version' => 'latest',
@@ -180,7 +220,13 @@ class CategoryProductTypeController extends BaseController
 	// 		return;
 	// 	}
 
-	// 	$products = Product::query()->whereNotNull('images')->select(['id', 'images', 'image'])->get();
+	// 	$products = Product::query()
+	// 		->whereNotNull('images')
+	// 		->where('images', 'like', '["http%')
+	// 		->select(['id', 'images', 'image'])
+	// 		->limit(10)
+	// 		->get();
+
 	// 	Log::info("Total product count: " . $products->count());
 
 	// 	$i = 0;
@@ -264,7 +310,7 @@ class CategoryProductTypeController extends BaseController
 	// 			return null;
 	// 		}
 
-	// 		$originalPath = env('STORAGE_ENV') . "/products/{$fileBaseName}.webp";
+	// 		$originalPath = env('STORAGE_ENV') . "/tanuj/products/{$fileBaseName}.webp";
 	// 		ob_start();
 	// 		imagewebp($image);
 	// 		$originalData = ob_get_clean();
@@ -279,7 +325,7 @@ class CategoryProductTypeController extends BaseController
 	// 				continue;
 	// 			}
 
-	// 			$resizedPath = env('STORAGE_ENV') . "/products/{$fileBaseName}-{$width}x{$height}.webp";
+	// 			$resizedPath = env('STORAGE_ENV') . "/tanuj/products/{$fileBaseName}-{$width}x{$height}.webp";
 	// 			ob_start();
 	// 			imagewebp($resizedImage);
 	// 			$resizedData = ob_get_clean();
