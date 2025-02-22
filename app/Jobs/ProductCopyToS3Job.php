@@ -45,9 +45,16 @@ class ProductCopyToS3Job implements ShouldQueue
 		->where('images', 'not like', '["https:\\\\/\\\\/horecastore-s3-storage%')
 		->select(['id', 'images', 'image'])
 		->orderBy('id', 'asc')
-		->offset($this->offset)
 		->limit($this->limit)
 		->get();
+
+		Log::info($products->count()." Product for offset $this->offset and limit $this->limit");
+
+		/* Stop execution if no products found */
+		if ($products->isEmpty()) {
+			Log::info("No unprocessed products found. Job will terminate.");
+			return;
+		}
 
 		foreach ($products as $product) {
 			$fetchedImages = $this->getImageURLs((array) $product->images ?? []);
