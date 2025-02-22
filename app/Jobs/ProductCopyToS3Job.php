@@ -42,6 +42,7 @@ class ProductCopyToS3Job implements ShouldQueue
 		->where('images', 'like', '["http%')
 		->where('images', 'not like', '["https:\\\\/\\\\/horecastore-s3-storage%')
 		->select(['id', 'images', 'image'])
+		->orderBy('id', 'asc')
 		->offset($this->offset)
 		->limit($this->limit)
 		->get();
@@ -58,21 +59,25 @@ class ProductCopyToS3Job implements ShouldQueue
 			} else {
 				$convertErr[] = "Failed to process images.";
 				$errorArray[] = [
-					"Product ID" =>  $product,
+					"Product ID" => $product->id,
 					"Error" => implode(' | ', $convertErr),
 				];
 				$failed++;
 			}
 
-			// Update logs every 50 processed records
-			if (($success + $failed) % 50 == 0) {
+			/* Update logs every 20 processed records and reset counters */
+			if (($success + $failed) % 20 == 0) {
 				$this->updateTransactionLog($success, $failed, $errorArray);
+				$success = 0;
+				$failed = 0;
 				$errorArray = [];
 			}
 		}
 
-		// Final log update
-		$this->updateTransactionLog($success, $failed, $errorArray);
+		/* Final log update */
+		if ($success > 0 || $failed > 0) {
+			$this->updateTransactionLog($success, $failed, $errorArray);
+		}
 	}
 
 	protected function updateTransactionLog($success, $failed, $errorArray)
