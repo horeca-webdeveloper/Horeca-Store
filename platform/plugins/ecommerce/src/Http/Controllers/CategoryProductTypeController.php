@@ -170,6 +170,10 @@ class CategoryProductTypeController extends BaseController
 		->where('images', 'not like', '["https:\\\\/\\\\/horecastore-s3-storage%')
 		->count();
 
+		if ($totalRecords == 0) {
+			return response()->json(['message' => 'No records left for conversion.']);
+		}
+
 		$batch = Bus::batch([])->before(function (Batch $batch) use ($totalRecords) {
 			$log = TransactionLog::create([
 				'module' => "Product",
@@ -192,9 +196,10 @@ class CategoryProductTypeController extends BaseController
 		->name("Product Convert to S3")
 		->dispatch();
 
-		$batchSize = 500;
+		$batchSize = 100;
 		for ($i = 0; $i < $totalRecords; $i += $batchSize) {
-			$batch->add(new ProductCopyToS3Job($i, $batchSize));
+			$actualLimit = min($batchSize, $totalRecords - $i);
+			$batch->add(new ProductCopyToS3Job($i, $actualLimit));
 		}
 
 		return response()->json(['message' => 'Job dispatched successfully.']);
