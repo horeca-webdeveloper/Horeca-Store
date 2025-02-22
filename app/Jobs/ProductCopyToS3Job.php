@@ -24,11 +24,13 @@ class ProductCopyToS3Job implements ShouldQueue
 
 	protected $offset;
 	protected $limit;
+	protected $storageEnv;
 
-	public function __construct($offset, $limit)
+	public function __construct($offset, $limit, $storageEnv)
 	{
 		$this->offset = $offset;
 		$this->limit = $limit;
+		$this->storageEnv = $storageEnv;
 	}
 
 	public function handle()
@@ -78,6 +80,10 @@ class ProductCopyToS3Job implements ShouldQueue
 		if ($success > 0 || $failed > 0) {
 			$this->updateTransactionLog($success, $failed, $errorArray);
 		}
+
+		/* Sleep for 10 minutes before allowing the next job to execute */
+		Log::info("Job completed. Sleeping for 10 minutes before next execution.");
+		sleep(600);
 	}
 
 	protected function updateTransactionLog($success, $failed, $errorArray)
@@ -115,10 +121,8 @@ class ProductCopyToS3Job implements ShouldQueue
 
 	protected function uploadImageFromURL(?string $url): ?string
 	{
-		$s3Disk = Storage::disk('s3');
-
 		if (!filter_var($url, FILTER_VALIDATE_URL)) {
-			Log::error("Invalid URL provided: " . $url);
+			Log::error("Invalid URL: " . $url);
 			return null;
 		}
 		try {
@@ -160,10 +164,13 @@ class ProductCopyToS3Job implements ShouldQueue
 				imagepalettetotruecolor($image);
 			}
 
-			$originalPath = env('STORAGE_ENV') . "/products/{$fileBaseName}.webp";
+			$originalPath = $this->storageEnv . "/products/{$fileBaseName}.webp";
 			ob_start();
 			imagewebp($image);
 			$originalData = ob_get_clean();
+
+			$s3Disk = Storage::disk('s3');
+			usleep(500000);
 			$s3Disk->put($originalPath, $originalData);
 			$imageUrl = $s3Disk->url($originalPath);
 			// $this->deleteLocalImages($fileBaseName);
@@ -174,15 +181,18 @@ class ProductCopyToS3Job implements ShouldQueue
 					continue;
 				}
 
-				$resizedPath = env('STORAGE_ENV') . "/products/{$fileBaseName}-{$width}x{$height}.webp";
+				$resizedPath = $this->storageEnv . "/products/{$fileBaseName}-{$width}x{$height}.webp";
 				ob_start();
 				imagewebp($resizedImage);
 				$resizedData = ob_get_clean();
+				usleep(500000);
 				$s3Disk->put($resizedPath, $resizedData);
 				// $this->deleteLocalImages("{$fileBaseName}-{$width}x{$height}");
 			}
 
 			imagedestroy($image);
+			unset($image, $imageContents, $originalData, $resizedData);
+			gc_collect_cycles();
 			return $imageUrl;
 		} catch (\Exception $e) {
 			Log::error("S3 Upload Error: " . $e->getMessage());

@@ -196,10 +196,12 @@ class CategoryProductTypeController extends BaseController
 		->name("Product Convert to S3")
 		->dispatch();
 
+		$storageEnv = env('STORAGE_ENV');
+
 		$batchSize = 100;
 		for ($i = 0; $i < $totalRecords; $i += $batchSize) {
 			$actualLimit = min($batchSize, $totalRecords - $i);
-			$batch->add(new ProductCopyToS3Job($i, $actualLimit));
+			$batch->add(new ProductCopyToS3Job($i, $actualLimit, $storageEnv));
 		}
 
 		return response()->json(['message' => 'Job dispatched successfully.']);
