@@ -74,8 +74,8 @@ class ProductCopyToS3Job implements ShouldQueue
 				$failed++;
 			}
 
-			/* Update logs every 20 processed records and reset counters */
-			if (($success + $failed) % 20 == 0) {
+			/* Update logs every 50 processed records and reset counters */
+			if (($success + $failed) % 50 == 0) {
 				$this->updateTransactionLog($success, $failed, $errorArray);
 				$success = 0;
 				$failed = 0;
@@ -88,9 +88,9 @@ class ProductCopyToS3Job implements ShouldQueue
 			$this->updateTransactionLog($success, $failed, $errorArray);
 		}
 
-		/* Sleep for 10 minutes before allowing the next job to execute */
-		Log::info("Job completed. Sleeping for 10 minutes before next execution.");
-		sleep(600);
+		/* Sleep for 5 minutes before allowing the next job to execute */
+		Log::info("Job completed. Sleeping for 5 minutes before next execution.");
+		sleep(300);
 	}
 
 	protected function updateTransactionLog($success, $failed, $errorArray)

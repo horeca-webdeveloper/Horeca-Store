@@ -198,7 +198,7 @@ class CategoryProductTypeController extends BaseController
 
 		$storageEnv = env('STORAGE_ENV');
 
-		$batchSize = 100;
+		$batchSize = 500;
 		for ($i = 0; $i < $totalRecords; $i += $batchSize) {
 			$actualLimit = min($batchSize, $totalRecords - $i);
 			$batch->add(new ProductCopyToS3Job($i, $actualLimit, $storageEnv));
