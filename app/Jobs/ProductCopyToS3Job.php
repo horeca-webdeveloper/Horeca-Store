@@ -1,210 +1,227 @@
- 
-<?php 
-// namespace App\Jobs;
+<?php
 
-// use Illuminate\Contracts\Queue\ShouldQueue;
-// use Illuminate\Foundation\Bus\Dispatchable;
-// use Illuminate\Queue\InteractsWithQueue;
-// use Illuminate\Bus\Queueable;
-// use Illuminate\Queue\SerializesModels;
-// use Illuminate\Bus\Batchable;
+namespace App\Jobs;
 
-// use Botble\Ecommerce\Models\Product;
-// use App\Models\TransactionLog;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Bus\Queueable;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Bus\Batchable;
 
-// use Illuminate\Support\Facades\Log;
-// use Illuminate\Support\Facades\Storage;
-// use Illuminate\Support\Str;
-// use Botble\Media\Facades\RvMedia;
+use Botble\Ecommerce\Models\Product;
+use App\Models\TransactionLog;
 
-// class ProductCopyToS3Job implements ShouldQueue
-// {
-// 	use Dispatchable, InteractsWithQueue, Queueable, SerializesModels, Batchable;
-// 	public $timeout = 43200;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Botble\Media\Facades\RvMedia;
 
-// 	protected $offset;
-// 	protected $limit;
+class ProductCopyToS3Job implements ShouldQueue
+{
+	use Dispatchable, InteractsWithQueue, Queueable, SerializesModels, Batchable;
+	public $timeout = 43200;
 
-// 	public function __construct($offset, $limit)
-// 	{
-// 		$this->offset = $offset;
-// 		$this->limit = $limit;
-// 	}
+	protected $offset;
+	protected $limit;
+	protected $storageEnv;
 
-// 	public function handle()
-// 	{
-// 		$success = 0;
-// 		$failed = 0;
-// 		$errorArray = [];
+	public function __construct($offset, $limit, $storageEnv)
+	{
+		$this->offset = $offset;
+		$this->limit = $limit;
+		$this->storageEnv = $storageEnv;
+	}
 
-// 		$products = Product::query()
-// 		->whereNotNull('images')
-// 		->where('images', 'like', '["http%')
-// 		->where('images', 'not like', '["https:\\\\/\\\\/horecastore-s3-storage%')
-// 		->select(['id', 'images', 'image'])
-// 		->orderBy('id', 'asc')
-// 		->offset($this->offset)
-// 		->limit($this->limit)
-// 		->get();
+	public function handle()
+	{
+		$success = 0;
+		$failed = 0;
+		$errorArray = [];
 
-// 		foreach ($products as $product) {
-// 			$fetchedImages = $this->getImageURLs((array) $product->images ?? []);
+		$products = Product::query()
+		->whereNotNull('images')
+		->where('images', 'like', '["http%')
+		->where('images', 'not like', '["https:\\\\/\\\\/horecastore-s3-storage%')
+		->select(['id', 'images', 'image'])
+		->orderBy('id', 'asc')
+		->limit($this->limit)
+		->get();
 
-// 			if (count($fetchedImages) > 0) {
-// 				$product->update([
-// 					'images' => json_encode($fetchedImages),
-// 					'image' => $fetchedImages[0],
-// 				]);
-// 				$success++;
-// 			} else {
-// 				$convertErr[] = "Failed to process images.";
-// 				$errorArray[] = [
-// 					"Product ID" => $product->id,
-// 					"Error" => implode(' | ', $convertErr),
-// 				];
-// 				$failed++;
-// 			}
+		Log::info($products->count()." Product for offset $this->offset and limit $this->limit");
 
-// 			/* Update logs every 20 processed records and reset counters */
-// 			if (($success + $failed) % 20 == 0) {
-// 				$this->updateTransactionLog($success, $failed, $errorArray);
-// 				$success = 0;
-// 				$failed = 0;
-// 				$errorArray = [];
-// 			}
-// 		}
+		/* Stop execution if no products found */
+		if ($products->isEmpty()) {
+			Log::info("No unprocessed products found. Job will terminate.");
+			return;
+		}
 
-// 		/* Final log update */
-// 		if ($success > 0 || $failed > 0) {
-// 			$this->updateTransactionLog($success, $failed, $errorArray);
-// 		}
-// 	}
+		foreach ($products as $product) {
+			$fetchedImages = $this->getImageURLs((array) $product->images ?? []);
 
-// 	protected function updateTransactionLog($success, $failed, $errorArray)
-// 	{
-// 		$log = TransactionLog::where('identifier', $this->batch()->id)->first();
+			if (count($fetchedImages) > 0) {
+				$product->update([
+					'images' => json_encode($fetchedImages),
+					'image' => $fetchedImages[0],
+				]);
+				$success++;
+			} else {
+				$convertErr[] = "Failed to process images.";
+				$errorArray[] = [
+					"Product ID" => $product->id,
+					"Error" => implode(' | ', $convertErr),
+				];
+				$failed++;
+			}
 
-// 		if ($log) {
-// 			$desc = json_decode($log->description, true);
-// 			$desc["Success Count"] += $success;
-// 			$desc["Failed Count"] += $failed;
-// 			$desc["Errors"] = array_merge($desc["Errors"], $errorArray);
+			/* Update logs every 50 processed records and reset counters */
+			if (($success + $failed) % 50 == 0) {
+				$this->updateTransactionLog($success, $failed, $errorArray);
+				$success = 0;
+				$failed = 0;
+				$errorArray = [];
+			}
+		}
 
-// 			$log->update(['description' => json_encode($desc, JSON_UNESCAPED_UNICODE)]);
-// 		}
-// 	}
+		/* Final log update */
+		if ($success > 0 || $failed > 0) {
+			$this->updateTransactionLog($success, $failed, $errorArray);
+		}
 
-// 	protected function getImageURLs(array $images): array
-// 	{
-// 		$images = array_values(array_filter(
-// 			array_map('trim', preg_split('/\s*,\s*/', implode(',', $images)))
-// 		));
+		/* Sleep for 5 minutes before allowing the next job to execute */
+		Log::info("Job completed. Sleeping for 5 minutes before next execution.");
+		sleep(300);
+	}
 
-// 		foreach ($images as $key => $image) {
-// 			$cleanImage = str_replace(RvMedia::getUploadURL() . '/', '', $image);
+	protected function updateTransactionLog($success, $failed, $errorArray)
+	{
+		$log = TransactionLog::where('identifier', $this->batch()->id)->first();
 
-// 			if (Str::startsWith($cleanImage, ['http://', 'https://'])) {
-// 				$cleanImage = $this->uploadImageFromURL($cleanImage);
-// 			}
-// 			if ($cleanImage) {
-// 				$images[$key] = $cleanImage;
-// 			}
-// 		}
-// 		return $images;
-// 	}
+		if ($log) {
+			$desc = json_decode($log->description, true);
+			$desc["Success Count"] += $success;
+			$desc["Failed Count"] += $failed;
+			$desc["Errors"] = array_merge($desc["Errors"], $errorArray);
 
-// 	protected function uploadImageFromURL(?string $url): ?string
-// 	{
-// 		$s3Disk = Storage::disk('s3');
+			$log->update(['description' => json_encode($desc, JSON_UNESCAPED_UNICODE)]);
+		}
+	}
 
-// 		if (!filter_var($url, FILTER_VALIDATE_URL)) {
-// 			Log::error("Invalid URL provided: " . $url);
-// 			return null;
-// 		}
-// 		try {
-// 			$imageContents = file_get_contents($url);
-// 		} catch (\Exception $e) {
-// 			Log::error("Failed to fetch image: " . $url." \nMessage: ". $e->getMessage());
-// 			return null;
-// 		}
-// 		if ($imageContents === false || empty($imageContents)) {
-// 			Log::error("Failed to download image from URL: " . $url);
-// 			return null;
-// 		}
+	protected function getImageURLs(array $images): array
+	{
+		$images = array_values(array_filter(
+			array_map('trim', preg_split('/\s*,\s*/', implode(',', $images)))
+		));
 
-// 		$fileNameWithQuery = basename(parse_url($url, PHP_URL_PATH));
-// 		$fileName = preg_replace('/\?.*/', '', $fileNameWithQuery);
-// 		$fileBaseName = pathinfo($fileName, PATHINFO_FILENAME);
-// 		$fileExtension = pathinfo($fileName, PATHINFO_EXTENSION) ?: 'webp';
+		foreach ($images as $key => $image) {
+			$cleanImage = str_replace(RvMedia::getUploadURL() . '/', '', $image);
 
-// 		if (empty($fileBaseName)) {
-// 			Log::error("Invalid file name extracted from URL: " . $url);
-// 			return null;
-// 		}
+			if (Str::startsWith($cleanImage, ['http://', 'https://'])) {
+				$cleanImage = $this->uploadImageFromURL($cleanImage);
+			}
+			if ($cleanImage) {
+				$images[$key] = $cleanImage;
+			}
+		}
+		return $images;
+	}
 
-// 		$sizes = [
-// 			'thumb' => [150, 150],
-// 			'medium' => [300, 300],
-// 			'large' => [790, 510]
-// 		];
+	protected function uploadImageFromURL(?string $url): ?string
+	{
+		if (!filter_var($url, FILTER_VALIDATE_URL)) {
+			Log::error("Invalid URL: " . $url);
+			return null;
+		}
+		try {
+			$imageContents = file_get_contents($url);
+		} catch (\Exception $e) {
+			Log::error("Failed to fetch image: " . $url." \nMessage: ". $e->getMessage());
+			return null;
+		}
+		if ($imageContents === false || empty($imageContents)) {
+			Log::error("Failed to download image from URL: " . $url);
+			return null;
+		}
 
-// 		try {
-// 			$image = imagecreatefromstring($imageContents);
-// 			if (!$image) {
-// 				Log::error("Failed to create image from URL: " . $url);
-// 				return null;
-// 			}
+		$fileNameWithQuery = basename(parse_url($url, PHP_URL_PATH));
+		$fileName = preg_replace('/\?.*/', '', $fileNameWithQuery);
+		$fileBaseName = pathinfo($fileName, PATHINFO_FILENAME);
+		$fileExtension = pathinfo($fileName, PATHINFO_EXTENSION) ?: 'webp';
 
-// 			/* Ensure image is in Truecolor format */
-// 			if (imageistruecolor($image) === false) {
-// 				imagepalettetotruecolor($image);
-// 			}
+		if (empty($fileBaseName)) {
+			Log::error("Invalid file name extracted from URL: " . $url);
+			return null;
+		}
 
-// 			$originalPath = env('STORAGE_ENV') . "/products/{$fileBaseName}.webp";
-// 			ob_start();
-// 			imagewebp($image);
-// 			$originalData = ob_get_clean();
-// 			$s3Disk->put($originalPath, $originalData);
-// 			$imageUrl = $s3Disk->url($originalPath);
-// 			// $this->deleteLocalImages($fileBaseName);
+		$sizes = [
+			'thumb' => [150, 150],
+			'medium' => [300, 300],
+			'large' => [790, 510]
+		];
 
-// 			foreach ($sizes as $sizeName => [$width, $height]) {
-// 				$resizedImage = $this->resizeImageGD($image, $width, $height);
-// 				if (!$resizedImage) {
-// 					continue;
-// 				}
+		try {
+			$image = imagecreatefromstring($imageContents);
+			if (!$image) {
+				Log::error("Failed to create image from URL: " . $url);
+				return null;
+			}
 
-// 				$resizedPath = env('STORAGE_ENV') . "/products/{$fileBaseName}-{$width}x{$height}.webp";
-// 				ob_start();
-// 				imagewebp($resizedImage);
-// 				$resizedData = ob_get_clean();
-// 				$s3Disk->put($resizedPath, $resizedData);
-// 				// $this->deleteLocalImages("{$fileBaseName}-{$width}x{$height}");
-// 			}
+			/* Ensure image is in Truecolor format */
+			if (imageistruecolor($image) === false) {
+				imagepalettetotruecolor($image);
+			}
 
-// 			imagedestroy($image);
-// 			return $imageUrl;
-// 		} catch (\Exception $e) {
-// 			Log::error("S3 Upload Error: " . $e->getMessage());
-// 			return null;
-// 		}
-// 	}
+			$originalPath = $this->storageEnv . "/products/{$fileBaseName}.webp";
+			ob_start();
+			imagewebp($image);
+			$originalData = ob_get_clean();
 
-// 	protected function resizeImageGD($image, $newWidth, $newHeight)
-// 	{
-// 		$width = imagesx($image);
-// 		$height = imagesy($image);
+			$s3Disk = Storage::disk('s3');
+			usleep(500000);
+			$s3Disk->put($originalPath, $originalData);
+			$imageUrl = $s3Disk->url($originalPath);
+			// $this->deleteLocalImages($fileBaseName);
 
-// 		$resizedImage = imagecreatetruecolor($newWidth, $newHeight);
-// 		imagealphablending($resizedImage, false);
-// 		imagesavealpha($resizedImage, true);
-// 		$transparent = imagecolorallocatealpha($resizedImage, 255, 255, 255, 127);
-// 		imagefill($resizedImage, 0, 0, $transparent);
+			foreach ($sizes as $sizeName => [$width, $height]) {
+				$resizedImage = $this->resizeImageGD($image, $width, $height);
+				if (!$resizedImage) {
+					continue;
+				}
 
-// 		imagecopyresampled($resizedImage, $image, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+				$resizedPath = $this->storageEnv . "/products/{$fileBaseName}-{$width}x{$height}.webp";
+				ob_start();
+				imagewebp($resizedImage);
+				$resizedData = ob_get_clean();
+				usleep(500000);
+				$s3Disk->put($resizedPath, $resizedData);
+				// $this->deleteLocalImages("{$fileBaseName}-{$width}x{$height}");
+			}
 
-// 		return $resizedImage;
-// 	}
+			imagedestroy($image);
+			unset($image, $imageContents, $originalData, $resizedData);
+			gc_collect_cycles();
+			return $imageUrl;
+		} catch (\Exception $e) {
+			Log::error("S3 Upload Error: " . $e->getMessage());
+			return null;
+		}
+	}
+
+	protected function resizeImageGD($image, $newWidth, $newHeight)
+	{
+		$width = imagesx($image);
+		$height = imagesy($image);
+
+		$resizedImage = imagecreatetruecolor($newWidth, $newHeight);
+		imagealphablending($resizedImage, false);
+		imagesavealpha($resizedImage, true);
+		$transparent = imagecolorallocatealpha($resizedImage, 255, 255, 255, 127);
+		imagefill($resizedImage, 0, 0, $transparent);
+
+		imagecopyresampled($resizedImage, $image, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+
+		return $resizedImage;
+	}
 
 	// protected function deleteLocalImages(string $fileBaseName)
 	// {
@@ -217,5 +234,5 @@
 	// 			Log::info("Deleted local file: " . $file);
 	// 		}
 	// 	}
-	//  }
- 
+	// }
+}
