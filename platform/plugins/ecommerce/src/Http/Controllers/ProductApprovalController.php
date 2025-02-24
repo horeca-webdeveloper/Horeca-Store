@@ -106,6 +106,7 @@ class ProductApprovalController extends BaseController
 								$discount->end_date = array_key_exists('never_expired', $discountDetail) && $discountDetail['never_expired'] == 1
 								? null
 								: Carbon::parse($discountDetail['discount_to_date']);
+								$discount->target ="specific-product";
 								$discount->save();
 
 								// Update relation
@@ -129,6 +130,7 @@ class ProductApprovalController extends BaseController
 							$discount->end_date = array_key_exists('never_expired', $discountDetail) && $discountDetail['never_expired'] == 1
 							? null
 							: Carbon::parse($discountDetail['discount_to_date']);
+							$discount->target ="specific-product";
 							$discount->save();
 
 							// Save relation
