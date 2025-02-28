@@ -348,6 +348,7 @@ public function addToCart(Request $request)
 //         'data' => $cartItems,
 //     ]);
 // }
+
 public function viewCart(Request $request)
 {
     $userId = Auth::id();
@@ -375,15 +376,17 @@ public function viewCart(Request $request)
         ->pluck('discount_id')
         ->toArray();
 
-    // Fetch applicable product discounts
+    // Fetch applicable product discounts (allow multiple discounts per product)
     $productDiscounts = DB::table('ec_discount_products')
         ->whereIn('product_id', $cartItems->pluck('product.id'))
-        ->pluck('discount_id', 'product_id')
-        ->toArray();
+        ->select('product_id', 'discount_id')
+        ->get()
+        ->groupBy('product_id')
+        ->map(fn($discounts) => $discounts->pluck('discount_id')->toArray());
 
     // Get all discounts from the discount table
     $discounts = DB::table('ec_discounts')
-        ->whereIn('id', array_merge($userDiscountIds, array_values($productDiscounts)))
+        ->whereIn('id', array_merge($userDiscountIds, $productDiscounts->flatten()->toArray()))
         ->get()
         ->keyBy('id');
 
@@ -415,13 +418,9 @@ public function viewCart(Request $request)
             $item->product->image = null;
         }
 
-        // Attach discount details if applicable
-        $discountId = $productDiscounts[$item->product->id] ?? null;
-        if ($discountId && isset($discounts[$discountId])) {
-            $item->product->discount = $discounts[$discountId];
-        } else {
-            $item->product->discount = null;
-        }
+        // Attach all applicable discounts
+        $discountIds = $productDiscounts[$item->product->id] ?? [];
+        $item->product->discounts = collect($discountIds)->map(fn($id) => $discounts[$id] ?? null)->filter()->values();
     });
 
     $currencyTitles = $cartItems->pluck('product.currency.title')->unique()->filter()->values();
@@ -432,6 +431,7 @@ public function viewCart(Request $request)
         'data' => $cartItems,
     ]);
 }
+
 
 
 
