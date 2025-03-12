@@ -374,13 +374,13 @@ class ProductController extends BaseController
 
                     $product->weight_unit_id = $request['weight_unit_id'];
                     $product->length_unit_id = $request['length_unit_id'];
-                    $product->depth_unit_id = $request['depth_unit_id'];
-                    $product->height_unit_id = $request['height_unit_id'];
-                    $product->width_unit_id = $request['width_unit_id'];
+                    // $product->depth_unit_id = $request['depth_unit_id'];
+                    // $product->height_unit_id = $request['height_unit_id'];
+                    // $product->width_unit_id = $request['width_unit_id'];
                     $product->shipping_length_id = $request['shipping_length_id'];
-                    $product->shipping_depth_id = $request['shipping_depth_id'];
-                    $product->shipping_height_id = $request['shipping_height_id'];
-                    $product->shipping_width_id = $request['shipping_width_id'];
+                    // $product->shipping_depth_id = $request['shipping_depth_id'];
+                    // $product->shipping_height_id = $request['shipping_height_id'];
+                    // $product->shipping_width_id = $request['shipping_width_id'];
                     // Additional processing
                     $product->status = $request->input('status');
                     if (EcommerceHelper::isEnabledSupportDigitalProducts() && $productType = $request->input('product_type')) {
@@ -719,13 +719,13 @@ class ProductController extends BaseController
 
                     $product->weight_unit_id = $request['weight_unit_id'];
                     $product->length_unit_id = $request['length_unit_id'];
-                    $product->depth_unit_id = $request['depth_unit_id'];
-                    $product->height_unit_id = $request['height_unit_id'];
-                    $product->width_unit_id = $request['width_unit_id'];
+                    // $product->depth_unit_id = $request['depth_unit_id'];
+                    // $product->height_unit_id = $request['height_unit_id'];
+                    // $product->width_unit_id = $request['width_unit_id'];
                     $product->shipping_length_id = $request['shipping_length_id'];
-                    $product->shipping_depth_id = $request['shipping_depth_id'];
-                    $product->shipping_height_id = $request['shipping_height_id'];
-                    $product->shipping_width_id = $request['shipping_width_id'];
+                    // $product->shipping_depth_id = $request['shipping_depth_id'];
+                    // $product->shipping_height_id = $request['shipping_height_id'];
+                    // $product->shipping_width_id = $request['shipping_width_id'];
                     // Additional processing
                     $product->status = $request->input('status');
                     if (EcommerceHelper::isEnabledSupportDigitalProducts() && $productType = $request->input('product_type')) {
@@ -1263,13 +1263,13 @@ class ProductController extends BaseController
                     $product->unit_of_measurement_id = $request->input('unit_of_measurement_id');
                     $product->weight_unit_id = $request->input('weight_unit_id');
                     $product->length_unit_id = $request->input('length_unit_id');
-                    $product->depth_unit_id = $request->input('depth_unit_id');
-                    $product->height_unit_id = $request->input('height_unit_id');
-                    $product->width_unit_id = $request->input('width_unit_id');
+                    // $product->depth_unit_id = $request->input('depth_unit_id');
+                    // $product->height_unit_id = $request->input('height_unit_id');
+                    // $product->width_unit_id = $request->input('width_unit_id');
                     $product->shipping_length_id = $request->input('shipping_length_id');
-                    $product->shipping_depth_id = $request->input('shipping_depth_id');
-                    $product->shipping_height_id = $request->input('shipping_height_id');
-                    $product->shipping_width_id = $request->input('shipping_width_id');
+                    // $product->shipping_depth_id = $request->input('shipping_depth_id');
+                    // $product->shipping_height_id = $request->input('shipping_height_id');
+                    // $product->shipping_width_id = $request->input('shipping_width_id');
                     $product->compare_type = json_encode(explode(',', $request->input('compare_type')));
                     $product->compare_products = json_encode(explode(',', $request->input('compare_products')));
                     $product->frequently_bought_together = $request->input('frequently_bought_together');
@@ -1565,13 +1565,13 @@ class ProductController extends BaseController
             $product->unit_of_measurement_id = $request->input('unit_of_measurement_id');
             $product->weight_unit_id = $request->input('weight_unit_id');
             $product->length_unit_id = $request->input('length_unit_id');
-            $product->depth_unit_id = $request->input('depth_unit_id');
-            $product->height_unit_id = $request->input('height_unit_id');
-            $product->width_unit_id = $request->input('width_unit_id');
+            // $product->depth_unit_id = $request->input('depth_unit_id');
+            // $product->height_unit_id = $request->input('height_unit_id');
+            // $product->width_unit_id = $request->input('width_unit_id');
             $product->shipping_length_id = $request->input('shipping_length_id');
-            $product->shipping_depth_id = $request->input('shipping_depth_id');
-            $product->shipping_height_id = $request->input('shipping_height_id');
-            $product->shipping_width_id = $request->input('shipping_width_id');
+            // $product->shipping_depth_id = $request->input('shipping_depth_id');
+            // $product->shipping_height_id = $request->input('shipping_height_id');
+            // $product->shipping_width_id = $request->input('shipping_width_id');
             $product->compare_type = json_encode(explode(',', $request->input('compare_type')));
             $product->compare_products = json_encode(explode(',', $request->input('compare_products')));
             $product->frequently_bought_together = $request->input('frequently_bought_together');
