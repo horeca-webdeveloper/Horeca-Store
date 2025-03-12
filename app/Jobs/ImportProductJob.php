@@ -59,6 +59,7 @@ class ImportProductJob implements ShouldQueue
 		$this->categoryIdNames = ProductCategory::whereDoesntHave('children')->pluck('name', 'id')->all();
 		$this->tagIdNames = ProductTag::pluck('name', 'id')->all();
 		$this->productTypeIdNames = ProductTypes::pluck('name', 'id')->all();
+		$SKUs = Product::pluck('sku', 'id')->all();
 
 
 		$log = TransactionLog::where('identifier', $this->batch()->id)->first();
@@ -115,8 +116,32 @@ class ImportProductJob implements ShouldQueue
 					$failed++;
 					continue;
 				}
+
+				/* Check if SKU is changed and is already taken by another product */
+				if (!empty($product->sku) && $product->sku !== $sku && in_array($sku, $SKUs)) {
+					$existingId = array_search($sku, $SKUs);
+					$rowError[] = "SKU already exists with ID: $existingId.";
+					$errorArray[] = [
+						"Row Number" => $failed + $success + 2 + $previousSuccessCount + $previousFailedCount,
+						"Error" => implode(' | ', $rowError),
+					];
+					$failed++;
+					continue;
+				}
 			} else {
 				$product = new Product();
+
+				/* Check if SKU already exists in the database */
+				if (!empty($sku) && in_array($sku, $SKUs)) {
+					$existingId = array_search($sku, $SKUs);
+					$rowError[] = "SKU already exists with ID: $existingId.";
+					$errorArray[] = [
+						"Row Number" => $failed + $success + 2 + $previousSuccessCount + $previousFailedCount,
+						"Error" => implode(' | ', $rowError),
+					];
+					$failed++;
+					continue;
+				}
 			}
 
 			/* Brand validation */
@@ -394,6 +419,8 @@ class ImportProductJob implements ShouldQueue
 				$product->created_by_id = $this->userId;
 				$product->created_by_type = User::class;
 				$product->save();
+
+				$SKUs[$product->id] = $sku;
 
 				$this->saveProductProductType($product, $productTypes);
 				// $categoryIdArray = $this->changeCategoryNameToId($categories);
