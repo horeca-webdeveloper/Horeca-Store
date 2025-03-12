@@ -8,8 +8,8 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Bus\Queueable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Bus\Batchable;
+use DB;
 
-use Botble\Ecommerce\Models\Product;
 use App\Models\TransactionLog;
 
 use Illuminate\Support\Facades\Log;
@@ -35,20 +35,14 @@ class ProductCopyToS3Job implements ShouldQueue
 
 	public function handle()
 	{
-		$success = 0;
-		$failed = 0;
-		$errorArray = [];
-
-		$products = Product::query()
-		->whereNotNull('images')
-		->where('images', 'like', '["http%')
-		->where('images', 'not like', '["https:\\\\/\\\\/horecastore-s3-storage%')
-		->select(['id', 'images', 'image'])
+		$products = DB::table('product_images')
+		->whereNull('updated_images')
+		->select(['id', 'images'])
 		->orderBy('id', 'asc')
 		->limit($this->limit)
 		->get();
 
-		Log::info($products->count()." Product for offset $this->offset and limit $this->limit");
+		Log::info($products->count()." Products for offset $this->offset and limit $this->limit");
 
 		/* Stop execution if no products found */
 		if ($products->isEmpty()) {
@@ -56,16 +50,23 @@ class ProductCopyToS3Job implements ShouldQueue
 			return;
 		}
 
+		/* Initialize counters */
+		$success = 0;
+		$failed = 0;
+		$errorArray = [];
+
 		foreach ($products as $product) {
-			$fetchedImages = $this->getImageURLs((array) $product->images ?? []);
+			$fetchedImages = [];
+			$fetchedImages[] = $this->uploadImageFromURL($product->images);
 
 			if (count($fetchedImages) > 0) {
-				$product->update([
-					'images' => json_encode($fetchedImages),
+				DB::table('product_images')->where('id', $product->id)->update([
+					'updated_images' => json_encode($fetchedImages),
 					'image' => $fetchedImages[0],
 				]);
 				$success++;
 			} else {
+				$convertErr = [];
 				$convertErr[] = "Failed to process images.";
 				$errorArray[] = [
 					"Product ID" => $product->id,
@@ -74,8 +75,8 @@ class ProductCopyToS3Job implements ShouldQueue
 				$failed++;
 			}
 
-			/* Update logs every 50 processed records and reset counters */
-			if (($success + $failed) % 50 == 0) {
+			/* Update logs every 10 processed records and reset counters */
+			if (($success + $failed) % 10 == 0) {
 				$this->updateTransactionLog($success, $failed, $errorArray);
 				$success = 0;
 				$failed = 0;

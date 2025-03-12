@@ -9,6 +9,7 @@ use Botble\Ecommerce\Models\Product;
 use Botble\Ecommerce\Models\ProductCategory;
 use Botble\Ecommerce\Models\CategorySpecification;
 use App\Models\TransactionLog;
+use DB;
 
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Bus\Batch;
@@ -164,10 +165,8 @@ class CategoryProductTypeController extends BaseController
 
 	public function copyProductsToS3()
 	{
-		$totalRecords = Product::query()
-		->whereNotNull('images')
-		->where('images', 'like', '["http%')
-		->where('images', 'not like', '["https:\\\\/\\\\/horecastore-s3-storage%')
+		$totalRecords = DB::table('product_images')
+		->whereNull('updated_images')
 		->count();
 
 		if ($totalRecords == 0) {
