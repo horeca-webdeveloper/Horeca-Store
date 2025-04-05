@@ -50,6 +50,10 @@ use App\Http\Controllers\API\CountryController;
  use App\Http\Controllers\API\CategoryWithSlugController;
  use App\Http\Controllers\API\EmailNotificationController;
  use App\Http\Controllers\API\ProductSpecificationApiController;
+// routes/api.php
+use App\Http\Controllers\API\ProductAttributeController;
+
+Route::get('product/{productId}/attributes', [ProductAttributeController::class, 'getAttributesByProduct']);
 
 Route::post('/send-confirmation-email', [EmailNotificationController::class, 'sendConfirmationEmail']);
 
