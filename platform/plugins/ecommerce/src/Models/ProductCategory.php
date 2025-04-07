@@ -192,4 +192,9 @@ class ProductCategory extends BaseModel implements HasTreeCategoryContract
 			});
 		}
 
+		public function parentCategory()
+		{
+			return $this->belongsTo(ProductCategory::class, 'parent_id');
+		}
+
 	}
