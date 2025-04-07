@@ -8,6 +8,10 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Botble\Ecommerce\Models\Brand;
 use Botble\Ecommerce\Models\Product;
+use Botble\Ecommerce\Models\AttributeValue;
+use Botble\Ecommerce\Models\Attribute;
+use Botble\Ecommerce\Models\AttributeGroup;
+use Botble\Ecommerce\Models\ProductAttribute;
 use Botble\Ecommerce\Models\ProductCategory;
 use Botble\Ecommerce\Models\Specification;
 
@@ -276,161 +280,6 @@ class CategoryController extends Controller
 		return asset('storage/default-placeholder.jpg'); // Replace with a valid placeholder image
 	}
 
-	// public function getSpecificationFilters(Request $request)
-	// {
-	// 	$categoryId = $request->get('category_id');
-	// 	$filters = $request->get('filters', []); // Filters from request
-	// 	$perPage = $request->get('per_page', 10); // Default pagination
-
-	// 	if (!$categoryId) {
-	// 		return response()->json([
-	// 			'success' => false,
-	// 			'message' => 'Category ID is required',
-	// 		], 200);
-	// 	}
-
-	// 	// Step 1: Fetch product IDs for the given category
-	// 	$productIds = DB::table('ec_product_category_product')
-	// 		->where('category_id', $categoryId)
-	// 		->pluck('product_id');
-
-	// 	if ($productIds->isEmpty()) {
-	// 		return response()->json([
-	// 			'success' => false,
-	// 			'message' => 'No products found for this category',
-	// 		], 200);
-	// 	}
-
-	// 	// Step 2: Fetch category-specific filters (spec_names)
-	// 	$categoryFilters = DB::table('category_specifications')
-	// 		->where('category_id', $categoryId)
-	// 		->where('specification_type', 'Filters') // Use the new specification_type column
-	// 		->pluck('specification_name');
-
-	// 	$specifications = collect();
-
-	// 	if ($categoryFilters->isNotEmpty()) {
-	// 		// Step 3: Fetch specifications for these products and filters
-	// 		$specifications = DB::table('specifications')
-	// 			->whereIn('product_id', $productIds)
-	// 			->whereIn('spec_name', $categoryFilters)
-	// 			->get();
-	// 	}
-
-	// 	// Step 4: Apply filters (handling both ranges and specific values)
-	// 	if (!empty($filters)) {
-	// 		foreach ($filters as $filter) {
-	// 			$specifications = $specifications->filter(function ($spec) use ($filter) {
-	// 				$specNameMatch = $spec->spec_name === $filter['spec_name'];
-
-	// 				// Handle range filters for numeric spec values
-	// 				$rangeMatch = false;
-	// 				if (isset($filter['min'], $filter['max'])) {
-	// 					if (is_numeric($spec->spec_value)) {
-	// 						$rangeMatch = $spec->spec_value >= $filter['min'] && $spec->spec_value <= $filter['max'];
-	// 					}
-	// 				} else {
-	// 					$rangeMatch = true;
-	// 				}
-
-	// 				// Handle specific value filters for both numeric and non-numeric values
-	// 				$valueMatch = isset($filter['spec_value'])
-	// 					? (string)$spec->spec_value === (string)$filter['spec_value']
-	// 					: true;
-
-	// 				return $specNameMatch && ($rangeMatch || $valueMatch);
-	// 			});
-	// 		}
-
-	// 		$productIds = $specifications->pluck('product_id')->unique();
-
-	// 		if ($productIds->isEmpty()) {
-	// 			return response()->json([
-	// 				'success' => false,
-	// 				'message' => 'No products match the selected filters',
-	// 			], 200);
-	// 		}
-	// 	}
-
-	// 	// Step 5: Fetch filtered products
-	// 	$products = DB::table('ec_products')
-	// 		->select([
-	// 			'id', 'name', 'images', 'sku', 'price', 'sale_price', 'refund',
-	// 			'delivery_days', 'currency_id',
-	// 		])
-	// 		->whereIn('id', $productIds)
-	// 		->paginate($perPage);
-
-	// 	// Step 6: Add specifications and ratings to products
-	// 	$products->transform(function ($product) use ($specifications) {
-	// 		$currency = DB::table('ec_currencies')->where('id', $product->currency_id)->first();
-	// 		$product->currency_title = $currency
-	// 			? ($currency->is_prefix_symbol
-	// 				? $currency->title . ' ' . $product->price
-	// 				: $product->price . ' ' . $currency->title)
-	// 			: $product->price;
-
-	// 		$totalReviews = DB::table('ec_reviews')->where('product_id', $product->id)->count();
-	// 		$product->avg_rating = $totalReviews > 0
-	// 			? DB::table('ec_reviews')->where('product_id', $product->id)->avg('star')
-	// 			: null;
-
-	// 		$product->specifications = $specifications->where('product_id', $product->id)->map(function ($spec) {
-	// 			return [
-	// 				'spec_name' => $spec->spec_name,
-	// 				'spec_value' => $spec->spec_value,
-	// 			];
-	// 		});
-
-	// 		$imagePaths = $product->images ? json_decode($product->images, true) : [];
-	// 		$product->images = array_map(function ($imagePath) {
-	// 			// Check if the URL starts with "http" or "https"
-	// 			if (preg_match('/^(http|https):\/\//', $imagePath)) {
-	// 				return $imagePath; // Return as is if it's an absolute URL
-	// 			}
-	// 			return asset('storage/' . $imagePath); // Otherwise, prepend storage path
-	// 		}, $imagePaths);
-
-	// 		return $product;
-	// 	});
-
-	// 	// Step 7: Create available filters (handling ranges and specific values)
-	// 	$availableFilters = $specifications->isNotEmpty()
-	// 		? $specifications->groupBy('spec_name')->map(function ($specs, $specName) {
-	// 			$numericValues = $specs->pluck('spec_value')->filter(fn($value) => is_numeric($value))->unique()->sort()->values();
-	// 			$nonNumericValues = $specs->pluck('spec_value')->filter(fn($value) => !is_numeric($value))->unique();
-
-	// 			$ranges = [];
-	// 			if ($numericValues->count() > 1) {
-	// 				$minValue = $numericValues->first();
-	// 				$maxValue = $numericValues->last();
-
-	// 				$interval = ceil(($maxValue - $minValue) / 4);
-
-	// 				for ($i = 0; $i < 4; $i++) {
-	// 					$start = $minValue + $i * $interval;
-	// 					$end = min($minValue + ($i + 1) * $interval, $maxValue);
-
-	// 					$ranges[] = [
-	// 						'min' => (int) $start,
-	// 						'max' => (int) $end,
-	// 					];
-	// 				}
-	// 			}
-
-	// 			return [
-	// 				'ranges' => $ranges,
-	// 				'non_numeric_values' => $nonNumericValues,
-	// 			];
-	// 		})
-	// 		: [];
-
-	// 	return response()->json([
-	// 		'success' => true,
-	// 		'filters' => $availableFilters,
-	// 		'products' => $products,
-	// 	], 200);
-	// }
 
 	// public function getSpecificationFilters(Request $request)   
 	// {
@@ -439,18 +288,21 @@ class CategoryController extends Controller
 	// 		'applied_filters' => 'nullable|array',
 	// 		'price_min' => 'nullable|numeric|min:0',
 	// 		'price_max' => 'nullable|numeric|min:0',
-	// 		'price_order' => 'nullable|in:high_to_low,low_to_high', // Add price order validation
+	// 		'price_order' => 'nullable|in:high_to_low,low_to_high',
+	// 		'brand_id' => 'nullable|array', // Update this line
+	// 		'brand_id.*' => 'integer', // Validate all brand_id elements as integers
+	// 		'rating' => 'nullable|numeric|min:1|max:5',
 	// 	]);
-
+	
 	// 	if ($validator->fails()) {
 	// 		return response()->json([
 	// 			'success' => false,
 	// 			'message' => $validator->errors()
 	// 		], 400);
 	// 	}
-
-	// 	$perPage = $request->get('per_page', 10); // Default pagination
-
+	
+	// 	$perPage = $request->get('per_page', 10);
+	
 	// 	$category = ProductCategory::find($request->category_id);
 	// 	if (!$category) {
 	// 		return response()->json([
@@ -458,7 +310,7 @@ class CategoryController extends Controller
 	// 			'message' => 'Category does not exist.'
 	// 		], 400);
 	// 	}
-
+	
 	// 	$categoryProductIds = $category->products->pluck('id')->all();
 	// 	if (!$categoryProductIds) {
 	// 		return response()->json([
@@ -466,8 +318,8 @@ class CategoryController extends Controller
 	// 			'message' => 'No product exist for this category.'
 	// 		], 400);
 	// 	}
-
-	// 	// Get sort parameter sdsd
+	
+	// 	// Get sort parameter
 	// 	$sortBy = $request->input('sort_by', 'created_at');
 	// 	if (!in_array($sortBy, ['created_at', 'price', 'name'])) {
 	// 		$sortBy = 'created_at';
@@ -476,13 +328,53 @@ class CategoryController extends Controller
 	// 	if (!in_array($sortByType, ['asc', 'desc'])) {
 	// 		$sortByType = 'desc';
 	// 	}
-
-	// 	$categoryProducts = Product::select( 'id', 'name', 'images', 'sku', 'price', 'sale_price', 'refund', 'delivery_days', 'currency_id')->whereIn('id', $categoryProductIds)->with(['currency', 'reviews', 'specifications']);
+	
+	// 	// First, if rating filter is applied, get the product IDs that match the rating criteria
+	// 	$ratingFilteredIds = collect($categoryProductIds);
+	// 	if ($request->has('rating') && $request->rating) {
+	// 		$ratingValue = $request->rating;
+			
+	// 		// Get products with the required average rating
+	// 		$ratingFilteredIds = DB::table('ec_reviews')
+	// 			->whereIn('product_id', $categoryProductIds)
+	// 			->select('product_id')
+	// 			->groupBy('product_id')
+	// 			->havingRaw('ROUND(AVG(star)) = ?', [$ratingValue])
+	// 			->pluck('product_id');
+				
+	// 		// If no products match the rating, return empty result early
+	// 		if ($ratingFilteredIds->isEmpty()) {
+	// 			return response()->json([
+	// 				'success' => true,
+	// 				'filters' => [],
+	// 				'products' => [
+	// 					'data' => [],
+	// 					'total' => 0,
+	// 					'per_page' => $perPage,
+	// 					'current_page' => 1,
+	// 					'last_page' => 1
+	// 				],
+	// 				'brands' => [],
+	// 				'rating_filter' => [
+	// 					'filter_name' => 'Rating',
+	// 					'filter_type' => 'rating',
+	// 					'filter_values' => [5, 4, 3, 2, 1]
+	// 				],
+	// 			], 200);
+	// 		}
+	// 	}
+	
+	// 	// Now use the filtered product IDs
+	// 	$categoryProducts = Product::select('id', 'name', 'images', 'sku', 'price', 'sale_price', 'refund', 'delivery_days', 'currency_id', 'brand_id')
+	// 							   ->whereIn('id', $ratingFilteredIds)
+	// 							   ->with(['currency', 'reviews', 'specifications', 'brand']);
+		
+	// 	// Apply specification filters
 	// 	if ($request->applied_filters) {
 	// 		foreach ($request->applied_filters as $appliedFilter) {
 	// 			$categoryProducts->whereHas('specifications', function($query) use ($appliedFilter) {
 	// 				$query->where('spec_name', $appliedFilter['specification_name']);
-
+	
 	// 				if ($appliedFilter['specification_type']=='fixed') {
 	// 					$query->where('spec_value', $appliedFilter['specification_value']);
 	// 				} elseif ($appliedFilter['specification_type']=='range') {
@@ -491,78 +383,80 @@ class CategoryController extends Controller
 	// 			});
 	// 		}
 	// 	}
-
-	// 	 // Apply price filter
-	// 	 if ($request->has('price_min') || $request->has('price_max')) {
+	
+	// 	// Apply price filter
+	// 	if ($request->has('price_min') || $request->has('price_max')) {
 	// 		$priceMin = $request->input('price_min', 0);
 	// 		$priceMax = $request->input('price_max', PHP_INT_MAX);
 	// 		$categoryProducts->whereRaw("COALESCE(sale_price, price) BETWEEN ? AND ?", [$priceMin, $priceMax]);
 	// 	}
-
-
-    //     if ($sortBy == 'price') {
-    //         $categoryProducts = $categoryProducts->orderByRaw("COALESCE(sale_price, price) $sortByType");
-    //     } else {
-    //         $categoryProducts = $categoryProducts->orderBy($sortBy, $sortByType);
-    //     }
-
+	
+	// 	// Apply brand filter
+	// 	if ($request->has('brand_id') && $request->brand_id) {
+	// 		$categoryProducts->whereIn('brand_id', $request->brand_id); // Updated to handle array
+	// 	}
+	
+	// 	// Apply sorting
+	// 	if ($sortBy == 'price') {
+	// 		$categoryProducts = $categoryProducts->orderByRaw("COALESCE(sale_price, price) $sortByType");
+	// 	} else {
+	// 		$categoryProducts = $categoryProducts->orderBy($sortBy, $sortByType);
+	// 	}
+	
 	// 	$categoryProducts = $categoryProducts->paginate($perPage);
-
+	
 	// 	$modifiedProducts = $categoryProducts->getCollection()->map(function ($product) {
-	// 		// $product->currency_title = $product->currency
-	// 		// 	? ($product->currency->is_prefix_symbol
-	// 		// 		? $product->currency->title . ' ' . $product->price
-	// 		// 		: $product->price . ' ' . $product->currency->title)
-	// 		// 	: $product->price;
-
 	// 		$product->currency_title = $product->currency ? $product->currency->title : '';
-
-	// 		$product->avg_rating = $product->reviews->count() > 0
-	// 			? $product->reviews->avg('star')
-	// 			: null;
-
+	
+	// 		// Calculate and round the average rating
+	// 		$rawAvgRating = $product->reviews->count() > 0 ? $product->reviews->avg('star') : null;
+	// 		$product->avg_rating = $rawAvgRating ? round($rawAvgRating) : null;
+	
+	// 		$product->brand_name = $product->brand ? $product->brand->name : null;
+	
 	// 		$product->specifications = $product->specifications->map(function ($spec) {
 	// 			return [
 	// 				'spec_name' => $spec->spec_name,
 	// 				'spec_value' => $spec->spec_value,
 	// 			];
 	// 		});
-
-	// 		unset($product->currency, $product->reviews, $product->specifications);
-
+	
+	// 		unset($product->currency, $product->reviews, $product->brand);
+	
 	// 		$imagePaths = is_array($product->images) ? $product->images : [];
 	// 		$product->images = array_map(function ($imagePath) {
 	// 			return preg_match('/^(http|https):\/\//', $imagePath)
 	// 				? $imagePath
 	// 				: asset('storage/' . $imagePath);
 	// 		}, $imagePaths);
-
+	
 	// 		return $product;
 	// 	});
-
+	
 	// 	$categoryProducts->setCollection($modifiedProducts);
-
+	
+	// 	// Get specifications for filtering
 	// 	$categorySpecificationNames = $category->specifications
 	// 		->filter(function ($spec) {
 	// 			return strpos($spec['specification_type'], 'Filters') !== false;
 	// 		})
 	// 		->pluck('specification_name')->all();
-
+	
 	// 	$specifications = Specification::whereIn('product_id', $categoryProductIds)->whereIn('spec_name', $categorySpecificationNames)->get();
 	// 	$filters = [];
 	// 	if ($specifications->count()) {
 	// 		$filters = collect($specifications)->groupBy('spec_name')->map(function ($group, $specName) {
 	// 			$values = $group->pluck('spec_value')->unique()->toArray();
-
+	
 	// 			// Check if all values are numeric
 	// 			if (count($values) > 2 && collect($values)->every(fn($val) => is_numeric($val))) {
 	// 				// Convert values to integers
 	// 				$numericValues = collect($values)->map(fn($val) => (int) $val)->sort()->values();
-
-	// 				// Define the number of ranges (minimum 2, maximum 5)
+	
+	// 				// Define the number of ranges
 	// 				$totalRanges = min(max(2, ceil(count($numericValues) / 2)), 5);
 	// 				$chunkSize = ceil(count($numericValues) / $totalRanges);
-
+	
 	// 				// Create range filters
 	// 				$ranges = $numericValues->chunk($chunkSize)->map(function ($chunk) {
 	// 					return [
@@ -570,14 +464,14 @@ class CategoryController extends Controller
 	// 						'max' => $chunk->last(),
 	// 					];
 	// 				})->values()->toArray();
-
+	
 	// 				return [
 	// 					'specification_name' => $specName,
 	// 					'specification_type' => 'range',
 	// 					'specification_value' => $ranges,
 	// 				];
 	// 			} else {
-	// 				// Fixed filter (if there are strings or only two values)
+	// 				// Fixed filter
 	// 				return [
 	// 					'specification_name' => $specName,
 	// 					'specification_type' => 'fixed',
@@ -587,387 +481,237 @@ class CategoryController extends Controller
 	// 		})
 	// 		->values()
 	// 		->toArray();
-	// 	} else {
-	// 		$filters = [];
 	// 	}
-
-	// 	$brands = Brand::select('id', 'name')->get();
-
+	
+	// 	// Get only brands that exist in this category's products
+	// 	$categoryBrandIds = Product::whereIn('id', $categoryProductIds)
+	// 							   ->whereNotNull('brand_id')
+	// 							   ->pluck('brand_id')
+	// 							   ->unique();
+		
+	// 	$brands = Brand::select('id', 'name')
+	// 				  ->whereIn('id', $categoryBrandIds)
+	// 				  ->get();
+	
+	// 	// Create rating filter options
+	// 	$ratingFilter = [
+	// 		'filter_name' => 'Rating',
+	// 		'filter_type' => 'rating',
+	// 		'filter_values' => [5, 4, 3, 2, 1]
+	// 	];
+	
 	// 	return response()->json([
 	// 		'success' => true,
 	// 		'filters' => $filters,
 	// 		'products' => $categoryProducts,
 	// 		'brands' => $brands,
+	// 		'rating_filter' => $ratingFilter,
 	// 	], 200);
 	// }
+	public function getSpecificationFilters(Request $request)
+{
+    // Existing validation code
+    $validator = Validator::make($request->all(), [
+        'category_id' => 'required|integer',
+        'filters' => 'nullable|array',
+        'price_min' => 'nullable|numeric|min:0',
+        'price_max' => 'nullable|numeric|min:0',
+        'price_order' => 'nullable|in:high_to_low,low_to_high',
+        'brand_id' => 'nullable|array',
+        'brand_id.*' => 'integer',
+        'rating' => 'nullable|numeric|min:1|max:5',
+    ]);
 
+    if ($validator->fails()) {
+        return response()->json(['success' => false, 'message' => $validator->errors()], 400);
+    }
 
-	public function getSpecificationFilters(Request $request)   
-	{
-		$validator = Validator::make($request->all(), [
-			'category_id' => 'required|integer',
-			'applied_filters' => 'nullable|array',
-			'price_min' => 'nullable|numeric|min:0',
-			'price_max' => 'nullable|numeric|min:0',
-			'price_order' => 'nullable|in:high_to_low,low_to_high',
-			'brand_id' => 'nullable|array', // Update this line
-			'brand_id.*' => 'integer', // Validate all brand_id elements as integers
-			'rating' => 'nullable|numeric|min:1|max:5',
-		]);
-	
-		if ($validator->fails()) {
-			return response()->json([
-				'success' => false,
-				'message' => $validator->errors()
-			], 400);
-		}
-	
-		$perPage = $request->get('per_page', 10);
-	
-		$category = ProductCategory::find($request->category_id);
-		if (!$category) {
-			return response()->json([
-				'success' => false,
-				'message' => 'Category does not exist.'
-			], 400);
-		}
-	
-		$categoryProductIds = $category->products->pluck('id')->all();
-		if (!$categoryProductIds) {
-			return response()->json([
-				'success' => false,
-				'message' => 'No product exist for this category.'
-			], 400);
-		}
-	
-		// Get sort parameter
-		$sortBy = $request->input('sort_by', 'created_at');
-		if (!in_array($sortBy, ['created_at', 'price', 'name'])) {
-			$sortBy = 'created_at';
-		}
-		$sortByType = $request->input('sort_by_type', 'desc');
-		if (!in_array($sortByType, ['asc', 'desc'])) {
-			$sortByType = 'desc';
-		}
-	
-		// First, if rating filter is applied, get the product IDs that match the rating criteria
-		$ratingFilteredIds = collect($categoryProductIds);
-		if ($request->has('rating') && $request->rating) {
-			$ratingValue = $request->rating;
-			
-			// Get products with the required average rating
-			$ratingFilteredIds = DB::table('ec_reviews')
-				->whereIn('product_id', $categoryProductIds)
-				->select('product_id')
-				->groupBy('product_id')
-				->havingRaw('ROUND(AVG(star)) = ?', [$ratingValue])
-				->pluck('product_id');
-				
-			// If no products match the rating, return empty result early
-			if ($ratingFilteredIds->isEmpty()) {
-				return response()->json([
-					'success' => true,
-					'filters' => [],
-					'products' => [
-						'data' => [],
-						'total' => 0,
-						'per_page' => $perPage,
-						'current_page' => 1,
-						'last_page' => 1
-					],
-					'brands' => [],
-					'rating_filter' => [
-						'filter_name' => 'Rating',
-						'filter_type' => 'rating',
-						'filter_values' => [5, 4, 3, 2, 1]
-					],
-				], 200);
-			}
-		}
-	
-		// Now use the filtered product IDs
-		$categoryProducts = Product::select('id', 'name', 'images', 'sku', 'price', 'sale_price', 'refund', 'delivery_days', 'currency_id', 'brand_id')
-								   ->whereIn('id', $ratingFilteredIds)
-								   ->with(['currency', 'reviews', 'specifications', 'brand']);
-		
-		// Apply specification filters
-		if ($request->applied_filters) {
-			foreach ($request->applied_filters as $appliedFilter) {
-				$categoryProducts->whereHas('specifications', function($query) use ($appliedFilter) {
-					$query->where('spec_name', $appliedFilter['specification_name']);
-	
-					if ($appliedFilter['specification_type']=='fixed') {
-						$query->where('spec_value', $appliedFilter['specification_value']);
-					} elseif ($appliedFilter['specification_type']=='range') {
-						$query->whereBetween('spec_value', [$appliedFilter['specification_value']['start'], $appliedFilter['specification_value']['end']]);
-					}
-				});
-			}
-		}
-	
-		// Apply price filter
-		if ($request->has('price_min') || $request->has('price_max')) {
-			$priceMin = $request->input('price_min', 0);
-			$priceMax = $request->input('price_max', PHP_INT_MAX);
-			$categoryProducts->whereRaw("COALESCE(sale_price, price) BETWEEN ? AND ?", [$priceMin, $priceMax]);
-		}
-	
-		// Apply brand filter
-		if ($request->has('brand_id') && $request->brand_id) {
-			$categoryProducts->whereIn('brand_id', $request->brand_id); // Updated to handle array
-		}
-	
-		// Apply sorting
-		if ($sortBy == 'price') {
-			$categoryProducts = $categoryProducts->orderByRaw("COALESCE(sale_price, price) $sortByType");
-		} else {
-			$categoryProducts = $categoryProducts->orderBy($sortBy, $sortByType);
-		}
-	
-		$categoryProducts = $categoryProducts->paginate($perPage);
-	
-		$modifiedProducts = $categoryProducts->getCollection()->map(function ($product) {
-			$product->currency_title = $product->currency ? $product->currency->title : '';
-	
-			// Calculate and round the average rating
-			$rawAvgRating = $product->reviews->count() > 0 ? $product->reviews->avg('star') : null;
-			$product->avg_rating = $rawAvgRating ? round($rawAvgRating) : null;
-	
-			$product->brand_name = $product->brand ? $product->brand->name : null;
-	
-			$product->specifications = $product->specifications->map(function ($spec) {
-				return [
-					'spec_name' => $spec->spec_name,
-					'spec_value' => $spec->spec_value,
-				];
-			});
-	
-			unset($product->currency, $product->reviews, $product->brand);
-	
-			$imagePaths = is_array($product->images) ? $product->images : [];
-			$product->images = array_map(function ($imagePath) {
-				return preg_match('/^(http|https):\/\//', $imagePath)
-					? $imagePath
-					: asset('storage/' . $imagePath);
-			}, $imagePaths);
-	
-			return $product;
-		});
-	
-		$categoryProducts->setCollection($modifiedProducts);
-	
-		// Get specifications for filtering
-		$categorySpecificationNames = $category->specifications
-			->filter(function ($spec) {
-				return strpos($spec['specification_type'], 'Filters') !== false;
-			})
-			->pluck('specification_name')->all();
-	
-		$specifications = Specification::whereIn('product_id', $categoryProductIds)->whereIn('spec_name', $categorySpecificationNames)->get();
-		$filters = [];
-		if ($specifications->count()) {
-			$filters = collect($specifications)->groupBy('spec_name')->map(function ($group, $specName) {
-				$values = $group->pluck('spec_value')->unique()->toArray();
-	
-				// Check if all values are numeric
-				if (count($values) > 2 && collect($values)->every(fn($val) => is_numeric($val))) {
-					// Convert values to integers
-					$numericValues = collect($values)->map(fn($val) => (int) $val)->sort()->values();
-	
-					// Define the number of ranges
-					$totalRanges = min(max(2, ceil(count($numericValues) / 2)), 5);
-					$chunkSize = ceil(count($numericValues) / $totalRanges);
-	
-					// Create range filters
-					$ranges = $numericValues->chunk($chunkSize)->map(function ($chunk) {
-						return [
-							'min' => $chunk->first(),
-							'max' => $chunk->last(),
-						];
-					})->values()->toArray();
-	
-					return [
-						'specification_name' => $specName,
-						'specification_type' => 'range',
-						'specification_value' => $ranges,
-					];
-				} else {
-					// Fixed filter
-					return [
-						'specification_name' => $specName,
-						'specification_type' => 'fixed',
-						'specification_value' => array_values($values),
-					];
-				}
-			})
-			->values()
-			->toArray();
-		}
-	
-		// Get only brands that exist in this category's products
-		$categoryBrandIds = Product::whereIn('id', $categoryProductIds)
-								   ->whereNotNull('brand_id')
-								   ->pluck('brand_id')
-								   ->unique();
-		
-		$brands = Brand::select('id', 'name')
-					  ->whereIn('id', $categoryBrandIds)
-					  ->get();
-	
-		// Create rating filter options
-		$ratingFilter = [
-			'filter_name' => 'Rating',
-			'filter_type' => 'rating',
-			'filter_values' => [5, 4, 3, 2, 1]
-		];
-	
-		return response()->json([
-			'success' => true,
-			'filters' => $filters,
-			'products' => $categoryProducts,
-			'brands' => $brands,
-			'rating_filter' => $ratingFilter,
-		], 200);
-	}
+    $perPage = $request->get('per_page', 10);
+    $category = ProductCategory::find($request->category_id);
+    if (!$category) {
+        return response()->json(['success' => false, 'message' => 'Category does not exist.'], 400);
+    }
 
+    $categoryProductIds = $category->products->pluck('id')->all();
+    if (empty($categoryProductIds)) {
+        return response()->json([
+            'success' => true,
+            'filters' => [],
+            'products' => [],
+            'brands' => [],
+            'rating_filter' => [
+                'filter_name' => 'Rating',
+                'filter_type' => 'rating',
+                'filter_values' => [5, 4, 3, 2, 1],
+            ],
+        ]);
+    }
 
-	// public function getSpecificationFilters(Request $request)
-	// {
-	// 	$validator = Validator::make($request->all(), [
-	// 		'category_id' => 'required|integer',
-	// 		'applied_filters' => 'nullable|array',
-	// 	]);
+    // Start with all category product IDs
+    $filteredProductIds = collect($categoryProductIds);
 
-	// 	if ($validator->fails()) {
-	// 		return response()->json([
-	// 			'success' => false,
-	// 			'message' => $validator->errors()
-	// 		], 400);
-	// 	}
-	// 	$perPage = $request->get('per_page', 10); // Default pagination
+    // Apply attribute filters if provided
+    if ($request->has('filters') && is_array($request->filters)) {
+        foreach ($request->filters as $filter) {
+            if (!isset($filter['specification_name']) || !isset($filter['specification_value']) || empty($filter['specification_value'])) {
+                continue;
+            }
 
-	// 	$category = ProductCategory::find($request->category_id);
-	// 	if (!$category) {
-	// 		return response()->json([
-	// 			'success' => false,
-	// 			'message' => 'Category does not exist.'
-	// 		], 400);
-	// 	}
+            $specName = $filter['specification_name'];
+            $specValues = is_array($filter['specification_value']) ? $filter['specification_value'] : [$filter['specification_value']];
 
+            // Find attribute ID based on name
+            $attribute = Attribute::where('name', $specName)->first();
+            if (!$attribute) {
+                continue;
+            }
 
-	// 	$categoryProductIds = $category->products->pluck('id')->all();
-	// 	if (!$categoryProductIds) {
-	// 		return response()->json([
-	// 			'success' => false,
-	// 			'message' => 'No product exist for this category.'
-	// 		], 400);
-	// 	}
+            // Find product IDs that match this attribute and values
+            $matchingProductIds = DB::table('product_attributes as pa')
+                ->where('pa.attribute_id', $attribute->id)
+                ->whereIn('pa.attribute_value', $specValues)
+                ->whereIn('pa.product_id', $filteredProductIds)
+                ->pluck('pa.product_id')
+                ->unique();
 
-	// 	$categoryProducts = Product::select( 'id', 'name', 'images', 'sku', 'price', 'sale_price', 'refund', 'delivery_days', 'currency_id')->whereIn('id', $categoryProductIds)->with(['currency', 'reviews', 'specifications']);
-	// 	if ($request->applied_filters) {
-	// 		foreach ($request->applied_filters as $appliedFilter) {
-	// 			$categoryProducts->whereHas('specifications', function($query) use ($appliedFilter) {
-	// 				$query->where('spec_name', $appliedFilter['specification_name']);
+            // Intersect with our running list of product IDs
+            $filteredProductIds = $filteredProductIds->intersect($matchingProductIds);
 
-	// 				if ($appliedFilter['specification_type']=='fixed') {
-	// 					$query->where('spec_value', $appliedFilter['specification_value']);
-	// 				} elseif ($appliedFilter['specification_type']=='range') {
-	// 					$query->whereBetween('spec_value', [$appliedFilter['specification_value']['start'], $appliedFilter['specification_value']['end']]);
-	// 				}
-	// 			});
-	// 		}
-	// 	}
+            // If no products match these filters, return empty results early
+            if ($filteredProductIds->isEmpty()) {
+                return response()->json([
+                    'success' => true,
+                    'filters' => [],
+                    'products' => [],
+                    'brands' => [],
+                    'rating_filter' => [
+                        'filter_name' => 'Rating',
+                        'filter_type' => 'rating',
+                        'filter_values' => [5, 4, 3, 2, 1],
+                    ],
+                ]);
+            }
+        }
+    }
 
-	// 	$categoryProducts = $categoryProducts->paginate($perPage);
+    // If a rating filter is applied, filter the already filtered product IDs
+    if ($request->has('rating') && $request->rating) {
+        $ratingFilteredIds = DB::table('ec_reviews')
+            ->whereIn('product_id', $filteredProductIds)
+            ->select('product_id')
+            ->groupBy('product_id')
+            ->havingRaw('ROUND(AVG(star)) = ?', [$request->rating])
+            ->pluck('product_id');
 
-	// 	// dd($categoryProducts->toArray());
+        $filteredProductIds = $filteredProductIds->intersect($ratingFilteredIds);
 
-	// 	$modifiedProducts = $categoryProducts->getCollection()->map(function ($product) {
-	// 		$product->currency_title = $product->currency
-	// 		? ($product->currency->is_prefix_symbol
-	// 			? $product->currency->title . ' ' . $product->price
-	// 			: $product->price . ' ' . $product->currency->title)
-	// 		: $product->price;
+        if ($filteredProductIds->isEmpty()) {
+            return response()->json([
+                'success' => true,
+                'filters' => [],
+                'products' => [],
+                'brands' => [],
+                'rating_filter' => [
+                    'filter_name' => 'Rating',
+                    'filter_type' => 'rating',
+                    'filter_values' => [5, 4, 3, 2, 1],
+                ],
+            ]);
+        }
+    }
 
-	// 		$product->avg_rating = $product->reviews->count() > 0
-	// 		? $product->reviews->avg('star')
-	// 		: null;
+    // Fetching products based on filters
+    $products = Product::whereIn('id', $filteredProductIds)
+        ->with(['currency', 'reviews', 'brand'])
+        ->when($request->has('price_min') || $request->has('price_max'), function ($query) use ($request) {
+            $min = $request->input('price_min', 0);
+            $max = $request->input('price_max', PHP_INT_MAX);
+            return $query->whereRaw("COALESCE(sale_price, price) BETWEEN ? AND ?", [$min, $max]);
+        })
+        ->when($request->has('brand_id') && $request->brand_id, function ($query) use ($request) {
+            return $query->whereIn('brand_id', $request->brand_id);
+        });
 
-	// 		$product->specifications = $product->specifications->map(function ($spec) {
-	// 			return [
-	// 				'spec_name' => $spec->spec_name,
-	// 				'spec_value' => $spec->spec_value,
-	// 			];
-	// 		});
+    // Apply sorting
+    $sortBy = $request->input('sort_by', 'created_at');
+    $sortByType = $request->input('sort_by_type', 'desc');
+    if ($sortBy == 'price') {
+        $products = $products->orderByRaw("COALESCE(sale_price, price) $sortByType");
+    } else {
+        $products = $products->orderBy($sortBy, $sortByType);
+    }
 
-	// 		unset($product->currency, $product->reviews, $product->specifications);
+    $paginatedProducts = $products->paginate($perPage);
+    $modifiedProducts = $paginatedProducts->getCollection()->map(function ($product) {
+        $product->currency_title = optional($product->currency)->title;
+        $product->avg_rating = $product->reviews->count() > 0 ? round($product->reviews->avg('star')) : null;
+        $product->brand_name = optional($product->brand)->name;
 
-	// 		$imagePaths = is_array($product->images) ? $product->images : [];
-	// 		$product->images = array_map(function ($imagePath) {
-	// 			return preg_match('/^(http|https):\/\//', $imagePath)
-	// 			? $imagePath
-	// 			: asset('storage/' . $imagePath);
-	// 		}, $imagePaths);
+        $product->images = collect(is_array($product->images) ? $product->images : [])->map(function ($img) {
+            return preg_match('/^(http|https):\/\//', $img) ? $img : asset('storage/' . $img);
+        })->toArray();
 
+        unset($product->currency, $product->reviews, $product->brand);
+        return $product;
+    });
 
-	// 		return $product;
-	// 	});
+    $paginatedProducts->setCollection($modifiedProducts);
 
-	// 	$categoryProducts->setCollection($modifiedProducts);
+    // Get all available attribute filters for this category
+    $attributeValues = DB::table('product_attributes as pa')
+        ->join('attributes as at', 'at.id', '=', 'pa.attribute_id')
+        ->whereIn('pa.product_id', $categoryProductIds)
+        ->select('at.name as attribute_name', 'pa.attribute_value', 'at.id as attribute_id')
+        ->get()
+        ->groupBy('attribute_name');
 
-	// 	$categorySpecificationNames = $category->specifications
-	// 	->filter(function ($spec) {
-	// 		return strpos($spec['specification_type'], 'Filters') !== false;
-	// 	})->pluck('specification_name')->all();
+    $filters = [];
+    foreach ($attributeValues as $attributeName => $values) {
+        $uniqueValues = $values->pluck('attribute_value')->unique()->filter()->values();
 
-	// 	$specifications = Specification::whereIn('product_id', $categoryProductIds)->whereIn('spec_name', $categorySpecificationNames)->get();
-    //     $filters = [];
-	// 	if ($specifications->count()) {
-	// 		$filters = collect($specifications)->groupBy('spec_name')->map(function ($group, $specName) {
-	// 			$values = $group->pluck('spec_value')->unique()->toArray();
+        if ($uniqueValues->every(fn($val) => is_numeric($val)) && $uniqueValues->count() > 2) {
+            $sorted = $uniqueValues->map(fn($val) => (float)$val)->sort()->values();
+            $chunkCount = min(5, ceil($sorted->count() / 2));
+            $chunkSize = ceil($sorted->count() / $chunkCount);
 
-	// 			// Check if all values are numeric
-	// 			if (count($values) > 2 && collect($values)->every(fn($val) => is_numeric($val))) {
-	// 				// Convert values to integers
-	// 				$numericValues = collect($values)->map(fn($val) => (int) $val)->sort()->values();
+            $ranges = $sorted->chunk($chunkSize)->map(function ($chunk) {
+                return [
+                    'min' => $chunk->first(),
+                    'max' => $chunk->last(),
+                ];
+            })->toArray();
 
-	// 				// Define the number of ranges (minimum 2, maximum 5)
-	// 				$totalRanges = min(max(2, ceil(count($numericValues) / 2)), 5);
-	// 				$chunkSize = ceil(count($numericValues) / $totalRanges);
+            $filters[] = [
+                'specification_name' => $attributeName,
+                'specification_type' => 'range',
+                'specification_value' => $ranges,
+            ];
+        } else {
+            $filters[] = [
+                'specification_name' => $attributeName,
+                'specification_type' => 'fixed',
+                'specification_value' => $uniqueValues->values(),
+            ];
+        }
+    }
 
-	// 				// Create range filters
-	// 				$ranges = $numericValues->chunk($chunkSize)->map(function ($chunk) {
-	// 					return [
-	// 						'min' => $chunk->first(),
-	// 						'max' => $chunk->last(),
-	// 					];
-	// 				})->values()->toArray();
+    $brandIds = Product::whereIn('id', $categoryProductIds)->whereNotNull('brand_id')->pluck('brand_id')->unique();
+    $brands = Brand::whereIn('id', $brandIds)->select('id', 'name')->get();
 
-	// 				return [
-	// 					'specification_name' => $specName,
-	// 					'specification_type' => 'range',
-	// 					'specification_value' => $ranges,
-	// 				];
-	// 			} else {
-	// 				// Fixed filter (if there are strings or only two values)
-	// 				return [
-	// 					'specification_name' => $specName,
-	// 					'specification_type' => 'fixed',
-	// 					'specification_value' => array_values($values),
-	// 				];
-	// 			}
-	// 		})
-	// 		->values()
-	// 		->toArray();
+    $ratingFilter = [
+        'filter_name' => 'Rating',
+        'filter_type' => 'rating',
+        'filter_values' => [5, 4, 3, 2, 1],
+    ];
 
-	// 	} else {
-	// 		[];
-	// 	}
-
-	// 	return response()->json([
-	// 		'success' => true,
-	// 		'filters' => $filters,
-	// 		'products' => $categoryProducts,
-	// 	], 200); dsdasd sd
-	// }
+    return response()->json([
+        'success' => true,
+        'filters' => $filters,
+        'products' => $paginatedProducts,
+        'brands' => $brands,
+        'rating_filter' => $ratingFilter,
+    ]);
+}
+	
+	
 }
