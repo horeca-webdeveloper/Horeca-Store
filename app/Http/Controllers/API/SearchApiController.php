@@ -164,7 +164,7 @@ use Botble\Ecommerce\Models\Product;
 use Botble\Ecommerce\Models\Brand;
 use Botble\Ecommerce\Models\Productcategory;
 use RvMedia;
-
+use Illuminate\Support\Facades\Cache;
 class SearchApiController extends Controller
 {
     // public function search(Request $request)
@@ -484,6 +484,8 @@ class SearchApiController extends Controller
 
     //     return response()->json(['categories' => $categories]);
     // }
+
+
     public function searchCategories(Request $request)
     {
         $query = $request->input('query');
@@ -492,42 +494,58 @@ class SearchApiController extends Controller
             return response()->json(['categories' => []]);
         }
     
-        $categories = Productcategory::where('name', 'LIKE', "%{$query}%")
-            ->orWhereHas('slugable', function($q) use ($query) {
-                $q->where('key', 'LIKE', "%{$query}%");
-            })
-            ->with('slugable')  // Eager load slugs
-            ->take(10)
-            ->get()
-            ->map(function ($category) {
-                $slugPath = [];
-                $current = $category;
-                
-                // Get parent slugs
-                while ($current->parent_id) {
-                    $parent = Productcategory::with('slugable')
-                        ->find($current->parent_id);
-                    
-                    if ($parent && $parent->slugable) {
-                        array_unshift($slugPath, $parent->slugable->key);
-                    }
-                    $current = $parent;
-                }
-                
-                // Add current category's slug
-                if ($category->slugable) {
-                    $slugPath[] = $category->slugable->key;
-                }
+        // Use a cache key based on the query, so we cache results for the specific query
+        $cacheKey = 'categories_search_' . md5($query);
+        
+        // Check if the result is cached
+        $categories = Cache::get($cacheKey);
     
-                return [
-                    'id' => $category->id,
-                    'name' => $category->name,
-                    'slug' => optional($category->slugable)->key,
-                    'slug_path' => implode('/', $slugPath)
-                ];
-            });
+        // If not cached, query the database and cache the result
+        if (!$categories) {
+            // Query to get categories with their slugs and parent category slugs
+            $categories = Productcategory::where('name', 'LIKE', "%{$query}%")
+                ->orWhereHas('slugable', function($q) use ($query) {
+                    $q->where('key', 'LIKE', "%{$query}%");
+                })
+                ->with(['slugable', 'parentCategory.slugable'])  // Eager load slugs and parent slugs
+                ->take(10)
+                ->get()
+                ->map(function ($category) {
+                    return [
+                        'id' => $category->id,
+                        'name' => $category->name,
+                        'slug' => optional($category->slugable)->key,
+                        'slug_path' => $this->getSlugPath($category),
+                    ];
+                });
+    
+            // Cache the result for 60 minutes (you can adjust this time)
+            Cache::put($cacheKey, $categories, 60); // Cache for 60 minutes
+        }
     
         return response()->json(['categories' => $categories]);
+    }
+    
+    public function getSlugPath($category)
+    {
+        $slugPath = [];
+        $current = $category;
+    
+        // Collect parent categories slugs efficiently
+        while ($current->parent_id) {
+            $parent = $current->parentCategory; // Lazy load parent category
+            if ($parent && $parent->slugable) {
+                array_unshift($slugPath, $parent->slugable->key);
+            }
+            $current = $parent;
+        }
+    
+        // Add the current category's slug
+        if ($category->slugable) {
+            $slugPath[] = $category->slugable->key;
+        }
+    
+        return implode('/', $slugPath);
     }
 
 
