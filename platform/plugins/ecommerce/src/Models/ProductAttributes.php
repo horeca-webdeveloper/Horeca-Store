@@ -7,7 +7,9 @@ use Botble\Base\Models\BaseModel;
 
 class ProductAttributes extends BaseModel
 {
-    protected $fillable = ['product_id', 'attribute_id', 'attribute_value']; // Ensure this is correct
+    protected $table = 'product_attributes';
+
+    protected $fillable = ['product_id', 'attribute_id', 'attribute_value' , 'attribute_value_id']; // Ensure this is correct
 
     // Define the relationship with the Product model
     public function product()
@@ -19,5 +21,10 @@ class ProductAttributes extends BaseModel
     public function attribute()
     {
         return $this->belongsTo(Attribute::class, 'attribute_id', 'id');  // Ensure 'attribute_id' is correct
+    }
+
+    public function attributeValue(): BelongsTo
+    {
+        return $this->belongsTo(AttributeValue::class, 'attribute_value_id');
     }
 }

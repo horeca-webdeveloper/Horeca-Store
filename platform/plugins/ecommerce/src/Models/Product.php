@@ -881,4 +881,11 @@ class Product extends BaseModel
     {
         return $this->translations()->where('lang_code', $langCode)->first();
     }
+
+    // In Product model
+    public function attributes()
+    {
+        return $this->belongsToMany(Attribute::class, 'product_attributes'); // Adjust the pivot table name if needed
+    }
+
 }
