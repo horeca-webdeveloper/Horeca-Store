@@ -1160,7 +1160,7 @@ public function getSpecificationFilters(Request $request)
         'rating_filter' => $ratingFilter,
         'debug_info' => $debugInfo
     ]);
-}0
+}
 
 // 	public function getSpecificationFilters(Request $request)
 // {
