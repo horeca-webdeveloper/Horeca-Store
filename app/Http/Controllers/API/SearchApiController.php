@@ -262,77 +262,49 @@ class SearchApiController extends Controller
                 ];
             });
     
-            // $categories = Productcategory::inRandomOrder()->take(4)->with('slugable')->get()->map(function ($category) {
-            //     return [
-            //         'id' => $category->id,
-            //         'name' => $category->name,
-            //         'slug' => optional($category->slugable)->key, // Fetch slug from morph relation
-            //         'products' => $category->products()->inRandomOrder()->take(3)->with('slugable')->get()->map(function ($product) {
-            //             return [
-            //                 'id' => $product->id,
-            //                 'name' => $product->name,
-            //                 'slug' => optional($product->slugable)->key,
-            //                 'image' => $this->getFullImageUrl($product->image),
-            //                 'price' => $product->price,
-            //                 'sale_price' => $product->sale_price,
-            //             ];
-            //         }),
-            //     ];
-            // });
-
-            // In the categories part of both conditions (empty query and search), update the mapping:
-
-                $categories = Productcategory::where('name', 'LIKE', "%{$query}%")
-                ->orWhereHas('slugable', function ($q) use ($query) {
-                    $q->where('key', 'LIKE', "%{$query}%");
-                })
-                ->take(4)
-                ->with('slugable')
-                ->get()
-                ->map(function ($category) {
-                    $slugPath = [];
-                    $current = $category;
-                    
-                    // Get parent slugs
-                    while ($current->parent_id) {
-                        $parent = Productcategory::with('slugable')
-                            ->find($current->parent_id);
-                        
-                        if ($parent && $parent->slugable) {
-                            array_unshift($slugPath, $parent->slugable->key);
-                        }
-                        $current = $parent;
-                    }
-                    
-                    // Add current category's slug
-                    if ($category->slugable) {
-                        $slugPath[] = $category->slugable->key;
-                    }
-
-                    return [
-                        'id' => $category->id,
-                        'name' => $category->name,
-                        'slug' => optional($category->slugable)->key,
-                        'slug_path' => implode('/', $slugPath),
-                        'products' => $category->products()->take(3)->with('slugable')->get()->map(function ($product) {
-                            return [
-                                'id' => $product->id,
-                                'name' => $product->name,
-                                'slug' => optional($product->slugable)->key,
-                                'image' => $this->getFullImageUrl($product->image),
-                                'price' => $product->price,
-                                'sale_price' => $product->sale_price,
-                            ];
-                        }),
-                    ];
-                });
+            // Random categories
+            $categories = Productcategory::inRandomOrder()->take(4)->with('slugable')->get()->map(function ($category) {
+                $slugPath = [];
+                $current = $category;
     
+                // Get parent slugs
+                while ($current->parent_id) {
+                    $parent = Productcategory::with('slugable')->find($current->parent_id);
+                    if ($parent && $parent->slugable) {
+                        array_unshift($slugPath, $parent->slugable->key);
+                    }
+                    $current = $parent;
+                }
+    
+                // Add current category's slug
+                if ($category->slugable) {
+                    $slugPath[] = $category->slugable->key;
+                }
+    
+                return [
+                    'id' => $category->id,
+                    'name' => $category->name,
+                    'slug' => optional($category->slugable)->key,
+                    'slug_path' => implode('/', $slugPath),
+                    'products' => $category->products()->take(3)->with('slugable')->get()->map(function ($product) {
+                        return [
+                            'id' => $product->id,
+                            'name' => $product->name,
+                            'slug' => optional($product->slugable)->key,
+                            'image' => $this->getFullImageUrl($product->image),
+                            'price' => $product->price,
+                            'sale_price' => $product->sale_price,
+                        ];
+                    }),
+                ];
+            });
+    
+            // Random brands
             $brands = Brand::inRandomOrder()->take(4)->with('slugable')->get()->map(function ($brand) {
                 return [
                     'id' => $brand->id,
                     'name' => $brand->name,
                     'slug' => optional($brand->slugable)->key, // Fetch slug from morph relation
-
                     'products' => $brand->products()->inRandomOrder()->take(3)->with('slugable')->get()->map(function ($product) {
                         return [
                             'id' => $product->id,
@@ -346,12 +318,12 @@ class SearchApiController extends Controller
                 ];
             });
         } else {
-            // Search functionality
+            // Search functionality with query
             $products = Product::where('name', 'LIKE', "%{$query}%")
+                ->orWhere('sku', 'LIKE', "%{$query}%") // SKU search
                 ->orWhereHas('slugable', function ($q) use ($query) {
                     $q->where('key', 'LIKE', "%{$query}%");
                 })
-                ->take(4)
                 ->with('slugable')
                 ->get()
                 ->map(function ($product) {
@@ -365,68 +337,61 @@ class SearchApiController extends Controller
                     ];
                 });
     
-            // $categories = Productcategory::where('name', 'LIKE', "%{$query}%")
-            //     ->orWhereHas('slugable', function ($q) use ($query) {
-            //         $q->where('key', 'LIKE', "%{$query}%");
-            //     })
-            //     ->take(4)
-            //     ->with('slugable')
-            //     ->get()
-            //     ->map(function ($category) {
-            //         return [
-            //             'id' => $category->id,
-            //             'name' => $category->name,
-            //             'products' => $category->products()->take(3)->with('slugable')->get()->map(function ($product) {
-            //                 return [
-            //                     'id' => $product->id,
-            //                     'name' => $product->name,
-            //                     'slug' => optional($product->slugable)->key,
-            //                     'image' => $this->getFullImageUrl($product->image),
-            //                     'price' => $product->price,
-            //                     'sale_price' => $product->sale_price,
-            //                 ];
-            //             }),
-            //         ];
-            //     });
-
-            $categories = Productcategory::inRandomOrder()->take(4)->with('slugable')->get()->map(function ($category) {
-                $slugPath = [];
-                $current = $category;
-                
-                // Get parent slugs
-                while ($current->parent_id) {
-                    $parent = Productcategory::with('slugable')
-                        ->find($current->parent_id);
-                    
-                    if ($parent && $parent->slugable) {
-                        array_unshift($slugPath, $parent->slugable->key);
-                    }
-                    $current = $parent;
-                }
-                
-                // Add current category's slug
-                if ($category->slugable) {
-                    $slugPath[] = $category->slugable->key;
-                }
-            
-                return [
-                    'id' => $category->id,
-                    'name' => $category->name,
-                    'slug' => optional($category->slugable)->key,
-                    'slug_path' => implode('/', $slugPath),
-                    'products' => $category->products()->inRandomOrder()->take(3)->with('slugable')->get()->map(function ($product) {
-                        return [
-                            'id' => $product->id,
-                            'name' => $product->name,
-                            'slug' => optional($product->slugable)->key,
-                            'image' => $this->getFullImageUrl($product->image),
-                            'price' => $product->price,
-                            'sale_price' => $product->sale_price,
-                        ];
-                    }),
-                ];
-            });
+            // Search categories and include products in matching categories
+            $categories = Productcategory::where('name', 'LIKE', "%{$query}%")
+                ->orWhereHas('slugable', function ($q) use ($query) {
+                    $q->where('key', 'LIKE', "%{$query}%");
+                })
+                ->with(['products' => function ($q) use ($query) {
+                    $q->where('name', 'LIKE', "%{$query}%")
+                      ->orWhere('sku', 'LIKE', "%{$query}%"); // Search SKU in products of category
+                }])
+                ->get()
+                ->map(function ($category) {
+                    $slugPath = [];
+                    $current = $category;
     
+                    // Get parent slugs
+                    while ($current->parent_id) {
+                        $parent = Productcategory::with('slugable')->find($current->parent_id);
+                        if ($parent && $parent->slugable) {
+                            array_unshift($slugPath, $parent->slugable->key);
+                        }
+                        $current = $parent;
+                    }
+    
+                    // Add current category's slug
+                    if ($category->slugable) {
+                        $slugPath[] = $category->slugable->key;
+                    }
+    
+                    // **Important Update Here**: Filter categories with no matching products
+                    $category->products = $category->products->filter(function ($product) {
+                        return !empty($product->name); // Only return non-empty products
+                    });
+    
+                    return [
+                        'id' => $category->id,
+                        'name' => $category->name,
+                        'slug' => optional($category->slugable)->key,
+                        'slug_path' => implode('/', $slugPath),
+                        'products' => $category->products->map(function ($product) {
+                            return [
+                                'id' => $product->id,
+                                'name' => $product->name,
+                                'slug' => optional($product->slugable)->key,
+                                'image' => $this->getFullImageUrl($product->image),
+                                'price' => $product->price,
+                                'sale_price' => $product->sale_price,
+                            ];
+                        }),
+                    ];
+                })
+                ->filter(function ($category) {
+                    return $category->products->isNotEmpty(); // Remove categories with no matching products
+                });
+    
+            // Search brands
             $brands = Brand::where('name', 'LIKE', "%{$query}%")
                 ->orWhereHas('slugable', function ($q) use ($query) {
                     $q->where('key', 'LIKE', "%{$query}%");
@@ -458,6 +423,8 @@ class SearchApiController extends Controller
             'brands' => $brands,
         ]);
     }
+    
+    
     
     // public function searchCategories(Request $request)
     // {

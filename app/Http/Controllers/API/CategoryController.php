@@ -508,7 +508,383 @@ class CategoryController extends Controller
 	// 		'rating_filter' => $ratingFilter,
 	// 	], 200);
 	// }
-	public function getSpecificationFilters(Request $request)
+
+// 	public function getSpecificationFilters(Request $request)
+// {
+//     // Existing validation code
+//     $validator = Validator::make($request->all(), [
+//         'category_id' => 'required|integer',
+//         'filters' => 'nullable|array',
+//         'price_min' => 'nullable|numeric|min:0',
+//         'price_max' => 'nullable|numeric|min:0',
+//         'price_order' => 'nullable|in:high_to_low,low_to_high',
+//         'brand_id' => 'nullable|array',
+//         'brand_id.*' => 'integer',
+//         'rating' => 'nullable|numeric|min:1|max:5',
+//     ]);
+
+//     if ($validator->fails()) {
+//         return response()->json(['success' => false, 'message' => $validator->errors()], 400);
+//     }
+
+//     $perPage = $request->get('per_page', 10);
+//     $category = ProductCategory::find($request->category_id);
+//     if (!$category) {
+//         return response()->json(['success' => false, 'message' => 'Category does not exist.'], 400);
+//     }
+
+//     $categoryProductIds = $category->products->pluck('id')->all();
+//     if (empty($categoryProductIds)) {
+//         return response()->json([
+//             'success' => true,
+//             'filters' => [],
+//             'products' => [],
+//             'brands' => [],
+//             'rating_filter' => [
+//                 'filter_name' => 'Rating',
+//                 'filter_type' => 'rating',
+//                 'filter_values' => [5, 4, 3, 2, 1],
+//             ],
+//         ]);
+//     }
+
+//     // Start with all category product IDs
+//     $filteredProductIds = collect($categoryProductIds);
+
+//     // Apply attribute filters if provided
+//     if ($request->has('filters') && is_array($request->filters)) {
+//         foreach ($request->filters as $filter) {
+//             if (!isset($filter['specification_name']) || !isset($filter['specification_value']) || empty($filter['specification_value'])) {
+//                 continue;
+//             }
+
+//             $specName = $filter['specification_name'];
+//             $specValues = is_array($filter['specification_value']) ? $filter['specification_value'] : [$filter['specification_value']];
+
+//             // Find attribute ID based on name
+//             $attribute = Attribute::where('name', $specName)->first();
+//             if (!$attribute) {
+//                 continue;
+//             }
+
+//             // Find product IDs that match this attribute and values
+//             $matchingProductIds = DB::table('product_attributes as pa')
+//                 ->where('pa.attribute_id', $attribute->id)
+//                 ->whereIn('pa.attribute_value', $specValues)
+//                 ->whereIn('pa.product_id', $filteredProductIds)
+//                 ->pluck('pa.product_id')
+//                 ->unique();
+
+//             // Intersect with our running list of product IDs
+//             $filteredProductIds = $filteredProductIds->intersect($matchingProductIds);
+
+//             // If no products match these filters, return empty results early
+//             if ($filteredProductIds->isEmpty()) {
+//                 return response()->json([
+//                     'success' => true,
+//                     'filters' => [],
+//                     'products' => [],
+//                     'brands' => [],
+//                     'rating_filter' => [
+//                         'filter_name' => 'Rating',
+//                         'filter_type' => 'rating',
+//                         'filter_values' => [5, 4, 3, 2, 1],
+//                     ],
+//                 ]);
+//             }
+//         }
+//     }
+
+//     // If a rating filter is applied, filter the already filtered product IDs
+//     if ($request->has('rating') && $request->rating) {
+//         $ratingFilteredIds = DB::table('ec_reviews')
+//             ->whereIn('product_id', $filteredProductIds)
+//             ->select('product_id')
+//             ->groupBy('product_id')
+//             ->havingRaw('ROUND(AVG(star)) = ?', [$request->rating])
+//             ->pluck('product_id');
+
+//         $filteredProductIds = $filteredProductIds->intersect($ratingFilteredIds);
+
+//         if ($filteredProductIds->isEmpty()) {
+//             return response()->json([
+//                 'success' => true,
+//                 'filters' => [],
+//                 'products' => [],
+//                 'brands' => [],
+//                 'rating_filter' => [
+//                     'filter_name' => 'Rating',
+//                     'filter_type' => 'rating',
+//                     'filter_values' => [5, 4, 3, 2, 1],
+//                 ],
+//             ]);
+//         }
+//     }
+
+//     // Fetching products based on filters
+//     $products = Product::whereIn('id', $filteredProductIds)
+//         ->with(['currency', 'reviews', 'brand'])
+//         ->when($request->has('price_min') || $request->has('price_max'), function ($query) use ($request) {
+//             $min = $request->input('price_min', 0);
+//             $max = $request->input('price_max', PHP_INT_MAX);
+//             return $query->whereRaw("COALESCE(sale_price, price) BETWEEN ? AND ?", [$min, $max]);
+//         })
+//         ->when($request->has('brand_id') && $request->brand_id, function ($query) use ($request) {
+//             return $query->whereIn('brand_id', $request->brand_id);
+//         });
+
+//     // Apply sorting
+//     $sortBy = $request->input('sort_by', 'created_at');
+//     $sortByType = $request->input('sort_by_type', 'desc');
+//     if ($sortBy == 'price') {
+//         $products = $products->orderByRaw("COALESCE(sale_price, price) $sortByType");
+//     } else {
+//         $products = $products->orderBy($sortBy, $sortByType);
+//     }
+
+//     $paginatedProducts = $products->paginate($perPage);
+//     $modifiedProducts = $paginatedProducts->getCollection()->map(function ($product) {
+//         $product->currency_title = optional($product->currency)->title;
+//         $product->avg_rating = $product->reviews->count() > 0 ? round($product->reviews->avg('star')) : null;
+//         $product->brand_name = optional($product->brand)->name;
+
+//         $product->images = collect(is_array($product->images) ? $product->images : [])->map(function ($img) {
+//             return preg_match('/^(http|https):\/\//', $img) ? $img : asset('storage/' . $img);
+//         })->toArray();
+
+//         unset($product->currency, $product->reviews, $product->brand);
+//         return $product;
+//     });
+
+//     $paginatedProducts->setCollection($modifiedProducts);
+
+//     // Get allowed attribute IDs from the sub_categories table for this category
+//     $subCategory = DB::table('sub_categories')
+//         ->where('category_id', $request->category_id)
+//         ->first();
+    
+//     // Initialize debug info
+//     $debugInfo = [
+//         'category_id' => $request->category_id,
+//         'has_subcategory' => $subCategory ? true : false,
+//         'raw_attributes_ids' => $subCategory ? $subCategory->attributes_ids : null,
+//         'category_product_count' => count($categoryProductIds),
+//         'has_products_with_attributes' => false,
+//         'attribute_ids_parsed' => [],
+//         'products_with_attributes' => []
+//     ];
+    
+//     // Initialize filters array
+//     $filters = [];
+    
+//     // Only process attribute filters if the subcategory exists and has attributes_ids
+//     if ($subCategory) {
+//         // Check if we have attributes_ids column (might be attributes_jd in your case)
+//         if (property_exists($subCategory, 'attributes_ids') || isset($subCategory->attributes_ids)) {
+//             if (!empty($subCategory->attributes_ids)) {
+//                 // Get the allowed attribute IDs
+//                 $allowedAttributeIds = [];
+                
+//                 // Assuming attributes_ids is stored as a JSON array or comma-separated string
+//                 if (is_string($subCategory->attributes_ids)) {
+//                     $allowedAttributeIds = json_decode($subCategory->attributes_ids, true);
+//                     $debugInfo['json_decode_error'] = json_last_error_msg();
+                    
+//                     // If it's a string but not JSON format (maybe comma-separated)
+//                     if (json_last_error() !== JSON_ERROR_NONE) {
+//                         $allowedAttributeIds = explode(',', $subCategory->attributes_ids);
+//                         $debugInfo['using_comma_separated'] = true;
+//                     }
+//                     // Special case: Check if we have an array containing a single string with comma-separated values
+//                     else if (count($allowedAttributeIds) === 1 && is_string($allowedAttributeIds[0]) && strpos($allowedAttributeIds[0], ',') !== false) {
+//                         $allowedAttributeIds = explode(',', $allowedAttributeIds[0]);
+//                         $debugInfo['using_nested_comma_separated'] = true;
+//                     }
+//                 } else {
+//                     $allowedAttributeIds = $subCategory->attributes_ids;
+//                 }
+                
+//                 // Ensure we have an array of integers
+//                 $allowedAttributeIds = array_map('intval', (array)$allowedAttributeIds);
+//                 $debugInfo['attribute_ids_parsed'] = $allowedAttributeIds;
+                
+//                 // Only proceed if we have valid attribute IDs
+//                 if (!empty($allowedAttributeIds)) {
+//                     // Check if ANY products have these attributes
+//                     $attributeProductCount = DB::table('product_attributes as pa')
+//                         ->whereIn('pa.product_id', $categoryProductIds)
+//                         ->whereIn('pa.attribute_id', $allowedAttributeIds)
+//                         ->count(DB::raw('DISTINCT pa.product_id'));
+                    
+//                     $debugInfo['has_products_with_attributes'] = $attributeProductCount > 0;
+//                     $debugInfo['products_with_attributes_count'] = $attributeProductCount;
+                    
+//                     // Get a sample of products with their attribute IDs for debugging
+//                     $sampleProducts = DB::table('product_attributes as pa')
+//                         ->whereIn('pa.product_id', $categoryProductIds)
+//                         ->select('pa.product_id', 'pa.attribute_id')
+//                         ->limit(5)
+//                         ->get();
+                    
+//                     $debugInfo['sample_product_attributes'] = $sampleProducts;
+                    
+//                     // Get attribute filters for this category, but only for the allowed attributes
+//                     $attributeValues = DB::table('product_attributes as pa')
+//                         ->join('attributes as at', 'at.id', '=', 'pa.attribute_id')
+//                         ->whereIn('pa.product_id', $categoryProductIds)
+//                         ->whereIn('pa.attribute_id', $allowedAttributeIds)
+//                         ->select('at.name as attribute_name', 'pa.attribute_value', 'at.id as attribute_id')
+//                         ->get();
+                        
+//                     $debugInfo['attribute_values_count'] = $attributeValues->count();
+                    
+//                     // If we have any attribute values
+//                     if ($attributeValues->count() > 0) {
+//                         $attributeValues = $attributeValues->groupBy('attribute_name');
+                        
+//                         // Process attribute filters
+//                         foreach ($attributeValues as $attributeName => $values) {
+//                             $uniqueValues = $values->pluck('attribute_value')->unique()->filter()->values();
+
+//                             if ($uniqueValues->every(fn($val) => is_numeric($val)) && $uniqueValues->count() > 2) {
+//                                 $sorted = $uniqueValues->map(fn($val) => (float)$val)->sort()->values();
+//                                 $chunkCount = min(5, ceil($sorted->count() / 2));
+//                                 $chunkSize = ceil($sorted->count() / $chunkCount);
+
+//                                 $ranges = $sorted->chunk($chunkSize)->map(function ($chunk) {
+//                                     return [
+//                                         'min' => $chunk->first(),
+//                                         'max' => $chunk->last(),
+//                                     ];
+//                                 })->toArray();
+
+//                                 $filters[] = [
+//                                     'specification_name' => $attributeName,
+//                                     'specification_type' => 'range',
+//                                     'specification_value' => $ranges,
+//                                 ];
+//                             } else {
+//                                 $filters[] = [
+//                                     'specification_name' => $attributeName,
+//                                     'specification_type' => 'fixed',
+//                                     'specification_value' => $uniqueValues->values(),
+//                                 ];
+//                             }
+//                         }
+//                     }
+//                 }
+//             } else {
+//                 $debugInfo['attributes_ids_empty'] = true;
+//             }
+//         } else if (property_exists($subCategory, 'attributes_jd') || isset($subCategory->attributes_jd)) {
+//             // If column is attributes_jd instead of attributes_ids
+//             $debugInfo['using_attributes_jd_instead'] = true;
+            
+//             if (!empty($subCategory->attributes_jd)) {
+//                 // Similar processing to above but for attributes_jd
+//                 $allowedAttributeIds = [];
+                
+//                 if (is_string($subCategory->attributes_jd)) {
+//                     $allowedAttributeIds = json_decode($subCategory->attributes_jd, true);
+//                     $debugInfo['json_decode_error_jd'] = json_last_error_msg();
+                    
+//                     if (json_last_error() !== JSON_ERROR_NONE) {
+//                         $allowedAttributeIds = explode(',', $subCategory->attributes_jd);
+//                         $debugInfo['using_comma_separated_jd'] = true;
+//                     } 
+//                     // Special case: Check if we have an array containing a single string with comma-separated values
+//                     else if (count($allowedAttributeIds) === 1 && is_string($allowedAttributeIds[0]) && strpos($allowedAttributeIds[0], ',') !== false) {
+//                         $allowedAttributeIds = explode(',', $allowedAttributeIds[0]);
+//                         $debugInfo['using_nested_comma_separated_jd'] = true;
+//                     }
+//                 } else {
+//                     $allowedAttributeIds = $subCategory->attributes_jd;
+//                 }
+                
+//                 $allowedAttributeIds = array_map('intval', (array)$allowedAttributeIds);
+//                 $debugInfo['attribute_ids_parsed_jd'] = $allowedAttributeIds;
+                
+//                 // Only proceed if we have valid attribute IDs
+//                 if (!empty($allowedAttributeIds)) {
+//                     // Check if ANY products have these attributes
+//                     $attributeProductCount = DB::table('product_attributes as pa')
+//                         ->whereIn('pa.product_id', $categoryProductIds)
+//                         ->whereIn('pa.attribute_id', $allowedAttributeIds)
+//                         ->count(DB::raw('DISTINCT pa.product_id'));
+                    
+//                     $debugInfo['has_products_with_attributes'] = $attributeProductCount > 0;
+//                     $debugInfo['products_with_attributes_count'] = $attributeProductCount;
+                    
+//                     // Get attribute filters for this category, but only for the allowed attributes
+//                     $attributeValues = DB::table('product_attributes as pa')
+//                         ->join('attributes as at', 'at.id', '=', 'pa.attribute_id')
+//                         ->whereIn('pa.product_id', $categoryProductIds)
+//                         ->whereIn('pa.attribute_id', $allowedAttributeIds)
+//                         ->select('at.name as attribute_name', 'pa.attribute_value', 'at.id as attribute_id')
+//                         ->get();
+                        
+//                     $debugInfo['attribute_values_count'] = $attributeValues->count();
+                    
+//                     // If we have any attribute values
+//                     if ($attributeValues->count() > 0) {
+//                         $attributeValues = $attributeValues->groupBy('attribute_name');
+                        
+//                         // Process attribute filters
+//                         foreach ($attributeValues as $attributeName => $values) {
+//                             $uniqueValues = $values->pluck('attribute_value')->unique()->filter()->values();
+
+//                             if ($uniqueValues->every(fn($val) => is_numeric($val)) && $uniqueValues->count() > 2) {
+//                                 $sorted = $uniqueValues->map(fn($val) => (float)$val)->sort()->values();
+//                                 $chunkCount = min(5, ceil($sorted->count() / 2));
+//                                 $chunkSize = ceil($sorted->count() / $chunkCount);
+
+//                                 $ranges = $sorted->chunk($chunkSize)->map(function ($chunk) {
+//                                     return [
+//                                         'min' => $chunk->first(),
+//                                         'max' => $chunk->last(),
+//                                     ];
+//                                 })->toArray();
+
+//                                 $filters[] = [
+//                                     'specification_name' => $attributeName,
+//                                     'specification_type' => 'range',
+//                                     'specification_value' => $ranges,
+//                                 ];
+//                             } else {
+//                                 $filters[] = [
+//                                     'specification_name' => $attributeName,
+//                                     'specification_type' => 'fixed',
+//                                     'specification_value' => $uniqueValues->values(),
+//                                 ];
+//                             }
+//                         }
+//                     }
+//                 }
+//             }
+//         }
+//     }
+
+//     $brandIds = Product::whereIn('id', $categoryProductIds)->whereNotNull('brand_id')->pluck('brand_id')->unique();
+//     $brands = Brand::whereIn('id', $brandIds)->select('id', 'name')->get();
+
+//     $ratingFilter = [
+//         'filter_name' => 'Rating',
+//         'filter_type' => 'rating',
+//         'filter_values' => [5, 4, 3, 2, 1],
+//     ];
+
+//     // For debugging purposes, add a debug key to the response
+//     return response()->json([
+//         'success' => true,
+//         'filters' => $filters,
+//         'products' => $paginatedProducts,
+//         'brands' => $brands,
+//         'rating_filter' => $ratingFilter,
+//         'debug_info' => $debugInfo  // Include debug info in the response
+//     ]);
+// }
+
+public function getSpecificationFilters(Request $request)
 {
     // Existing validation code
     $validator = Validator::make($request->all(), [
@@ -657,41 +1033,112 @@ class CategoryController extends Controller
 
     $paginatedProducts->setCollection($modifiedProducts);
 
-    // Get all available attribute filters for this category
-    $attributeValues = DB::table('product_attributes as pa')
-        ->join('attributes as at', 'at.id', '=', 'pa.attribute_id')
-        ->whereIn('pa.product_id', $categoryProductIds)
-        ->select('at.name as attribute_name', 'pa.attribute_value', 'at.id as attribute_id')
-        ->get()
-        ->groupBy('attribute_name');
-
+    // Initialize filters array - will remain empty if subcategory doesn't exist
     $filters = [];
-    foreach ($attributeValues as $attributeName => $values) {
-        $uniqueValues = $values->pluck('attribute_value')->unique()->filter()->values();
+    
+    // Initialize debug info
+    $debugInfo = [
+        'category_id' => $request->category_id,
+        'category_product_count' => count($categoryProductIds),
+    ];
+    
+    // Get subcategory for this category
+    $subCategory = DB::table('sub_categories')
+        ->where('category_id', $request->category_id)
+        ->first();
+    
+    $debugInfo['has_subcategory'] = $subCategory ? true : false;
+    
+    // Only process attribute filters if the subcategory exists
+    if ($subCategory) {
+        $attributeIdsField = null;
+        $attributeIds = [];
+        
+        // Check which attribute ID field exists
+        if (property_exists($subCategory, 'attributes_ids') || isset($subCategory->attributes_ids)) {
+            $attributeIdsField = 'attributes_ids';
+        } else if (property_exists($subCategory, 'attributes_jd') || isset($subCategory->attributes_jd)) {
+            $attributeIdsField = 'attributes_jd';
+        }
+        
+        $debugInfo['attribute_ids_field'] = $attributeIdsField;
+        
+        // Process attribute IDs if the field exists and has value
+        if ($attributeIdsField && !empty($subCategory->$attributeIdsField)) {
+            $attributeIdsValue = $subCategory->$attributeIdsField;
+            
+            // Parse attribute IDs based on data type
+            if (is_string($attributeIdsValue)) {
+                $attributeIds = json_decode($attributeIdsValue, true);
+                $debugInfo['json_decode_error'] = json_last_error_msg();
+                
+                // If it's not valid JSON, try comma-separated format
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    $attributeIds = explode(',', $attributeIdsValue);
+                    $debugInfo['using_comma_separated'] = true;
+                }
+                // Special case: Check if we have an array containing a single string with comma-separated values
+                else if (count($attributeIds) === 1 && is_string($attributeIds[0]) && strpos($attributeIds[0], ',') !== false) {
+                    $attributeIds = explode(',', $attributeIds[0]);
+                    $debugInfo['using_nested_comma_separated'] = true;
+                }
+            } else {
+                $attributeIds = $attributeIdsValue;
+            }
+            
+            // Ensure we have an array of integers
+            $attributeIds = array_map('intval', (array)$attributeIds);
+            $debugInfo['attribute_ids_parsed'] = $attributeIds;
+            
+            // Only proceed if we have valid attribute IDs
+            if (!empty($attributeIds)) {
+                // Get attribute filters for this category, but only for the allowed attributes
+                $attributeValues = DB::table('product_attributes as pa')
+                    ->join('attributes as at', 'at.id', '=', 'pa.attribute_id')
+                    ->whereIn('pa.product_id', $categoryProductIds)
+                    ->whereIn('pa.attribute_id', $attributeIds)
+                    ->select('at.name as attribute_name', 'pa.attribute_value', 'at.id as attribute_id')
+                    ->get();
+                    
+                $debugInfo['attribute_values_count'] = $attributeValues->count();
+                
+                // If we have any attribute values
+                if ($attributeValues->count() > 0) {
+                    $attributeValues = $attributeValues->groupBy('attribute_name');
+                    
+                    // Process attribute filters
+                    foreach ($attributeValues as $attributeName => $values) {
+                        $uniqueValues = $values->pluck('attribute_value')->unique()->filter()->values();
 
-        if ($uniqueValues->every(fn($val) => is_numeric($val)) && $uniqueValues->count() > 2) {
-            $sorted = $uniqueValues->map(fn($val) => (float)$val)->sort()->values();
-            $chunkCount = min(5, ceil($sorted->count() / 2));
-            $chunkSize = ceil($sorted->count() / $chunkCount);
+                        if ($uniqueValues->every(fn($val) => is_numeric($val)) && $uniqueValues->count() > 2) {
+                            $sorted = $uniqueValues->map(fn($val) => (float)$val)->sort()->values();
+                            $chunkCount = min(5, ceil($sorted->count() / 2));
+                            $chunkSize = ceil($sorted->count() / $chunkCount);
 
-            $ranges = $sorted->chunk($chunkSize)->map(function ($chunk) {
-                return [
-                    'min' => $chunk->first(),
-                    'max' => $chunk->last(),
-                ];
-            })->toArray();
+                            $ranges = $sorted->chunk($chunkSize)->map(function ($chunk) {
+                                return [
+                                    'min' => $chunk->first(),
+                                    'max' => $chunk->last(),
+                                ];
+                            })->toArray();
 
-            $filters[] = [
-                'specification_name' => $attributeName,
-                'specification_type' => 'range',
-                'specification_value' => $ranges,
-            ];
+                            $filters[] = [
+                                'specification_name' => $attributeName,
+                                'specification_type' => 'range',
+                                'specification_value' => $ranges,
+                            ];
+                        } else {
+                            $filters[] = [
+                                'specification_name' => $attributeName,
+                                'specification_type' => 'fixed',
+                                'specification_value' => $uniqueValues->values(),
+                            ];
+                        }
+                    }
+                }
+            }
         } else {
-            $filters[] = [
-                'specification_name' => $attributeName,
-                'specification_type' => 'fixed',
-                'specification_value' => $uniqueValues->values(),
-            ];
+            $debugInfo['attributes_field_empty'] = true;
         }
     }
 
@@ -704,14 +1151,221 @@ class CategoryController extends Controller
         'filter_values' => [5, 4, 3, 2, 1],
     ];
 
+    // For debugging purposes, add a debug key to the response
     return response()->json([
         'success' => true,
         'filters' => $filters,
         'products' => $paginatedProducts,
         'brands' => $brands,
         'rating_filter' => $ratingFilter,
+        'debug_info' => $debugInfo
     ]);
 }
+
+// 	public function getSpecificationFilters(Request $request)
+// {
+//     // Existing validation code
+//     $validator = Validator::make($request->all(), [
+//         'category_id' => 'required|integer',
+//         'filters' => 'nullable|array',
+//         'price_min' => 'nullable|numeric|min:0',
+//         'price_max' => 'nullable|numeric|min:0',
+//         'price_order' => 'nullable|in:high_to_low,low_to_high',
+//         'brand_id' => 'nullable|array',
+//         'brand_id.*' => 'integer',
+//         'rating' => 'nullable|numeric|min:1|max:5',
+//     ]);
+
+//     if ($validator->fails()) {
+//         return response()->json(['success' => false, 'message' => $validator->errors()], 400);
+//     }
+
+//     $perPage = $request->get('per_page', 10);
+//     $category = ProductCategory::find($request->category_id);
+//     if (!$category) {
+//         return response()->json(['success' => false, 'message' => 'Category does not exist.'], 400);
+//     }
+
+//     $categoryProductIds = $category->products->pluck('id')->all();
+//     if (empty($categoryProductIds)) {
+//         return response()->json([
+//             'success' => true,
+//             'filters' => [],
+//             'products' => [],
+//             'brands' => [],
+//             'rating_filter' => [
+//                 'filter_name' => 'Rating',
+//                 'filter_type' => 'rating',
+//                 'filter_values' => [5, 4, 3, 2, 1],
+//             ],
+//         ]);
+//     }
+
+//     // Start with all category product IDs
+//     $filteredProductIds = collect($categoryProductIds);
+
+//     // Apply attribute filters if provided
+//     if ($request->has('filters') && is_array($request->filters)) {
+//         foreach ($request->filters as $filter) {
+//             if (!isset($filter['specification_name']) || !isset($filter['specification_value']) || empty($filter['specification_value'])) {
+//                 continue;
+//             }
+
+//             $specName = $filter['specification_name'];
+//             $specValues = is_array($filter['specification_value']) ? $filter['specification_value'] : [$filter['specification_value']];
+
+//             // Find attribute ID based on name
+//             $attribute = Attribute::where('name', $specName)->first();
+//             if (!$attribute) {
+//                 continue;
+//             }
+
+//             // Find product IDs that match this attribute and values
+//             $matchingProductIds = DB::table('product_attributes as pa')
+//                 ->where('pa.attribute_id', $attribute->id)
+//                 ->whereIn('pa.attribute_value', $specValues)
+//                 ->whereIn('pa.product_id', $filteredProductIds)
+//                 ->pluck('pa.product_id')
+//                 ->unique();
+
+//             // Intersect with our running list of product IDs
+//             $filteredProductIds = $filteredProductIds->intersect($matchingProductIds);
+
+//             // If no products match these filters, return empty results early
+//             if ($filteredProductIds->isEmpty()) {
+//                 return response()->json([
+//                     'success' => true,
+//                     'filters' => [],
+//                     'products' => [],
+//                     'brands' => [],
+//                     'rating_filter' => [
+//                         'filter_name' => 'Rating',
+//                         'filter_type' => 'rating',
+//                         'filter_values' => [5, 4, 3, 2, 1],
+//                     ],
+//                 ]);
+//             }
+//         }
+//     }
+
+//     // If a rating filter is applied, filter the already filtered product IDs
+//     if ($request->has('rating') && $request->rating) {
+//         $ratingFilteredIds = DB::table('ec_reviews')
+//             ->whereIn('product_id', $filteredProductIds)
+//             ->select('product_id')
+//             ->groupBy('product_id')
+//             ->havingRaw('ROUND(AVG(star)) = ?', [$request->rating])
+//             ->pluck('product_id');
+
+//         $filteredProductIds = $filteredProductIds->intersect($ratingFilteredIds);
+
+//         if ($filteredProductIds->isEmpty()) {
+//             return response()->json([
+//                 'success' => true,
+//                 'filters' => [],
+//                 'products' => [],
+//                 'brands' => [],
+//                 'rating_filter' => [
+//                     'filter_name' => 'Rating',
+//                     'filter_type' => 'rating',
+//                     'filter_values' => [5, 4, 3, 2, 1],
+//                 ],
+//             ]);
+//         }
+//     }
+
+//     // Fetching products based on filters
+//     $products = Product::whereIn('id', $filteredProductIds)
+//         ->with(['currency', 'reviews', 'brand'])
+//         ->when($request->has('price_min') || $request->has('price_max'), function ($query) use ($request) {
+//             $min = $request->input('price_min', 0);
+//             $max = $request->input('price_max', PHP_INT_MAX);
+//             return $query->whereRaw("COALESCE(sale_price, price) BETWEEN ? AND ?", [$min, $max]);
+//         })
+//         ->when($request->has('brand_id') && $request->brand_id, function ($query) use ($request) {
+//             return $query->whereIn('brand_id', $request->brand_id);
+//         });
+
+//     // Apply sorting
+//     $sortBy = $request->input('sort_by', 'created_at');
+//     $sortByType = $request->input('sort_by_type', 'desc');
+//     if ($sortBy == 'price') {
+//         $products = $products->orderByRaw("COALESCE(sale_price, price) $sortByType");
+//     } else {
+//         $products = $products->orderBy($sortBy, $sortByType);
+//     }
+
+//     $paginatedProducts = $products->paginate($perPage);
+//     $modifiedProducts = $paginatedProducts->getCollection()->map(function ($product) {
+//         $product->currency_title = optional($product->currency)->title;
+//         $product->avg_rating = $product->reviews->count() > 0 ? round($product->reviews->avg('star')) : null;
+//         $product->brand_name = optional($product->brand)->name;
+
+//         $product->images = collect(is_array($product->images) ? $product->images : [])->map(function ($img) {
+//             return preg_match('/^(http|https):\/\//', $img) ? $img : asset('storage/' . $img);
+//         })->toArray();
+
+//         unset($product->currency, $product->reviews, $product->brand);
+//         return $product;
+//     });
+
+//     $paginatedProducts->setCollection($modifiedProducts);
+
+//     // Get all available attribute filters for this category
+//     $attributeValues = DB::table('product_attributes as pa')
+//         ->join('attributes as at', 'at.id', '=', 'pa.attribute_id')
+//         ->whereIn('pa.product_id', $categoryProductIds)
+//         ->select('at.name as attribute_name', 'pa.attribute_value', 'at.id as attribute_id')
+//         ->get()
+//         ->groupBy('attribute_name');
+
+//     $filters = [];
+//     foreach ($attributeValues as $attributeName => $values) {
+//         $uniqueValues = $values->pluck('attribute_value')->unique()->filter()->values();
+
+//         if ($uniqueValues->every(fn($val) => is_numeric($val)) && $uniqueValues->count() > 2) {
+//             $sorted = $uniqueValues->map(fn($val) => (float)$val)->sort()->values();
+//             $chunkCount = min(5, ceil($sorted->count() / 2));
+//             $chunkSize = ceil($sorted->count() / $chunkCount);
+
+//             $ranges = $sorted->chunk($chunkSize)->map(function ($chunk) {
+//                 return [
+//                     'min' => $chunk->first(),
+//                     'max' => $chunk->last(),
+//                 ];
+//             })->toArray();
+
+//             $filters[] = [
+//                 'specification_name' => $attributeName,
+//                 'specification_type' => 'range',
+//                 'specification_value' => $ranges,
+//             ];
+//         } else {
+//             $filters[] = [
+//                 'specification_name' => $attributeName,
+//                 'specification_type' => 'fixed',
+//                 'specification_value' => $uniqueValues->values(),
+//             ];
+//         }
+//     }
+
+//     $brandIds = Product::whereIn('id', $categoryProductIds)->whereNotNull('brand_id')->pluck('brand_id')->unique();
+//     $brands = Brand::whereIn('id', $brandIds)->select('id', 'name')->get();
+
+//     $ratingFilter = [
+//         'filter_name' => 'Rating',
+//         'filter_type' => 'rating',
+//         'filter_values' => [5, 4, 3, 2, 1],
+//     ];
+
+//     return response()->json([
+//         'success' => true,
+//         'filters' => $filters,
+//         'products' => $paginatedProducts,
+//         'brands' => $brands,
+//         'rating_filter' => $ratingFilter,
+//     ]);
+// }
 	
 	
 }
