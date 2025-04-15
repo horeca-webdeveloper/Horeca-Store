@@ -1187,8 +1187,8 @@ public function getSpecificationFilters(Request $request)
     }
 
     // Get products from current category
-    $currentCategoryProducts = $category->products->pluck('id')->all();
-    
+    // $currentCategoryProducts = $category->products->pluck('id')->all();
+    $currentCategoryProducts = $category->products()->where('status', 'published')->pluck('id')->all();
     // Get all child categories based on parent_id
     $childCategories = ProductCategory::where('parent_id', $category->id)->get();
     $childCategoryIds = $childCategories->pluck('id')->toArray();
@@ -1198,7 +1198,8 @@ public function getSpecificationFilters(Request $request)
     if (!empty($childCategoryIds)) {
         // Using a relationship between categories and products
         foreach ($childCategories as $childCategory) {
-            $childProductIds = array_merge($childProductIds, $childCategory->products->pluck('id')->all());
+            // $childProductIds = array_merge($childProductIds, $childCategory->products->pluck('id')->all());
+			$childProductIds = array_merge($childProductIds, $childCategory->products()->where('status', 'published')->pluck('id')->all());
         }
     }
     
@@ -1307,6 +1308,7 @@ public function getSpecificationFilters(Request $request)
 
     // Fetching products based on filters
     $products = Product::whereIn('id', $filteredProductIds)
+		->where('status', 'published')
         ->with(['currency', 'reviews', 'brand'])
         ->when($request->has('price_min') || $request->has('price_max'), function ($query) use ($request) {
             $min = $request->input('price_min', 0);
@@ -1398,6 +1400,7 @@ public function getSpecificationFilters(Request $request)
                 // Get attribute filters for both parent and child category products
                 $attributeValues = DB::table('product_attributes as pa')
                     ->join('attributes as at', 'at.id', '=', 'pa.attribute_id')
+					->where('p.status', 'published')
                     ->whereIn('pa.product_id', $allCategoryProductIds)
                     ->whereIn('pa.attribute_id', $attributeIds)
                     ->select('at.name as attribute_name', 'pa.attribute_value', 'at.id as attribute_id')
@@ -1446,7 +1449,7 @@ public function getSpecificationFilters(Request $request)
     }
 
     // Get brands from all products (parent + child categories)
-    $brandIds = Product::whereIn('id', $allCategoryProductIds)->whereNotNull('brand_id')->pluck('brand_id')->unique();
+    $brandIds = Product::whereIn('id', $allCategoryProductIds)->where('status', 'published')->whereNotNull('brand_id')->pluck('brand_id')->unique();
     $brands = Brand::whereIn('id', $brandIds)->select('id', 'name')->get();
 
     $ratingFilter = [
