@@ -1198,8 +1198,8 @@ public function getSpecificationFilters(Request $request)
     if (!empty($childCategoryIds)) {
         // Using a relationship between categories and products
         foreach ($childCategories as $childCategory) {
-            // $childProductIds = array_merge($childProductIds, $childCategory->products->pluck('id')->all());
-			$childProductIds = array_merge($childProductIds, $childCategory->products()->where('status', 'published')->pluck('id')->all());
+            $childProductIds = array_merge($childProductIds, $childCategory->products->pluck('id')->all());
+			// $childProductIds = array_merge($childProductIds, $childCategory->products()->where('status', 'published')->pluck('id')->all());
         }
     }
     
@@ -1400,7 +1400,7 @@ public function getSpecificationFilters(Request $request)
                 // Get attribute filters for both parent and child category products
                 $attributeValues = DB::table('product_attributes as pa')
                     ->join('attributes as at', 'at.id', '=', 'pa.attribute_id')
-					->where('p.status', 'published')
+					// ->where('p.status', 'published')
                     ->whereIn('pa.product_id', $allCategoryProductIds)
                     ->whereIn('pa.attribute_id', $attributeIds)
                     ->select('at.name as attribute_name', 'pa.attribute_value', 'at.id as attribute_id')
