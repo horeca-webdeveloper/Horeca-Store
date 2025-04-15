@@ -251,7 +251,7 @@ class SearchApiController extends Controller
     
         if (empty($query)) {
             // Default response with random items
-            $products = Product::inRandomOrder()->take(4)->with('slugable')->get()->map(function ($product) {
+            $products = Product::where('status', 'published')->inRandomOrder()->take(4)->with('slugable')->get()->map(function ($product) {
                 return [
                     'id' => $product->id,
                     'name' => $product->name,
@@ -286,7 +286,7 @@ class SearchApiController extends Controller
                     'name' => $category->name,
                     'slug' => optional($category->slugable)->key,
                     'slug_path' => implode('/', $slugPath),
-                    'products' => $category->products()->take(3)->with('slugable')->get()->map(function ($product) {
+                    'products' => $category->products()->where('status', 'published')->take(3)->with('slugable')->get()->map(function ($product) {
                         return [
                             'id' => $product->id,
                             'name' => $product->name,
@@ -305,7 +305,7 @@ class SearchApiController extends Controller
                     'id' => $brand->id,
                     'name' => $brand->name,
                     'slug' => optional($brand->slugable)->key, // Fetch slug from morph relation
-                    'products' => $brand->products()->inRandomOrder()->take(3)->with('slugable')->get()->map(function ($product) {
+                    'products' => $brand->products()->where('status', 'published')->inRandomOrder()->take(3)->with('slugable')->get()->map(function ($product) {
                         return [
                             'id' => $product->id,
                             'name' => $product->name,
@@ -319,11 +319,14 @@ class SearchApiController extends Controller
             });
         } else {
             // Search functionality with query
-            $products = Product::where('name', 'LIKE', "%{$query}%")
-                ->orWhere('sku', 'LIKE', "%{$query}%") // SKU search
-                ->orWhereHas('slugable', function ($q) use ($query) {
-                    $q->where('key', 'LIKE', "%{$query}%");
-                })
+            $products = Product::where('status', 'published')
+            ->where(function ($q) use ($query) {
+                $q->where('name', 'LIKE', "%{$query}%")
+                  ->orWhere('sku', 'LIKE', "%{$query}%")
+                  ->orWhereHas('slugable', function ($q) use ($query) {
+                      $q->where('key', 'LIKE', "%{$query}%");
+                  });
+            })
                 ->with('slugable')
                 ->get()
                 ->map(function ($product) {
