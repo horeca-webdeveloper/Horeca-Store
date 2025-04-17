@@ -52,6 +52,12 @@ use App\Http\Controllers\API\CountryController;
  use App\Http\Controllers\API\ProductSpecificationApiController;
 // routes/api.php
 use App\Http\Controllers\API\ProductAttributeController;
+use App\Http\Controllers\API\SEOManagementController;
+
+Route::get('/seo-management', [SEOManagementController::class, 'index']);
+Route::get('/seo-management/relational/{relational_id}', [SEOManagementController::class, 'getByRelationalId']);
+Route::get('seo/paragraphs/{relational_id}', [SEOManagementController::class, 'getParagraphData']);
+
 
 Route::get('product/{productId}/attributes', [ProductAttributeController::class, 'getAttributesByProduct']);
 
