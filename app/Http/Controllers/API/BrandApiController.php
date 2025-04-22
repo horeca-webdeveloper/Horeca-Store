@@ -8,7 +8,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use Botble\Ecommerce\Models\Brand;
 use Illuminate\Support\Str;
-
+use Botble\Ecommerce\Models\Product;
+use Illuminate\Http\JsonResponse;
 
 class BrandApiController extends Controller
 {
@@ -459,6 +460,37 @@ public function getAllHomeBrandProducts(Request $request)
                     }),
                 ];
             }),
+        ]);
+    }
+
+    
+    public function brandsByCategory($id): JsonResponse
+    {
+        $brandIds = Product::whereHas('categories', function ($query) use ($id) {
+            $query->where('ec_product_category_product.category_id', $id);
+        })->pluck('brand_id')->unique()->filter();
+
+        if ($brandIds->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No brands found for this category.',
+                'data' => []
+            ], 404);
+        }
+
+        $brands = Brand::whereIn('id', $brandIds)
+            ->where('status', 'published')
+            ->select('id', 'name', 'logo')
+            ->get()
+            ->map(function ($brand) {
+                $brand->logo = $brand->logo ? asset( $brand->logo) : null;
+                return $brand;
+            });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Brands retrieved successfully.',
+            'data' => $brands
         ]);
     }
     
