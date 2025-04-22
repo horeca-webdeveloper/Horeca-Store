@@ -53,6 +53,9 @@ use App\Http\Controllers\API\CountryController;
 // routes/api.php
 use App\Http\Controllers\API\ProductAttributeController;
 use App\Http\Controllers\API\SEOManagementController;
+use App\Http\Controllers\API\BrandPageController;
+
+
 
 Route::get('/seo-management', [SEOManagementController::class, 'index']);
 Route::get('/seo-management/relational/{relational_id}', [SEOManagementController::class, 'getByRelationalId']);
@@ -90,6 +93,7 @@ Route::middleware(['auth:sanctum'])->prefix('addresses')->group(function () {
 
 
 });
+Route::get('/products/{id}/related', [ProductApiController::class, 'relatedProducts']);
 Route::post('/upload-product-documents', [ProductController::class, 'uploadDocuments']);
 
 Route::middleware('auth:sanctum')->get('/order-tracking', [OrderTrackingController::class, 'trackOrder']);
@@ -315,5 +319,6 @@ Route::middleware('web')->group(function () {
     Route::post('/orders/latest', [OrderApiController::class, 'getLatestOrder']);
     Route::post('/guest-orders', [OrderApiController::class, 'storeGuest']);
 
+    Route::get('brand-page/{id}', [BrandPageController::class, 'show']);
 
 Route::get('/product-specifications', [ProductSpecificationApiController::class, 'getProductSpecifications']); // No productId in the URL

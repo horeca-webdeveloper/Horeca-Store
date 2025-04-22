@@ -1670,7 +1670,99 @@ class ProductApiController extends Controller
 
 
 
+public function relatedProducts($id)
+{
+    $product = Product::find($id);
 
+    if (!$product) {
+        return response()->json(['message' => 'Product not found'], 404);
+    }
+
+    // Auth and wishlist logic
+    $userId = Auth::id();
+    $wishlistProductIds = [];
+
+    if ($userId) {
+        $wishlistProductIds = DB::table('ec_wish_lists')
+            ->where('customer_id', $userId)
+            ->pluck('product_id')
+            ->map(fn($id) => (int) $id)
+            ->toArray();
+    } else {
+        $wishlistProductIds = session()->get('guest_wishlist', []);
+    }
+
+    // Get related categories
+    $categoryIds = $product->categories->pluck('id');
+
+    if ($categoryIds->isEmpty()) {
+        return response()->json(['message' => 'No related categories found'], 404);
+    }
+
+    $relatedProducts = Product::whereHas('categories', function ($query) use ($categoryIds) {
+            $query->whereIn('ec_product_categories.id', $categoryIds);
+        })
+        ->where('id', '!=', $id)
+        ->where('status', 'published')
+        ->inRandomOrder()
+        ->limit(20)
+        ->with([
+            'reviews:id,product_id,star',
+            'currency',
+            'specifications'
+        ])
+        ->get();
+
+    $transformed = $relatedProducts->map(function ($product) use ($wishlistProductIds) {
+        $product->images = collect($product->images)->map(function ($image) {
+            return filter_var($image, FILTER_VALIDATE_URL) ? $image : url('storage/' . ltrim($image, '/'));
+        });
+
+        $videoPaths = json_decode($product->video_path, true) ?? [];
+        $product->video_path = collect($videoPaths)->map(function ($video) {
+            return filter_var($video, FILTER_VALIDATE_URL) ? $video : url('storage/' . ltrim($video, '/'));
+        });
+
+        $totalReviews = $product->reviews->count();
+        $avgRating = $totalReviews > 0 ? $product->reviews->avg('star') : null;
+        $quantity = $product->quantity ?? 0;
+        $unitsSold = $product->units_sold ?? 0;
+        $leftStock = $quantity - $unitsSold;
+
+        return [
+            'id' => $product->id,
+            'name' => $product->name,
+            'images' => $product->images,
+            'video_url' => $product->video_url,
+            'video_path' => $product->video_path,
+            'sku' => $product->sku,
+            'original_price' => $product->price,
+            'sale_price' => $product->sale_price,
+            'front_sale_price' => $product->sale_price ?? $product->price,
+            'price' => $product->price,
+            'start_date' => $product->start_date,
+            'end_date' => $product->end_date,
+            'warranty_information' => $product->warranty_information,
+            'currency' => $product->currency?->title,
+            'total_reviews' => $totalReviews,
+            'avg_rating' => $avgRating,
+            'best_price' => $product->sale_price ?? $product->price,
+            'best_delivery_date' => null, // optional to calculate
+            'leftStock' => $leftStock,
+            'currency_title' => $product->currency
+                ? ($product->currency->is_prefix_symbol
+                    ? $product->currency->title
+                    : ($product->price . ' ' . $product->currency->title))
+                : $product->price,
+            'in_wishlist' => in_array($product->id, $wishlistProductIds),
+        ];
+    });
+
+    return response()->json([
+        'success' => true,
+        'data' => $transformed
+    ]);
+}
 
 
 
