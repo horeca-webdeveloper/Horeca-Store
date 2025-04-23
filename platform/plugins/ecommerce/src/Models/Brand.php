@@ -44,4 +44,5 @@ class Brand extends BaseModel
     {
         return $this->morphToMany(ProductCategory::class, 'reference', 'ec_product_categorizables', 'reference_id', 'category_id');
     }
+    
 }

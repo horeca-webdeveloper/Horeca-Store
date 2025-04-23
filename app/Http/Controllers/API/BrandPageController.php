@@ -36,10 +36,58 @@ class BrandPageController extends Controller
             return response()->json(['error' => 'No template data found for this brand'], 404);
         }
 
+     // After retrieving the templateData
+
+        // Get all unique category IDs from the templateData
+        $categoryIds = [];
+        if (!empty($templateData->category_id)) {
+            foreach ($templateData->category_id as $categoryItem) {
+                if (isset($categoryItem['category_id'])) {
+                    $categoryIds[] = $categoryItem['category_id'];
+                }
+            }
+        }
+        $categoryIds = array_unique($categoryIds);
+
+        // Fetch category details from ec_product_categories table
+        $categories = [];
+        if (!empty($categoryIds)) {
+            $categories = \DB::table('ec_product_categories')
+                ->whereIn('id', $categoryIds)
+                ->get();
+        }
+
+        // Create a lookup array for easy access to category data
+        $categoryData = [];
+        foreach ($categories as $category) {
+            $categoryData[$category->id] = $category;
+        }
+
+        // Create a new array with the enhanced category data
+        $enhancedCategoryData = [];
+        if (!empty($templateData->category_id)) {
+            foreach ($templateData->category_id as $categoryItem) {
+                $catId = $categoryItem['category_id'];
+                $newItem = $categoryItem; // Copy the original item
+                
+                if (isset($categoryData[$catId])) {
+                    // Add category details to the copied item
+                    $newItem['category_details'] = $categoryData[$catId];
+                }
+                
+                $enhancedCategoryData[] = $newItem;
+            }
+        }
+
+        // Convert template data to array for modification
+        $templateDataArray = $templateData->toArray();
+        $templateDataArray['category_id'] = $enhancedCategoryData;
+
+        // Return the response with the modified data
         return response()->json([
             'brand' => $brand,
             'template_type' => $templateType,
-            'template_data' => $templateData,
+            'template_data' => $templateDataArray,
         ]);
     }
 }
