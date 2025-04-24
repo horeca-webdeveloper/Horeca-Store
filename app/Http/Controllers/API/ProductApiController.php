@@ -1764,6 +1764,219 @@ public function relatedProducts($id)
     ]);
 }
 
+public function productsByBrand($id, Request $request)
+{
+    $brand = Brand::find($id);
+
+    if (!$brand) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Brand not found',
+        ], 404);
+    }
+
+    $perPage = $request->get('per_page', 10);
+
+    // Auth and wishlist logic
+    $userId = Auth::id();
+    $wishlistProductIds = [];
+
+    if ($userId) {
+        $wishlistProductIds = DB::table('ec_wish_lists')
+            ->where('customer_id', $userId)
+            ->pluck('product_id')
+            ->map(fn($id) => (int) $id)
+            ->toArray();
+    } else {
+        $wishlistProductIds = session()->get('guest_wishlist', []);
+    }
+
+    // Get paginated products with relationships
+    $products = $brand->products()
+        ->where('status', 'published')
+        ->with(['reviews:id,product_id,star', 'currency', 'specifications'])
+        ->paginate($perPage);
+
+    // Transform each product
+    $transformed = collect($products->items())->map(function ($product) use ($wishlistProductIds) {
+        $product->images = collect($product->images)->map(function ($image) {
+            return filter_var($image, FILTER_VALIDATE_URL) ? $image : url('storage/' . ltrim($image, '/'));
+        });
+
+        $videoPaths = json_decode($product->video_path, true) ?? [];
+        $product->video_path = collect($videoPaths)->map(function ($video) {
+            return filter_var($video, FILTER_VALIDATE_URL) ? $video : url('storage/' . ltrim($video, '/'));
+        });
+
+        $totalReviews = $product->reviews->count();
+        $avgRating = $totalReviews > 0 ? $product->reviews->avg('star') : null;
+        $quantity = $product->quantity ?? 0;
+        $unitsSold = $product->units_sold ?? 0;
+        $leftStock = $quantity - $unitsSold;
+
+        return [
+            'id' => $product->id,
+            'name' => $product->name,
+            'images' => $product->images,
+            'video_url' => $product->video_url,
+            'video_path' => $product->video_path,
+            'sku' => $product->sku,
+            'original_price' => $product->price,
+            'sale_price' => $product->sale_price,
+            'front_sale_price' => $product->sale_price ?? $product->price,
+            'price' => $product->price,
+            'start_date' => $product->start_date,
+            'end_date' => $product->end_date,
+            'warranty_information' => $product->warranty_information,
+            'currency' => $product->currency?->title,
+            'total_reviews' => $totalReviews,
+            'avg_rating' => $avgRating,
+            'best_price' => $product->sale_price ?? $product->price,
+            'best_delivery_date' => null,
+            'leftStock' => $leftStock,
+            'currency_title' => $product->currency
+                ? ($product->currency->is_prefix_symbol
+                    ? $product->currency->title
+                    : ($product->price . ' ' . $product->currency->title))
+                : $product->price,
+            'in_wishlist' => in_array($product->id, $wishlistProductIds),
+        ];
+    });
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Products fetched successfully',
+        'current_page' => $products->currentPage(),
+        'last_page' => $products->lastPage(),
+        'total' => $products->total(),
+        'per_page' => $products->perPage(),
+        'data' => $transformed,
+    ]);
+}
+
+
+public function saleProductsByBrand($id, Request $request)
+{
+    $brand = Brand::find($id);
+
+    if (!$brand) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Brand not found',
+        ], 404);
+    }
+
+    $perPage = $request->get('per_page', 10);
+
+    // Wishlist logic
+    $userId = Auth::id();
+    $wishlistProductIds = [];
+
+    if ($userId) {
+        $wishlistProductIds = DB::table('ec_wish_lists')
+            ->where('customer_id', $userId)
+            ->pluck('product_id')
+            ->map(fn($id) => (int) $id)
+            ->toArray();
+    } else {
+        $wishlistProductIds = session()->get('guest_wishlist', []);
+    }
+
+    // Fetch products with non-empty sale_price
+    $products = $brand->products()
+        ->where('status', 'published')
+        ->whereNotNull('sale_price')
+        ->where('sale_price', '>', 0)
+        ->with(['reviews:id,product_id,star', 'currency', 'specifications'])
+        ->paginate($perPage);
+
+    $transformed = collect($products->items())->map(function ($product) use ($wishlistProductIds) {
+        $product->images = collect($product->images)->map(function ($image) {
+            return filter_var($image, FILTER_VALIDATE_URL) ? $image : url('storage/' . ltrim($image, '/'));
+        });
+
+        $videoPaths = json_decode($product->video_path, true) ?? [];
+        $product->video_path = collect($videoPaths)->map(function ($video) {
+            return filter_var($video, FILTER_VALIDATE_URL) ? $video : url('storage/' . ltrim($video, '/'));
+        });
+
+        $totalReviews = $product->reviews->count();
+        $avgRating = $totalReviews > 0 ? $product->reviews->avg('star') : null;
+        $quantity = $product->quantity ?? 0;
+        $unitsSold = $product->units_sold ?? 0;
+        $leftStock = $quantity - $unitsSold;
+
+        return [
+            'id' => $product->id,
+            'name' => $product->name,
+            'images' => $product->images,
+            'video_url' => $product->video_url,
+            'video_path' => $product->video_path,
+            'sku' => $product->sku,
+            'original_price' => $product->price,
+            'sale_price' => $product->sale_price,
+            'front_sale_price' => $product->sale_price ?? $product->price,
+            'price' => $product->price,
+            'start_date' => $product->start_date,
+            'end_date' => $product->end_date,
+            'warranty_information' => $product->warranty_information,
+            'currency' => $product->currency?->title,
+            'total_reviews' => $totalReviews,
+            'avg_rating' => $avgRating,
+            'best_price' => $product->sale_price ?? $product->price,
+            'best_delivery_date' => null,
+            'leftStock' => $leftStock,
+            'currency_title' => $product->currency
+                ? ($product->currency->is_prefix_symbol
+                    ? $product->currency->title
+                    : ($product->price . ' ' . $product->currency->title))
+                : $product->price,
+            'in_wishlist' => in_array($product->id, $wishlistProductIds),
+        ];
+    });
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Sale products fetched successfully',
+        'current_page' => $products->currentPage(),
+        'last_page' => $products->lastPage(),
+        'total' => $products->total(),
+        'per_page' => $products->perPage(),
+        'data' => $transformed,
+    ]);
+}
+
+
+public function brandSummaryStats($id)
+{
+    $brand = Brand::find($id);
+
+    if (!$brand) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Brand not found',
+        ], 404);
+    }
+
+    $productIds = Product::where('brand_id', $id)->pluck('id');
+
+    $totalUnitsSold = Product::whereIn('id', $productIds)->sum('units_sold');
+
+    $totalReviews = DB::table('ec_reviews')
+        ->whereIn('product_id', $productIds)
+        ->count();
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Brand summary fetched successfully',
+        'data' => [
+            'brand_id' => $id,
+            'brand_name' => $brand->name,
+            'total_units_sold' => $totalUnitsSold,
+            'total_reviews' => $totalReviews,
+        ]
+    ]);
+}
 
 
 

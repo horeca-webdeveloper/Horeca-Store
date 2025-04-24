@@ -493,6 +493,9 @@ public function getAllHomeBrandProducts(Request $request)
             'data' => $brands
         ]);
     }
+
+
+   
     
 }
 
