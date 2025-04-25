@@ -495,7 +495,65 @@ public function getAllHomeBrandProducts(Request $request)
     }
 
 
-   
+    // public function getAllBrandsAlphabetically(): JsonResponse
+    // {
+    //     $brands = Brand::where('status', 'published')
+    //         ->select('id', 'name', 'logo')
+    //         ->orderBy('name') // ensures alphabetical order
+    //         ->get()
+    //         ->map(function ($brand) {
+    //             $brand->logo = $brand->logo ? asset($brand->logo) : null;
+    //             return $brand;
+    //         });
+    
+    //     $grouped = $brands->groupBy(function ($brand) {
+    //         return strtoupper(substr($brand->name, 0, 1)); // group by first letter
+    //     })->sortKeys(); // sort alphabetically by keys (A, B, C...)
+    
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'Brands grouped alphabetically.',
+    //         'data' => $grouped
+    //     ]);
+    // }
+    
+public function getAllBrandsAlphabetically(Request $request): JsonResponse
+{
+    $letter = strtoupper($request->query('letter')); // e.g. ?letter=B
+
+    $brandsQuery = Brand::where('status', 'published')
+        ->select('id', 'name', 'logo')
+        ->orderBy('name');
+
+    if ($letter) {
+        $brandsQuery->where('name', 'LIKE', $letter . '%');
+    }
+
+    $brands = $brandsQuery->get()->map(function ($brand) {
+        $brand->logo = $brand->logo ? asset($brand->logo) : null;
+        return $brand;
+    });
+
+    if ($letter) {
+        // Return filtered brands only
+        return response()->json([
+            'success' => true,
+            'message' => "Brands starting with letter '$letter'.",
+            'data' => $brands
+        ]);
+    } else {
+        // Return grouped by A-Z
+        $grouped = $brands->groupBy(function ($brand) {
+            return strtoupper(substr($brand->name, 0, 1));
+        })->sortKeys();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Brands grouped alphabetically.',
+            'data' => $grouped
+        ]);
+    }
+}
     
 }
 

@@ -324,5 +324,6 @@ Route::middleware('web')->group(function () {
     Route::get('brands/{id}/products', [ProductApiController::class, 'productsByBrand']);
     Route::get('brands/{id}/sale-products', [ProductApiController::class, 'saleProductsByBrand']);
     Route::get('brands/{id}/summary-stats', [ProductApiController::class, 'brandSummaryStats']);
+    Route::get('/brands/alphabetical', [BrandApiController::class, 'getAllBrandsAlphabetically']);
 
 Route::get('/product-specifications', [ProductSpecificationApiController::class, 'getProductSpecifications']); // No productId in the URL
