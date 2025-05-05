@@ -262,29 +262,55 @@ class SearchApiController extends Controller
                     ];
                 });
     
-            $categories = Productcategory::inRandomOrder()
+                $categories = Productcategory::with(['slugable', 'products' => function ($q) {
+                    $q->where('status', 'published')->take(5);
+                }])
+                ->inRandomOrder()
                 ->take(4)
-                ->with('slugable')
                 ->get()
                 ->map(function ($category) {
                     return [
                         'name' => $category->name,
                         'url' => $category->url,
                         'image' => RvMedia::getImageUrl($category->image, 'thumb', false, RvMedia::getDefaultImage()),
+                        'products' => $category->products->map(function ($product) {
+                            return [
+                                'id' => $product->id,
+                                'name' => $product->name,
+                                'slug' => optional($product->slugable)->key,
+                                'image' => RvMedia::getImageUrl($product->image, 'thumb', false, RvMedia::getDefaultImage()),
+                                'price' => $product->price,
+                                'sale_price' => $product->sale_price,
+                            ];
+                        }),
                     ];
                 });
+            
     
-            $brands = Brand::inRandomOrder()
+                $brands = Brand::with(['slugable', 'products' => function ($q) {
+                    $q->where('status', 'published')->take(5);
+                }])
+                ->inRandomOrder()
                 ->take(4)
-                ->with('slugable')
                 ->get()
                 ->map(function ($brand) {
                     return [
                         'name' => $brand->name,
                         'url' => $brand->url,
                         'image' => RvMedia::getImageUrl($brand->logo, 'thumb', false, RvMedia::getDefaultImage()),
+                        'products' => $brand->products->map(function ($product) {
+                            return [
+                                'id' => $product->id,
+                                'name' => $product->name,
+                                'slug' => optional($product->slugable)->key,
+                                'image' => RvMedia::getImageUrl($product->image, 'thumb', false, RvMedia::getDefaultImage()),
+                                'price' => $product->price,
+                                'sale_price' => $product->sale_price,
+                            ];
+                        }),
                     ];
                 });
+            
     
             return response()->json([
                 'products' => $products,
