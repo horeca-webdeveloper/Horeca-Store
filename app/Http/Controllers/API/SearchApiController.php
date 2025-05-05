@@ -361,6 +361,16 @@ class SearchApiController extends Controller
                     'name' => $category->name,
                     'url' => $category->url,
                     'image' => RvMedia::getImageUrl($category->image, 'thumb', false, RvMedia::getDefaultImage()),
+                    'products' => $category->products->map(function ($product) {
+                        return [
+                            'id' => $product->id,
+                            'name' => $product->name,
+                            'slug' => optional($product->slugable)->key,
+                            'image' => RvMedia::getImageUrl($product->image, 'thumb', false, RvMedia::getDefaultImage()),
+                            'price' => $product->price,
+                            'sale_price' => $product->sale_price,
+                        ];
+                    }),
                 ];
             });
     
@@ -380,6 +390,16 @@ class SearchApiController extends Controller
                     'name' => $brand->name,
                     'url' => $brand->url,
                     'image' => RvMedia::getImageUrl($brand->logo, 'thumb', false, RvMedia::getDefaultImage()),
+                    'products' => $brand->products->map(function ($product) {
+                        return [
+                            'id' => $product->id,
+                            'name' => $product->name,
+                            'slug' => optional($product->slugable)->key,
+                            'image' => RvMedia::getImageUrl($product->image, 'thumb', false, RvMedia::getDefaultImage()),
+                            'price' => $product->price,
+                            'sale_price' => $product->sale_price,
+                        ];
+                    }),
                 ];
             });
     
