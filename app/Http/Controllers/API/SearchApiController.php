@@ -296,24 +296,28 @@ class SearchApiController extends Controller
         $products = Product::where('status', 'published')
         ->where(function ($q) use ($query) {
             $q->where('name', 'LIKE', "{$query}%")
-            ->orWhere('name', 'LIKE', "%{$query}%")
-            ->orWhere('sku', 'LIKE', "{$query}%")
-            ->orWhere('sku', 'LIKE', "%{$query}%")
-            ->orWhereHas('slugable', function ($q) use ($query) {
-                $q->where('key', 'LIKE', "{$query}%")
+              ->orWhere('name', 'LIKE', "%{$query}%")
+              ->orWhere('sku', 'LIKE', "{$query}%")
+              ->orWhere('sku', 'LIKE', "%{$query}%")
+              ->orWhereHas('slugable', function ($q) use ($query) {
+                  $q->where('key', 'LIKE', "{$query}%")
                     ->orWhere('key', 'LIKE', "%{$query}%");
-            });
+              });
         })
-        ->take(5) // ✅ limit to 5
-        ->with(['slugable:id,key,slugable_id,slugable_type'])
+        ->take(5)
+        ->with('slugable') // ✅ fixed
         ->get()
         ->map(function ($product) {
             return [
+                'id' => $product->id,
                 'name' => $product->name,
-                'url' => $product->url,
-                'image' => RvMedia::getImageUrl($product->image, 'thumb', false, RvMedia::getDefaultImage()),
+                'image' => $this->getFullImageUrl($product->image),
+                'slug' => optional($product->slugable)->key,
+                'price' => $product->price,
+                'sale_price' => $product->sale_price,
             ];
         });
+    
 
     
         $categories = Productcategory::where(function ($q) use ($query) {
