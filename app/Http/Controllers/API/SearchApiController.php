@@ -249,7 +249,8 @@ class SearchApiController extends Controller
         $query = $request->input('query');
     
         if (empty($query)) {
-            $products = Product::where('status', 'published')
+            $products = Product::select('id', 'name', 'url', 'image', 'price', 'sale_price')
+                ->where('status', 'published')
                 ->inRandomOrder()
                 ->take(4)
                 ->with('slugable')
@@ -262,54 +263,59 @@ class SearchApiController extends Controller
                     ];
                 });
     
-               // Fetch categories with associated products
-                $categories = Productcategory::with(['products' => function($query) {
-                    $query->where('status', 'published')->take(3); // Only published products
-                }])->inRandomOrder()->take(4)->get();
-
-                // Fetch brands with associated products
-                $brands = Brand::with(['products' => function($query) {
-                    $query->where('status', 'published')->take(3); // Only published products
-                }])->inRandomOrder()->take(4)->get();
-
-            // Mapping the data for output
-            $categories = $categories->map(function ($category) {
-                return [
-                    'name' => $category->name,
-                    'url' => $category->url,
-                    'image' => RvMedia::getImageUrl($category->image, 'thumb', false, RvMedia::getDefaultImage()),
-                    'products' => $category->products->map(function ($product) {
-                        return [
-                            'id' => $product->id,
-                            'name' => $product->name,
-                            'slug' => optional($product->slugable)->key,
-                            'image' => RvMedia::getImageUrl($product->image, 'thumb', false, RvMedia::getDefaultImage()),
-                            'price' => $product->price,
-                            'sale_price' => $product->sale_price,
-                        ];
-                    }),
-                ];
-            });
-
-            $brands = $brands->map(function ($brand) {
-                return [
-                    'name' => $brand->name,
-                    'url' => $brand->url,
-                    'image' => RvMedia::getImageUrl($brand->logo, 'thumb', false, RvMedia::getDefaultImage()),
-                    'products' => $brand->products->map(function ($product) {
-                        return [
-                            'id' => $product->id,
-                            'name' => $product->name,
-                            'slug' => optional($product->slugable)->key,
-                            'image' => RvMedia::getImageUrl($product->image, 'thumb', false, RvMedia::getDefaultImage()),
-                            'price' => $product->price,
-                            'sale_price' => $product->sale_price,
-                        ];
-                    }),
-                ];
-            });
-
-            
+            $categories = Productcategory::select('id', 'name', 'url', 'image')
+                ->with(['products' => function ($query) {
+                    $query->select('id', 'name', 'slugable_id', 'image', 'price', 'sale_price')
+                          ->where('status', 'published')
+                          ->take(3);
+                }])
+                ->inRandomOrder()
+                ->take(4)
+                ->get()
+                ->map(function ($category) {
+                    return [
+                        'name' => $category->name,
+                        'url' => $category->url,
+                        'image' => RvMedia::getImageUrl($category->image, 'thumb', false, RvMedia::getDefaultImage()),
+                        'products' => $category->products->map(function ($product) {
+                            return [
+                                'id' => $product->id,
+                                'name' => $product->name,
+                                'slug' => optional($product->slugable)->key,
+                                'image' => RvMedia::getImageUrl($product->image, 'thumb', false, RvMedia::getDefaultImage()),
+                                'price' => $product->price,
+                                'sale_price' => $product->sale_price,
+                            ];
+                        }),
+                    ];
+                });
+    
+            $brands = Brand::select('id', 'name', 'url', 'logo')
+                ->with(['products' => function ($query) {
+                    $query->select('id', 'name', 'slugable_id', 'image', 'price', 'sale_price')
+                          ->where('status', 'published')
+                          ->take(3);
+                }])
+                ->inRandomOrder()
+                ->take(4)
+                ->get()
+                ->map(function ($brand) {
+                    return [
+                        'name' => $brand->name,
+                        'url' => $brand->url,
+                        'image' => RvMedia::getImageUrl($brand->logo, 'thumb', false, RvMedia::getDefaultImage()),
+                        'products' => $brand->products->map(function ($product) {
+                            return [
+                                'id' => $product->id,
+                                'name' => $product->name,
+                                'slug' => optional($product->slugable)->key,
+                                'image' => RvMedia::getImageUrl($product->image, 'thumb', false, RvMedia::getDefaultImage()),
+                                'price' => $product->price,
+                                'sale_price' => $product->sale_price,
+                            ];
+                        }),
+                    ];
+                });
     
             return response()->json([
                 'products' => $products,
@@ -318,34 +324,34 @@ class SearchApiController extends Controller
             ]);
         }
     
-        $products = Product::where('status', 'published')
-        ->where(function ($q) use ($query) {
-            $q->where('name', 'LIKE', "{$query}%")
-              ->orWhere('name', 'LIKE', "%{$query}%")
-              ->orWhere('sku', 'LIKE', "{$query}%")
-              ->orWhere('sku', 'LIKE', "%{$query}%")
-              ->orWhereHas('slugable', function ($q) use ($query) {
-                  $q->where('key', 'LIKE', "{$query}%")
-                    ->orWhere('key', 'LIKE', "%{$query}%");
-              });
-        })
-        ->take(5)
-        ->with('slugable') // ✅ fixed
-        ->get()
-        ->map(function ($product) {
-            return [
-                'id' => $product->id,
-                'name' => $product->name,
-                'image' => $this->getFullImageUrl($product->image),
-                'slug' => optional($product->slugable)->key,
-                'price' => $product->price,
-                'sale_price' => $product->sale_price,
-            ];
-        });
+        $products = Product::select('id', 'name', 'url', 'image', 'price', 'sale_price')
+            ->where('status', 'published')
+            ->where(function ($q) use ($query) {
+                $q->where('name', 'LIKE', "{$query}%")
+                  ->orWhere('name', 'LIKE', "%{$query}%")
+                  ->orWhere('sku', 'LIKE', "{$query}%")
+                  ->orWhere('sku', 'LIKE', "%{$query}%")
+                  ->orWhereHas('slugable', function ($q) use ($query) {
+                      $q->where('key', 'LIKE', "{$query}%")
+                        ->orWhere('key', 'LIKE', "%{$query}%");
+                  });
+            })
+            ->take(5)
+            ->with('slugable')
+            ->get()
+            ->map(function ($product) {
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'image' => RvMedia::getImageUrl($product->image, 'thumb', false, RvMedia::getDefaultImage()),
+                    'slug' => optional($product->slugable)->key,
+                    'price' => $product->price,
+                    'sale_price' => $product->sale_price,
+                ];
+            });
     
-
-    
-        $categories = Productcategory::where(function ($q) use ($query) {
+        $categories = Productcategory::select('id', 'name', 'url', 'image')
+            ->where(function ($q) use ($query) {
                 $q->where('name', 'LIKE', "{$query}%")
                   ->orWhere('name', 'LIKE', "%{$query}%")
                   ->orWhereHas('slugable', function ($q) use ($query) {
@@ -374,7 +380,8 @@ class SearchApiController extends Controller
                 ];
             });
     
-        $brands = Brand::where(function ($q) use ($query) {
+        $brands = Brand::select('id', 'name', 'url', 'logo')
+            ->where(function ($q) use ($query) {
                 $q->where('name', 'LIKE', "{$query}%")
                   ->orWhere('name', 'LIKE', "%{$query}%")
                   ->orWhereHas('slugable', function ($q) use ($query) {
