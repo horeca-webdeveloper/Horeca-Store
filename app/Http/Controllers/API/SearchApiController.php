@@ -248,21 +248,17 @@ class SearchApiController extends Controller
     {
         $query = $request->input('query');
 
-        if (empty($query)) {
-            // Same logic as before (random products/categories/brands)
-    
-        } else {
-            // Products: prioritize "starts with", then fall back to "contains"
+        if (!empty($query)) {
             $products = Product::where('status', 'published')
                 ->where(function ($q) use ($query) {
-                    $q->where('name', 'LIKE', "{$query}%")
-                      ->orWhere('sku', 'LIKE', "{$query}%")
+                    $q->where('name', 'LIKE', "%{$query}%")
+                      ->orWhere('sku', 'LIKE', "%{$query}%")
                       ->orWhereHas('slugable', function ($q) use ($query) {
-                          $q->where('key', 'LIKE', "{$query}%");
+                          $q->where('key', 'LIKE', "%{$query}%");
                       });
                 })
+                ->orderByRaw("CASE WHEN name LIKE ? THEN 0 WHEN name LIKE ? THEN 1 ELSE 2 END", ["{$query}%", "%{$query}%"])
                 ->with('slugable')
-                ->take(10)
                 ->get()
                 ->map(function ($product) {
                     return [
@@ -275,22 +271,24 @@ class SearchApiController extends Controller
                     ];
                 });
         
-            // Categories: match name or slug starting with query
-            $categories = Productcategory::where('name', 'LIKE', "{$query}%")
-                ->orWhereHas('slugable', function ($q) use ($query) {
-                    $q->where('key', 'LIKE', "{$query}%");
+            $categories = Productcategory::where(function ($q) use ($query) {
+                    $q->where('name', 'LIKE', "%{$query}%")
+                      ->orWhereHas('slugable', function ($q) use ($query) {
+                          $q->where('key', 'LIKE', "%{$query}%");
+                      });
                 })
+                ->orderByRaw("CASE WHEN name LIKE ? THEN 0 WHEN name LIKE ? THEN 1 ELSE 2 END", ["{$query}%", "%{$query}%"])
                 ->with(['products' => function ($q) use ($query) {
                     $q->where('status', 'published')
-                      ->where('name', 'LIKE', "{$query}%")
-                      ->orWhere('sku', 'LIKE', "{$query}%");
-                }])
-                ->take(4)
+                      ->where(function ($q) use ($query) {
+                          $q->where('name', 'LIKE', "%{$query}%")
+                            ->orWhere('sku', 'LIKE', "%{$query}%");
+                      });
+                }, 'slugable'])
                 ->get()
                 ->map(function ($category) {
                     $slugPath = [];
                     $current = $category;
-        
                     while ($current->parent_id) {
                         $parent = Productcategory::with('slugable')->find($current->parent_id);
                         if ($parent && $parent->slugable) {
@@ -303,7 +301,9 @@ class SearchApiController extends Controller
                         $slugPath[] = $category->slugable->key;
                     }
         
-                    $category->products = $category->products->filter(fn($product) => !empty($product->name));
+                    $category->products = $category->products->filter(function ($product) {
+                        return !empty($product->name);
+                    });
         
                     return [
                         'id' => $category->id,
@@ -321,16 +321,19 @@ class SearchApiController extends Controller
                             ];
                         }),
                     ];
-                })
-                ->filter(fn($category) => $category->products->isNotEmpty());
+                })->filter(function ($category) {
+                    return $category->products->isNotEmpty();
+                });
         
-            // Brands: same change
-            $brands = Brand::where('name', 'LIKE', "{$query}%")
-                ->orWhereHas('slugable', function ($q) use ($query) {
-                    $q->where('key', 'LIKE', "{$query}%");
+            $brands = Brand::where(function ($q) use ($query) {
+                    $q->where('name', 'LIKE', "%{$query}%")
+                      ->orWhereHas('slugable', function ($q) use ($query) {
+                          $q->where('key', 'LIKE', "%{$query}%");
+                      });
                 })
-                ->take(4)
+                ->orderByRaw("CASE WHEN name LIKE ? THEN 0 WHEN name LIKE ? THEN 1 ELSE 2 END", ["{$query}%", "%{$query}%"])
                 ->with('slugable')
+                ->take(4)
                 ->get()
                 ->map(function ($brand) {
                     return [
@@ -349,8 +352,8 @@ class SearchApiController extends Controller
                         }),
                     ];
                 });
-        }
-        
+            }
+  
         return response()->json([
             'products' => $products,
             'categories' => $categories,
