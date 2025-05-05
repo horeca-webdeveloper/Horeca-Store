@@ -252,7 +252,7 @@ class SearchApiController extends Controller
             $products = Product::where('status', 'published')
                 ->inRandomOrder()
                 ->take(4)
-                ->with(['slugable:id,key,slugable_id,slugable_type'])
+                ->with('slugable')
                 ->get()
                 ->map(function ($product) {
                     return [
@@ -264,7 +264,7 @@ class SearchApiController extends Controller
     
             $categories = Productcategory::inRandomOrder()
                 ->take(4)
-                ->with(['slugable:id,key,slugable_id,slugable_type'])
+                ->with('slugable')
                 ->get()
                 ->map(function ($category) {
                     return [
@@ -276,7 +276,7 @@ class SearchApiController extends Controller
     
             $brands = Brand::inRandomOrder()
                 ->take(4)
-                ->with(['slugable:id,key,slugable_id,slugable_type'])
+                ->with('slugable')
                 ->get()
                 ->map(function ($brand) {
                     return [
@@ -329,7 +329,7 @@ class SearchApiController extends Controller
                   });
             })
             ->take(5)
-            ->with(['slugable:id,key,slugable_id,slugable_type'])
+            ->with('slugable')
             ->get()
             ->map(function ($category) {
                 return [
@@ -348,7 +348,7 @@ class SearchApiController extends Controller
                   });
             })
             ->take(5)
-            ->with(['slugable:id,key,slugable_id,slugable_type'])
+            ->with('slugable')
             ->get()
             ->map(function ($brand) {
                 return [
