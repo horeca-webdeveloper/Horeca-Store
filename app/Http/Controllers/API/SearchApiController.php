@@ -247,120 +247,120 @@ class SearchApiController extends Controller
     public function search(Request $request)
     {
         $query = $request->input('query');
-
-        if (!empty($query)) {
+    
+        if (empty($query)) {
             $products = Product::where('status', 'published')
-                ->where(function ($q) use ($query) {
-                    $q->where('name', 'LIKE', "%{$query}%")
-                      ->orWhere('sku', 'LIKE', "%{$query}%")
-                      ->orWhereHas('slugable', function ($q) use ($query) {
-                          $q->where('key', 'LIKE', "%{$query}%");
-                      });
-                })
-                ->orderByRaw("CASE WHEN name LIKE ? THEN 0 WHEN name LIKE ? THEN 1 ELSE 2 END", ["{$query}%", "%{$query}%"])
-                ->with('slugable')
+                ->inRandomOrder()
+                ->take(4)
+                ->with(['slugable:id,key,slugable_id,slugable_type'])
                 ->get()
                 ->map(function ($product) {
                     return [
-                        'id' => $product->id,
                         'name' => $product->name,
-                        'image' => $this->getFullImageUrl($product->image),
-                        'slug' => optional($product->slugable)->key,
-                        'price' => $product->price,
-                        'sale_price' => $product->sale_price,
+                        'url' => $product->url,
+                        'image' => RvMedia::getImageUrl($product->image, 'thumb', false, RvMedia::getDefaultImage()),
                     ];
                 });
-        
-            $categories = Productcategory::where(function ($q) use ($query) {
-                    $q->where('name', 'LIKE', "%{$query}%")
-                      ->orWhereHas('slugable', function ($q) use ($query) {
-                          $q->where('key', 'LIKE', "%{$query}%");
-                      });
-                })
-                ->orderByRaw("CASE WHEN name LIKE ? THEN 0 WHEN name LIKE ? THEN 1 ELSE 2 END", ["{$query}%", "%{$query}%"])
-                ->with(['products' => function ($q) use ($query) {
-                    $q->where('status', 'published')
-                      ->where(function ($q) use ($query) {
-                          $q->where('name', 'LIKE', "%{$query}%")
-                            ->orWhere('sku', 'LIKE', "%{$query}%");
-                      });
-                }, 'slugable'])
+    
+            $categories = Productcategory::inRandomOrder()
+                ->take(4)
+                ->with(['slugable:id,key,slugable_id,slugable_type'])
                 ->get()
                 ->map(function ($category) {
-                    $slugPath = [];
-                    $current = $category;
-                    while ($current->parent_id) {
-                        $parent = Productcategory::with('slugable')->find($current->parent_id);
-                        if ($parent && $parent->slugable) {
-                            array_unshift($slugPath, $parent->slugable->key);
-                        }
-                        $current = $parent;
-                    }
-        
-                    if ($category->slugable) {
-                        $slugPath[] = $category->slugable->key;
-                    }
-        
-                    $category->products = $category->products->filter(function ($product) {
-                        return !empty($product->name);
-                    });
-        
                     return [
-                        'id' => $category->id,
                         'name' => $category->name,
-                        'slug' => optional($category->slugable)->key,
-                        'slug_path' => implode('/', $slugPath),
-                        'products' => $category->products->map(function ($product) {
-                            return [
-                                'id' => $product->id,
-                                'name' => $product->name,
-                                'slug' => optional($product->slugable)->key,
-                                'image' => $this->getFullImageUrl($product->image),
-                                'price' => $product->price,
-                                'sale_price' => $product->sale_price,
-                            ];
-                        }),
+                        'url' => $category->url,
+                        'image' => RvMedia::getImageUrl($category->image, 'thumb', false, RvMedia::getDefaultImage()),
                     ];
-                })->filter(function ($category) {
-                    return $category->products->isNotEmpty();
                 });
-        
-            $brands = Brand::where(function ($q) use ($query) {
-                    $q->where('name', 'LIKE', "%{$query}%")
-                      ->orWhereHas('slugable', function ($q) use ($query) {
-                          $q->where('key', 'LIKE', "%{$query}%");
-                      });
-                })
-                ->orderByRaw("CASE WHEN name LIKE ? THEN 0 WHEN name LIKE ? THEN 1 ELSE 2 END", ["{$query}%", "%{$query}%"])
-                ->with('slugable')
+    
+            $brands = Brand::inRandomOrder()
                 ->take(4)
+                ->with(['slugable:id,key,slugable_id,slugable_type'])
                 ->get()
                 ->map(function ($brand) {
                     return [
-                        'id' => $brand->id,
                         'name' => $brand->name,
-                        'slug' => optional($brand->slugable)->key,
-                        'products' => $brand->products()->where('status', 'published')->take(3)->with('slugable')->get()->map(function ($product) {
-                            return [
-                                'id' => $product->id,
-                                'name' => $product->name,
-                                'slug' => optional($product->slugable)->key,
-                                'image' => $this->getFullImageUrl($product->image),
-                                'price' => $product->price,
-                                'sale_price' => $product->sale_price,
-                            ];
-                        }),
+                        'url' => $brand->url,
+                        'image' => RvMedia::getImageUrl($brand->logo, 'thumb', false, RvMedia::getDefaultImage()),
                     ];
                 });
-            }
-  
+    
+            return response()->json([
+                'products' => $products,
+                'categories' => $categories,
+                'brands' => $brands,
+            ]);
+        }
+    
+        $products = Product::where('status', 'published')
+        ->where(function ($q) use ($query) {
+            $q->where('name', 'LIKE', "{$query}%")
+            ->orWhere('name', 'LIKE', "%{$query}%")
+            ->orWhere('sku', 'LIKE', "{$query}%")
+            ->orWhere('sku', 'LIKE', "%{$query}%")
+            ->orWhereHas('slugable', function ($q) use ($query) {
+                $q->where('key', 'LIKE', "{$query}%")
+                    ->orWhere('key', 'LIKE', "%{$query}%");
+            });
+        })
+        ->take(5) // ✅ limit to 5
+        ->with(['slugable:id,key,slugable_id,slugable_type'])
+        ->get()
+        ->map(function ($product) {
+            return [
+                'name' => $product->name,
+                'url' => $product->url,
+                'image' => RvMedia::getImageUrl($product->image, 'thumb', false, RvMedia::getDefaultImage()),
+            ];
+        });
+
+    
+        $categories = Productcategory::where(function ($q) use ($query) {
+                $q->where('name', 'LIKE', "{$query}%")
+                  ->orWhere('name', 'LIKE', "%{$query}%")
+                  ->orWhereHas('slugable', function ($q) use ($query) {
+                      $q->where('key', 'LIKE', "{$query}%")
+                        ->orWhere('key', 'LIKE', "%{$query}%");
+                  });
+            })
+            ->take(5)
+            ->with(['slugable:id,key,slugable_id,slugable_type'])
+            ->get()
+            ->map(function ($category) {
+                return [
+                    'name' => $category->name,
+                    'url' => $category->url,
+                    'image' => RvMedia::getImageUrl($category->image, 'thumb', false, RvMedia::getDefaultImage()),
+                ];
+            });
+    
+        $brands = Brand::where(function ($q) use ($query) {
+                $q->where('name', 'LIKE', "{$query}%")
+                  ->orWhere('name', 'LIKE', "%{$query}%")
+                  ->orWhereHas('slugable', function ($q) use ($query) {
+                      $q->where('key', 'LIKE', "{$query}%")
+                        ->orWhere('key', 'LIKE', "%{$query}%");
+                  });
+            })
+            ->take(5)
+            ->with(['slugable:id,key,slugable_id,slugable_type'])
+            ->get()
+            ->map(function ($brand) {
+                return [
+                    'name' => $brand->name,
+                    'url' => $brand->url,
+                    'image' => RvMedia::getImageUrl($brand->logo, 'thumb', false, RvMedia::getDefaultImage()),
+                ];
+            });
+    
         return response()->json([
             'products' => $products,
             'categories' => $categories,
             'brands' => $brands,
         ]);
-        
     }
+    
     
     
     
