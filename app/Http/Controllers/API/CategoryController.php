@@ -1003,7 +1003,7 @@ public function getSpecificationFilters(Request $request)
 
     // Group filters by specification name for proper application
     $groupedFilters = [];
-    $rangeFilters = [];
+    $rangeFiltersByAttribute = []; // Changed: Store range filters by attribute name
     
     if ($request->has('filters') && is_array($request->filters)) {
         foreach ($request->filters as $filter) {
@@ -1020,11 +1020,11 @@ public function getSpecificationFilters(Request $request)
                 if (is_array($value) && isset($value['min']) && isset($value['max'])) {
                     $isRangeFilter = true;
                     
-                    // Store range filters separately with their min/max values
-                    if (!isset($rangeFilters[$specName])) {
-                        $rangeFilters[$specName] = [];
+                    // Changed: Store range filters by attribute name
+                    if (!isset($rangeFiltersByAttribute[$specName])) {
+                        $rangeFiltersByAttribute[$specName] = [];
                     }
-                    $rangeFilters[$specName][] = $value;
+                    $rangeFiltersByAttribute[$specName][] = $value;
                 }
             }
             
@@ -1039,7 +1039,7 @@ public function getSpecificationFilters(Request $request)
     }
     
     $debugInfo['grouped_filters'] = $groupedFilters;
-    $debugInfo['range_filters'] = $rangeFilters;
+    $debugInfo['range_filters_by_attribute'] = $rangeFiltersByAttribute; // Changed: Updated debug info
 
     // Apply regular attribute filters if provided, grouped by specification name
     foreach ($groupedFilters as $specName => $specValues) {
@@ -1077,32 +1077,37 @@ public function getSpecificationFilters(Request $request)
         }
     }
     
-    // Apply range filters
-    foreach ($rangeFilters as $specName => $rangeValues) {
+    // Changed: Apply range filters by attribute
+    foreach ($rangeFiltersByAttribute as $specName => $ranges) {
         // Find attribute ID based on name
         $attribute = Attribute::where('name', $specName)->first();
         if (!$attribute) {
             continue;
         }
         
+        // Start with the base query
         $query = DB::table('product_attributes as pa')
             ->where('pa.attribute_id', $attribute->id)
             ->whereIn('pa.product_id', $filteredProductIds);
         
-        // Build range conditions
+        // Build range conditions for this attribute - using OR between ranges of the same attribute
         $rangeConditions = [];
-        foreach ($rangeValues as $range) {
+        foreach ($ranges as $range) {
             $min = $range['min'];
             $max = $range['max'];
+            
             // For numeric attribute values, handle different formats
             $rangeConditions[] = "(CAST(pa.attribute_value AS DECIMAL(10,2)) BETWEEN $min AND $max OR 
-                                 CAST(REGEXP_REPLACE(pa.attribute_value, '[^0-9].*', '') AS DECIMAL(10,2)) BETWEEN $min AND $max)";
+                               CAST(REGEXP_REPLACE(pa.attribute_value, '[^0-9].*', '') AS DECIMAL(10,2)) BETWEEN $min AND $max)";
         }
         
+        // Only add WHERE condition if we have range conditions
         if (count($rangeConditions) > 0) {
+            // Use OR between ranges of the same attribute
             $query->whereRaw('(' . implode(' OR ', $rangeConditions) . ')');
         }
         
+        // Get products that match ANY of the ranges for this attribute
         $matchingProductIds = $query->pluck('pa.product_id')->unique();
         
         // Intersect with our running list of product IDs
