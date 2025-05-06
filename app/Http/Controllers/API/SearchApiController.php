@@ -278,6 +278,7 @@ class SearchApiController extends Controller
                 return [
                     'id' => $category->id,
                     'name' => $category->name,
+                    'slug' => optional($category->slugable)->key,
                     'url' => $category->url,
                     'image' => RvMedia::getImageUrl($category->image, 'thumb', false, RvMedia::getDefaultImage()),
                     'products' => $category->products->map(function ($product) {
@@ -298,6 +299,7 @@ class SearchApiController extends Controller
                     'id' => $brand->id,
                     'name' => $brand->name,
                     'url' => $brand->url,
+                    'slug' => optional($brand->slugable)->key,
                     'image' => RvMedia::getImageUrl($brand->logo, 'thumb', false, RvMedia::getDefaultImage()),
                     'products' => $brand->products->map(function ($product) {
                         return [
@@ -363,6 +365,7 @@ class SearchApiController extends Controller
                 return [
                     'id' => $category->id,
                     'name' => $category->name,
+                    'slug' => optional($category->slugable)->key,
                     'url' => $category->url,
                     'image' => RvMedia::getImageUrl($category->image, 'thumb', false, RvMedia::getDefaultImage()),
                     'products' => $category->products->map(function ($product) {
@@ -393,6 +396,7 @@ class SearchApiController extends Controller
                 return [
                     'id' => $brand->id,
                     'name' => $brand->name,
+                    'slug' => optional($brand->slugable)->key,
                     'url' => $brand->url,
                     'image' => RvMedia::getImageUrl($brand->logo, 'thumb', false, RvMedia::getDefaultImage()),
                     'products' => $brand->products->map(function ($product) {
