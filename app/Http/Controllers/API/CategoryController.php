@@ -587,7 +587,7 @@ class CategoryController extends Controller
 //         'debug_info' => $debugInfo
 //     ]);
 // }
-// public function getSpecificationFilters(Request $request)
+// public function getSpecificationFilters(Request $request)s
 // {
 //     // Existing validation code
 //     $validator = Validator::make($request->all(), [
