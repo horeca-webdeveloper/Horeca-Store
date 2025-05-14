@@ -17,7 +17,8 @@ class CategoryMenuController extends Controller
 
         // Select only the necessary fields and eager load product count
         $query = ProductCategory::select(['id', 'name', 'slug', 'parent_id', 'image'])
-            ->withCount('products');
+            ->withCount('products')
+            ->where('status', 'published');
 
         if ($filterId) {
             $query->where('id', $filterId)->orWhere('parent_id', $filterId);
