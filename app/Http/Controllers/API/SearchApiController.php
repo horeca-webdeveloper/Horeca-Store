@@ -421,75 +421,86 @@ class SearchApiController extends Controller
     
   
 
-    
-    
+
+
     // public function searchCategories(Request $request)
     // {
     //     $query = $request->input('query');
-
+        
     //     if (empty($query)) {
     //         return response()->json(['categories' => []]);
     //     }
-
-    //     $categories = Productcategory::where('name', 'LIKE', "%{$query}%")
-    //         ->orWhereHas('slugable', function ($q) use ($query) {
-    //             $q->where('key', 'LIKE', "%{$query}%");
-    //         })
-    //         ->take(10)
-    //         ->with('slugable')
-    //         ->get()
-    //         ->map(function ($category) {
-    //             return [
-    //                 'id' => $category->id,
-    //                 'name' => $category->name,
-    //                 'slug' => optional($category->slugable)->key,
-    //             ];
-    //         });
-
+    
+    //     // Use a cache key based on the query, so we cache results for the specific query
+    //     $cacheKey = 'categories_search_' . md5($query);
+        
+    //     // Check if the result is cached
+    //     $categories = Cache::get($cacheKey);
+    
+    //     // If not cached, query the database and cache the result
+    //     if (!$categories) {
+    //         // Query to get categories with their slugs and parent category slugs
+    //         $categories = Productcategory::where('name', 'LIKE', "%{$query}%")
+    //             ->orWhereHas('slugable', function($q) use ($query) {
+    //                 $q->where('key', 'LIKE', "%{$query}%");
+    //             })
+    //             ->with(['slugable', 'parentCategory.slugable'])  // Eager load slugs and parent slugs
+    //             ->take(10)
+    //             ->get()
+    //             ->map(function ($category) {
+    //                 return [
+    //                     'id' => $category->id,
+    //                     'name' => $category->name,
+    //                     'slug' => optional($category->slugable)->key,
+    //                     'slug_path' => $this->getSlugPath($category),
+    //                 ];
+    //             });
+    
+    //         // Cache the result for 60 minutes (you can adjust this time)
+    //         Cache::put($cacheKey, $categories, 60); // Cache for 60 minutes
+    //     }
+    
     //     return response()->json(['categories' => $categories]);
     // }
-
-
+    
     public function searchCategories(Request $request)
-    {
-        $query = $request->input('query');
-        
-        if (empty($query)) {
-            return response()->json(['categories' => []]);
-        }
-    
-        // Use a cache key based on the query, so we cache results for the specific query
-        $cacheKey = 'categories_search_' . md5($query);
-        
-        // Check if the result is cached
-        $categories = Cache::get($cacheKey);
-    
-        // If not cached, query the database and cache the result
-        if (!$categories) {
-            // Query to get categories with their slugs and parent category slugs
-            $categories = Productcategory::where('name', 'LIKE', "%{$query}%")
-                ->orWhereHas('slugable', function($q) use ($query) {
-                    $q->where('key', 'LIKE', "%{$query}%");
-                })
-                ->with(['slugable', 'parentCategory.slugable'])  // Eager load slugs and parent slugs
-                ->take(10)
-                ->get()
-                ->map(function ($category) {
-                    return [
-                        'id' => $category->id,
-                        'name' => $category->name,
-                        'slug' => optional($category->slugable)->key,
-                        'slug_path' => $this->getSlugPath($category),
-                    ];
-                });
-    
-            // Cache the result for 60 minutes (you can adjust this time)
-            Cache::put($cacheKey, $categories, 60); // Cache for 60 minutes
-        }
-    
-        return response()->json(['categories' => $categories]);
+{
+    $query = $request->input('query');
+
+    if (empty($query)) {
+        return response()->json(['categories' => []]);
     }
-    
+
+    $cacheKey = 'categories_search_' . md5($query);
+
+    $categories = Cache::get($cacheKey);
+
+    if (!$categories) {
+        $categories = ProductCategory::where('status', 'published') // Filter only published categories
+            ->where(function ($q) use ($query) {
+                $q->where('name', 'LIKE', "%{$query}%")
+                  ->orWhereHas('slugable', function ($subQ) use ($query) {
+                      $subQ->where('key', 'LIKE', "%{$query}%");
+                  });
+            })
+            ->with(['slugable', 'parentCategory.slugable'])
+            ->take(10)
+            ->get()
+            ->map(function ($category) {
+                return [
+                    'id' => $category->id,
+                    'name' => $category->name,
+                    'slug' => optional($category->slugable)->key,
+                    'slug_path' => $this->getSlugPath($category),
+                ];
+            });
+
+        Cache::put($cacheKey, $categories, 60);
+    }
+
+    return response()->json(['categories' => $categories]);
+}
+
     public function getSlugPath($category)
     {
         $slugPath = [];
