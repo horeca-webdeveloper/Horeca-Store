@@ -500,6 +500,9 @@ class ProductApiController extends Controller
 
                     // Transform the products collection
                     $products->getCollection()->transform(function ($product) {
+
+                        $product->description = $this->cleanProductText($product->description);
+
                         // Handle images
                         $product->images = collect($product->images)->map(function ($image) {
                             if (filter_var($image, FILTER_VALIDATE_URL)) {
@@ -590,7 +593,7 @@ class ProductApiController extends Controller
 
 
 
-   if ($product->frequently_bought_together) {
+                        if ($product->frequently_bought_together) {
                                 $frequentlyBoughtData = json_decode($product->frequently_bought_together, true);
                                 $frequentlyBoughtSkus = array_column($frequentlyBoughtData, 'value');
                             
@@ -1255,7 +1258,7 @@ class ProductApiController extends Controller
 
 
 
-                    private function applyFilters(\Illuminate\Database\Eloquent\Builder $query, \Illuminate\Http\Request $request)
+     private function applyFilters(\Illuminate\Database\Eloquent\Builder $query, \Illuminate\Http\Request $request)
         {
             // Log the request to ensure you're receiving the correct parameters
             \Log::info($request->all());
@@ -1981,6 +1984,18 @@ public function brandSummaryStats($id)
 
 
 
+private function cleanProductText($text)
+{
+    if (!$text) return null;
+
+    // Decode JSON-encoded arrays if necessary
+    if (is_array($text)) {
+        $text = implode(" ", $text);
+    }
+
+    // Fix encoded characters and remove odd trailing characters
+    return preg_replace('/[\x00-\x1F\x7F\xA0\xAD]+|[\?]+$/u', '', strip_tags(html_entity_decode($text)));
+}
 
 
 }
