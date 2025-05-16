@@ -155,7 +155,7 @@ class ProductApiController extends Controller
                     // Transform the products collection
                     $products->getCollection()->transform(function ($product) use ($wishlistProductIds) {
 
-                        $product->description = $this->cleanProductText($product->description);
+                        $product->description = array_map([$this, 'cleanProductText'], $product->description);
 
                         // Handle images
                         $product->images = collect($product->images)->map(function ($image) {
@@ -504,7 +504,7 @@ class ProductApiController extends Controller
                     // Transform the products collection
                     $products->getCollection()->transform(function ($product) {
 
-                        $product->description = $this->cleanProductText($product->description);
+                        $product->description = array_map([$this, 'cleanProductText'], $product->description);
 
                         // Handle images
                         $product->images = collect($product->images)->map(function ($image) {
@@ -877,7 +877,7 @@ class ProductApiController extends Controller
 
         $products->getCollection()->transform(function ($product) use ($wishlistProductIds) {
 
-            $product->description = $this->cleanProductText($product->description);
+            $product->description = array_map([$this, 'cleanProductText'], $product->description);
 
             // Select only required fields for the response
             $product->images = collect($product->images)->map(function ($image) {
@@ -1179,7 +1179,7 @@ class ProductApiController extends Controller
 
                         $products->getCollection()->transform(function ($product)  {
 
-                            $product->description = $this->cleanProductText($product->description);
+                            $product->description = array_map([$this, 'cleanProductText'], $product->description);
 
 
                             // Select only required fields for the response
@@ -1992,18 +1992,23 @@ public function brandSummaryStats($id)
 
 
 
-private function cleanProductText($text)
+public function cleanProductText($text)
 {
-    if (!$text) return null;
+    // Replace escaped slashes
+    $text = str_replace('\/', '/', $text);
 
-    // Decode JSON-encoded arrays if necessary
-    if (is_array($text)) {
-        $text = implode(" ", $text);
-    }
+    // Fix strange characters
+    $text = str_replace(['??', '?', '�'], '', $text);
 
-    // Fix encoded characters and remove odd trailing characters
-    return preg_replace('/[\x00-\x1F\x7F\xA0\xAD]+|[\?]+$/u', '', strip_tags(html_entity_decode($text)));
+    // Replace temperature symbols like 120?F with 120°F
+    $text = preg_replace('/(\d+)\?F/', '$1°F', $text);
+
+    // Clean up spacing
+    $text = trim($text);
+
+    return $text;
 }
+
 
 
 }
