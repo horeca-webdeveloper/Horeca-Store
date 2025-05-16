@@ -154,9 +154,6 @@ class ProductApiController extends Controller
 
                     // Transform the products collection
                     $products->getCollection()->transform(function ($product) use ($wishlistProductIds) {
-
-                        $product->description = array_map([$this, 'cleanProductText'], $product->description);
-
                         // Handle images
                         $product->images = collect($product->images)->map(function ($image) {
                             if (filter_var($image, FILTER_VALIDATE_URL)) {
@@ -503,9 +500,6 @@ class ProductApiController extends Controller
 
                     // Transform the products collection
                     $products->getCollection()->transform(function ($product) {
-
-                        $product->description = array_map([$this, 'cleanProductText'], $product->description);
-
                         // Handle images
                         $product->images = collect($product->images)->map(function ($image) {
                             if (filter_var($image, FILTER_VALIDATE_URL)) {
@@ -596,7 +590,7 @@ class ProductApiController extends Controller
 
 
 
-                        if ($product->frequently_bought_together) {
+   if ($product->frequently_bought_together) {
                                 $frequentlyBoughtData = json_decode($product->frequently_bought_together, true);
                                 $frequentlyBoughtSkus = array_column($frequentlyBoughtData, 'value');
                             
@@ -876,8 +870,6 @@ class ProductApiController extends Controller
         $brands = Brand::select('id', 'name')->get();
 
         $products->getCollection()->transform(function ($product) use ($wishlistProductIds) {
-
-            $product->description = array_map([$this, 'cleanProductText'], $product->description);
 
             // Select only required fields for the response
             $product->images = collect($product->images)->map(function ($image) {
@@ -1179,9 +1171,6 @@ class ProductApiController extends Controller
 
                         $products->getCollection()->transform(function ($product)  {
 
-                            $product->description = array_map([$this, 'cleanProductText'], $product->description);
-
-
                             // Select only required fields for the response
                             $product->images = collect($product->images)->map(function ($image) {
                                 return filter_var($image, FILTER_VALIDATE_URL) ? $image : url('storage/' . ltrim($image, '/'));
@@ -1266,7 +1255,7 @@ class ProductApiController extends Controller
 
 
 
-     private function applyFilters(\Illuminate\Database\Eloquent\Builder $query, \Illuminate\Http\Request $request)
+                    private function applyFilters(\Illuminate\Database\Eloquent\Builder $query, \Illuminate\Http\Request $request)
         {
             // Log the request to ensure you're receiving the correct parameters
             \Log::info($request->all());
@@ -1991,27 +1980,6 @@ public function brandSummaryStats($id)
 
 
 
-
-public function cleanProductText($text)
-{
-    $array = json_decode($jsonString, true);
-
-    if (!is_array($array)) {
-        return $jsonString; // fallback if it's not a valid array
-    }
-
-    $cleaned = array_map(function ($text) {
-        // Remove weird characters
-        $text = str_replace(['??', '?', '�', '\/'], ['', '', '', '/'], $text);
-
-        // Fix temperatures like 120?F → 120°F
-        $text = preg_replace('/(\d+)\?F/', '$1°F', $text);
-
-        return trim($text);
-    }, $array);
-
-    return json_encode($cleaned, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-}
 
 
 
