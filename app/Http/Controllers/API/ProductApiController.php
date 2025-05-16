@@ -154,6 +154,9 @@ class ProductApiController extends Controller
 
                     // Transform the products collection
                     $products->getCollection()->transform(function ($product) use ($wishlistProductIds) {
+
+                        $product->description = $this->cleanProductText($product->description);
+
                         // Handle images
                         $product->images = collect($product->images)->map(function ($image) {
                             if (filter_var($image, FILTER_VALIDATE_URL)) {
@@ -874,6 +877,8 @@ class ProductApiController extends Controller
 
         $products->getCollection()->transform(function ($product) use ($wishlistProductIds) {
 
+            $product->description = $this->cleanProductText($product->description);
+
             // Select only required fields for the response
             $product->images = collect($product->images)->map(function ($image) {
                 return filter_var($image, FILTER_VALIDATE_URL) ? $image : url('storage/' . ltrim($image, '/'));
@@ -1173,6 +1178,9 @@ class ProductApiController extends Controller
                         $brands = Brand::select('id', 'name')->get();
 
                         $products->getCollection()->transform(function ($product)  {
+
+                            $product->description = $this->cleanProductText($product->description);
+
 
                             // Select only required fields for the response
                             $product->images = collect($product->images)->map(function ($image) {
