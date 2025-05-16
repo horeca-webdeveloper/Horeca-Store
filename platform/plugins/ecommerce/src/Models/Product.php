@@ -888,4 +888,10 @@ class Product extends BaseModel
         return $this->belongsToMany(Attribute::class, 'product_attributes'); // Adjust the pivot table name if needed
     }
 
+    public function faqs()
+    {
+        return $this->hasMany(Faq::class);
+    }
+
+
 }

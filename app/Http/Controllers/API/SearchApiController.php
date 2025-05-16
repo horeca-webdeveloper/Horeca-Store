@@ -464,42 +464,42 @@ class SearchApiController extends Controller
     // }
     
     public function searchCategories(Request $request)
-{
-    $query = $request->input('query');
+    {
+        $query = $request->input('query');
 
-    if (empty($query)) {
-        return response()->json(['categories' => []]);
+        if (empty($query)) {
+            return response()->json(['categories' => []]);
+        }
+
+        $cacheKey = 'categories_search_' . md5($query);
+
+        $categories = Cache::get($cacheKey);
+
+        if (!$categories) {
+            $categories = ProductCategory::where('status', 'published') // Filter only published categories
+                ->where(function ($q) use ($query) {
+                    $q->where('name', 'LIKE', "%{$query}%")
+                    ->orWhereHas('slugable', function ($subQ) use ($query) {
+                        $subQ->where('key', 'LIKE', "%{$query}%");
+                    });
+                })
+                ->with(['slugable', 'parentCategory.slugable'])
+                ->take(10)
+                ->get()
+                ->map(function ($category) {
+                    return [
+                        'id' => $category->id,
+                        'name' => $category->name,
+                        'slug' => optional($category->slugable)->key,
+                        'slug_path' => $this->getSlugPath($category),
+                    ];
+                });
+
+            Cache::put($cacheKey, $categories, 60);
+        }
+
+        return response()->json(['categories' => $categories]);
     }
-
-    $cacheKey = 'categories_search_' . md5($query);
-
-    $categories = Cache::get($cacheKey);
-
-    if (!$categories) {
-        $categories = ProductCategory::where('status', 'published') // Filter only published categories
-            ->where(function ($q) use ($query) {
-                $q->where('name', 'LIKE', "%{$query}%")
-                  ->orWhereHas('slugable', function ($subQ) use ($query) {
-                      $subQ->where('key', 'LIKE', "%{$query}%");
-                  });
-            })
-            ->with(['slugable', 'parentCategory.slugable'])
-            ->take(10)
-            ->get()
-            ->map(function ($category) {
-                return [
-                    'id' => $category->id,
-                    'name' => $category->name,
-                    'slug' => optional($category->slugable)->key,
-                    'slug_path' => $this->getSlugPath($category),
-                ];
-            });
-
-        Cache::put($cacheKey, $categories, 60);
-    }
-
-    return response()->json(['categories' => $categories]);
-}
 
     public function getSlugPath($category)
     {

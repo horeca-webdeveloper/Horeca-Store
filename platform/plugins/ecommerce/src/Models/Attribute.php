@@ -13,5 +13,11 @@ class Attribute extends BaseModel
         return $this->hasMany(ProductAttributes::class, 'attribute_id', 'id');  // Ensure the foreign key is correct
     }
 
+    public function attributeGroup()
+{
+    return $this->belongsTo(\Botble\Ecommerce\Models\AttributeGroup::class, 'attribute_group_id');
+}
+
+
 
 }
