@@ -63,6 +63,8 @@ Route::get('seo/paragraphs/{relational_id}', [SEOManagementController::class, 'g
 
 
 Route::get('product/{productId}/attributes', [ProductAttributeController::class, 'getAttributesByProduct']);
+Route::get('product-group/{productId}/attributes', [ProductAttributeController::class, 'getAttributesByProductWithGroup']);
+
 
 Route::post('/send-confirmation-email', [EmailNotificationController::class, 'sendConfirmationEmail']);
 
