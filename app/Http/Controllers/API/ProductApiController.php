@@ -1994,19 +1994,23 @@ public function brandSummaryStats($id)
 
 public function cleanProductText($text)
 {
-    // Replace escaped slashes
-    $text = str_replace('\/', '/', $text);
+    $array = json_decode($jsonString, true);
 
-    // Fix strange characters
-    $text = str_replace(['??', '?', '�'], '', $text);
+    if (!is_array($array)) {
+        return $jsonString; // fallback if it's not a valid array
+    }
 
-    // Replace temperature symbols like 120?F with 120°F
-    $text = preg_replace('/(\d+)\?F/', '$1°F', $text);
+    $cleaned = array_map(function ($text) {
+        // Remove weird characters
+        $text = str_replace(['??', '?', '�', '\/'], ['', '', '', '/'], $text);
 
-    // Clean up spacing
-    $text = trim($text);
+        // Fix temperatures like 120?F → 120°F
+        $text = preg_replace('/(\d+)\?F/', '$1°F', $text);
 
-    return $text;
+        return trim($text);
+    }, $array);
+
+    return json_encode($cleaned, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 }
 
 
