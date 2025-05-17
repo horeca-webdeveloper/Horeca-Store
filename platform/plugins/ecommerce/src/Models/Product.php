@@ -152,6 +152,8 @@ class Product extends BaseModel
         'minimum_order_quantity' => 'int',
         'maximum_order_quantity' => 'int',
         'specs_sheet' => 'array',
+        'description' => 'array',
+        'benefit_features' => 'array',
         // 'video_path'=> 'json',
 
     ];
