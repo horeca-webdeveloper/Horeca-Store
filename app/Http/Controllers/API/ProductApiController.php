@@ -154,6 +154,23 @@ class ProductApiController extends Controller
 
                     // Transform the products collection
                     $products->getCollection()->transform(function ($product) use ($wishlistProductIds) {
+
+                        // Handle benefit features
+                    if (!empty($product->benefit_features)) {
+                        $decodedBenefits = json_decode($product->benefit_features, true);
+
+                        if (json_last_error() === JSON_ERROR_NONE && is_array($decodedBenefits)) {
+                            $product->benefit_features = array_map(function ($benefit) {
+                                return [
+                                    'benefit' => $benefit['benefit'] ?? null,
+                                    'feature' => $benefit['feature'] ?? null,
+                                ];
+                            }, $decodedBenefits);
+                        } else {
+                            $product->benefit_features = [];
+                        }
+                    }
+
                         // Handle images
                         $product->images = collect($product->images)->map(function ($image) {
                             if (filter_var($image, FILTER_VALIDATE_URL)) {
@@ -590,7 +607,7 @@ class ProductApiController extends Controller
 
 
 
-   if ($product->frequently_bought_together) {
+                    if ($product->frequently_bought_together) {
                                 $frequentlyBoughtData = json_decode($product->frequently_bought_together, true);
                                 $frequentlyBoughtSkus = array_column($frequentlyBoughtData, 'value');
                             
@@ -870,6 +887,21 @@ class ProductApiController extends Controller
         $brands = Brand::select('id', 'name')->get();
 
         $products->getCollection()->transform(function ($product) use ($wishlistProductIds) {
+                // Handle benefit features
+                if (!empty($product->benefit_features)) {
+                    $decodedBenefits = json_decode($product->benefit_features, true);
+
+                    if (json_last_error() === JSON_ERROR_NONE && is_array($decodedBenefits)) {
+                        $product->benefit_features = array_map(function ($benefit) {
+                            return [
+                                'benefit' => $benefit['benefit'] ?? null,
+                                'feature' => $benefit['feature'] ?? null,
+                            ];
+                        }, $decodedBenefits);
+                    } else {
+                        $product->benefit_features = [];
+                    }
+                }
 
             // Select only required fields for the response
             $product->images = collect($product->images)->map(function ($image) {
