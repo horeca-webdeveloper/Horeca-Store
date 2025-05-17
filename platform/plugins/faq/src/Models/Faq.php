@@ -16,6 +16,7 @@ class Faq extends BaseModel
         'answer',
         'category_id',
         'status',
+        'product_id'
     ];
 
     protected $casts = [
