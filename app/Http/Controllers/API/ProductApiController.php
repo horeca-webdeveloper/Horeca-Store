@@ -155,21 +155,9 @@ class ProductApiController extends Controller
                     // Transform the products collection
                     $products->getCollection()->transform(function ($product) use ($wishlistProductIds) {
 
-                        // Handle benefit features
-                    if (!empty($product->benefit_features)) {
-                        $decodedBenefits = json_decode($product->benefit_features, true);
+                        $product->benefits_features = json_decode($product->benefits_features, true);
 
-                        if (json_last_error() === JSON_ERROR_NONE && is_array($decodedBenefits)) {
-                            $product->benefit_features = array_map(function ($benefit) {
-                                return [
-                                    'benefit' => $benefit['benefit'] ?? null,
-                                    'feature' => $benefit['feature'] ?? null,
-                                ];
-                            }, $decodedBenefits);
-                        } else {
-                            $product->benefit_features = [];
-                        }
-                    }
+                        
 
                         // Handle images
                         $product->images = collect($product->images)->map(function ($image) {
@@ -517,6 +505,11 @@ class ProductApiController extends Controller
 
                     // Transform the products collection
                     $products->getCollection()->transform(function ($product) {
+
+                        $product->benefits_features = json_decode($product->benefits_features, true);
+
+                        
+
                         // Handle images
                         $product->images = collect($product->images)->map(function ($image) {
                             if (filter_var($image, FILTER_VALIDATE_URL)) {
