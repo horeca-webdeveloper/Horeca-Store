@@ -244,181 +244,402 @@ class SearchApiController extends Controller
     //     return response()->json($results);
     // }
 
-    public function search(Request $request)
-    {
-        $query = $request->input('query');
+    // public function search(Request $request)
+    // {
+    //     $query = $request->input('query');
     
-        if (empty($query)) {
-            $products = Product::where('status', 'published')
-                ->inRandomOrder()
-                ->take(4)
-                ->with('slugable')
-                ->get()
-                ->map(function ($product) {
-                    return [
-                        'id' => $product->id,
-                        'name' => $product->name,
-                        'url' => $product->url,
-                        'image' => RvMedia::getImageUrl($product->image, 'thumb', false, RvMedia::getDefaultImage()),
-                    ];
-                });
+    //     if (empty($query)) {
+    //         $products = Product::where('status', 'published')
+    //             ->inRandomOrder()
+    //             ->take(4)
+    //             ->with('slugable')
+    //             ->get()
+    //             ->map(function ($product) {
+    //                 return [
+    //                     'id' => $product->id,
+    //                     'name' => $product->name,
+    //                     'url' => $product->url,
+    //                     'image' => RvMedia::getImageUrl($product->image, 'thumb', false, RvMedia::getDefaultImage()),
+    //                 ];
+    //             });
     
-               // Fetch categories with associated products
-                $categories = Productcategory::with(['products' => function($query) {
-                    $query->where('status', 'published')->take(3); // Only published products
-                }])->inRandomOrder()->take(4)->get();
+    //            // Fetch categories with associated products
+    //             $categories = Productcategory::with(['products' => function($query) {
+    //                 $query->where('status', 'published')->take(3); // Only published products
+    //             }])->inRandomOrder()->take(4)->get();
 
-                // Fetch brands with associated products
-                $brands = Brand::with(['products' => function($query) {
-                    $query->where('status', 'published')->take(3); // Only published products
-                }])->inRandomOrder()->take(4)->get();
+    //             // Fetch brands with associated products
+    //             $brands = Brand::with(['products' => function($query) {
+    //                 $query->where('status', 'published')->take(3); // Only published products
+    //             }])->inRandomOrder()->take(4)->get();
 
-            // Mapping the data for output
-            $categories = $categories->map(function ($category) {
-                return [
-                    'id' => $category->id,
-                    'name' => $category->name,
-                    'slug' => optional($category->slugable)->key,
-                    'url' => $category->url,
-                    'image' => RvMedia::getImageUrl($category->image, 'thumb', false, RvMedia::getDefaultImage()),
-                    'products' => $category->products->map(function ($product) {
-                        return [
-                            'id' => $product->id,
-                            'name' => $product->name,
-                            'slug' => optional($product->slugable)->key,
-                            'image' => RvMedia::getImageUrl($product->image, 'thumb', false, RvMedia::getDefaultImage()),
-                            'price' => $product->price,
-                            'sale_price' => $product->sale_price,
-                        ];
-                    }),
-                ];
-            });
+    //         // Mapping the data for output
+    //         $categories = $categories->map(function ($category) {
+    //             return [
+    //                 'id' => $category->id,
+    //                 'name' => $category->name,
+    //                 'slug' => optional($category->slugable)->key,
+    //                 'url' => $category->url,
+    //                 'image' => RvMedia::getImageUrl($category->image, 'thumb', false, RvMedia::getDefaultImage()),
+    //                 'products' => $category->products->map(function ($product) {
+    //                     return [
+    //                         'id' => $product->id,
+    //                         'name' => $product->name,
+    //                         'slug' => optional($product->slugable)->key,
+    //                         'image' => RvMedia::getImageUrl($product->image, 'thumb', false, RvMedia::getDefaultImage()),
+    //                         'price' => $product->price,
+    //                         'sale_price' => $product->sale_price,
+    //                     ];
+    //                 }),
+    //             ];
+    //         });
 
-            $brands = $brands->map(function ($brand) {
-                return [
-                    'id' => $brand->id,
-                    'name' => $brand->name,
-                    'url' => $brand->url,
-                    'slug' => optional($brand->slugable)->key,
-                    'image' => RvMedia::getImageUrl($brand->logo, 'thumb', false, RvMedia::getDefaultImage()),
-                    'products' => $brand->products->map(function ($product) {
-                        return [
-                            'id' => $product->id,
-                            'name' => $product->name,
-                            'slug' => optional($product->slugable)->key,
-                            'image' => RvMedia::getImageUrl($product->image, 'thumb', false, RvMedia::getDefaultImage()),
-                            'price' => $product->price,
-                            'sale_price' => $product->sale_price,
-                        ];
-                    }),
-                ];
-            });
+    //         $brands = $brands->map(function ($brand) {
+    //             return [
+    //                 'id' => $brand->id,
+    //                 'name' => $brand->name,
+    //                 'url' => $brand->url,
+    //                 'slug' => optional($brand->slugable)->key,
+    //                 'image' => RvMedia::getImageUrl($brand->logo, 'thumb', false, RvMedia::getDefaultImage()),
+    //                 'products' => $brand->products->map(function ($product) {
+    //                     return [
+    //                         'id' => $product->id,
+    //                         'name' => $product->name,
+    //                         'slug' => optional($product->slugable)->key,
+    //                         'image' => RvMedia::getImageUrl($product->image, 'thumb', false, RvMedia::getDefaultImage()),
+    //                         'price' => $product->price,
+    //                         'sale_price' => $product->sale_price,
+    //                     ];
+    //                 }),
+    //             ];
+    //         });
 
             
     
-            return response()->json([
-                'products' => $products,
-                'categories' => $categories,
-                'brands' => $brands,
-            ]);
-        }
+    //         return response()->json([
+    //             'products' => $products,
+    //             'categories' => $categories,
+    //             'brands' => $brands,
+    //         ]);
+    //     }
     
-        $products = Product::where('status', 'published')
-        ->where(function ($q) use ($query) {
-            $q->where('name', 'LIKE', "{$query}%")
-              ->orWhere('name', 'LIKE', "%{$query}%")
-              ->orWhere('sku', 'LIKE', "{$query}%")
-              ->orWhere('sku', 'LIKE', "%{$query}%")
-              ->orWhereHas('slugable', function ($q) use ($query) {
-                  $q->where('key', 'LIKE', "{$query}%")
-                    ->orWhere('key', 'LIKE', "%{$query}%");
-              });
-        })
-        ->take(5)
-        ->with('slugable') // ✅ fixed
-        ->get()
-        ->map(function ($product) {
-            return [
-                'id' => $product->id,
-                'name' => $product->name,
-                'image' => $this->getFullImageUrl($product->image),
-                'slug' => optional($product->slugable)->key,
-                'price' => $product->price,
-                'sale_price' => $product->sale_price,
-            ];
-        });
+    //     $products = Product::where('status', 'published')
+    //     ->where(function ($q) use ($query) {
+    //         $q->where('name', 'LIKE', "{$query}%")
+    //           ->orWhere('name', 'LIKE', "%{$query}%")
+    //           ->orWhere('sku', 'LIKE', "{$query}%")
+    //           ->orWhere('sku', 'LIKE', "%{$query}%")
+    //           ->orWhereHas('slugable', function ($q) use ($query) {
+    //               $q->where('key', 'LIKE', "{$query}%")
+    //                 ->orWhere('key', 'LIKE', "%{$query}%");
+    //           });
+    //     })
+    //     ->take(5)
+    //     ->with('slugable') // ✅ fixed
+    //     ->get()
+    //     ->map(function ($product) {
+    //         return [
+    //             'id' => $product->id,
+    //             'name' => $product->name,
+    //             'image' => $this->getFullImageUrl($product->image),
+    //             'slug' => optional($product->slugable)->key,
+    //             'price' => $product->price,
+    //             'sale_price' => $product->sale_price,
+    //         ];
+    //     });
     
 
     
-        $categories = Productcategory::where(function ($q) use ($query) {
-                $q->where('name', 'LIKE', "{$query}%")
-                  ->orWhere('name', 'LIKE', "%{$query}%")
-                  ->orWhereHas('slugable', function ($q) use ($query) {
-                      $q->where('key', 'LIKE', "{$query}%")
-                        ->orWhere('key', 'LIKE', "%{$query}%");
-                  });
-            })
-            ->take(5)
+    //     $categories = Productcategory::where(function ($q) use ($query) {
+    //             $q->where('name', 'LIKE', "{$query}%")
+    //               ->orWhere('name', 'LIKE', "%{$query}%")
+    //               ->orWhereHas('slugable', function ($q) use ($query) {
+    //                   $q->where('key', 'LIKE', "{$query}%")
+    //                     ->orWhere('key', 'LIKE', "%{$query}%");
+    //               });
+    //         })
+    //         ->take(5)
+    //         ->with('slugable')
+    //         ->get()
+    //         ->map(function ($category) {
+    //             return [
+    //                 'id' => $category->id,
+    //                 'name' => $category->name,
+    //                 'slug' => optional($category->slugable)->key,
+    //                 'url' => $category->url,
+    //                 'image' => RvMedia::getImageUrl($category->image, 'thumb', false, RvMedia::getDefaultImage()),
+    //                 'products' => $category->products->map(function ($product) {
+    //                     return [
+    //                         'id' => $product->id,
+    //                         'name' => $product->name,
+    //                         'slug' => optional($product->slugable)->key,
+    //                         'image' => RvMedia::getImageUrl($product->image, 'thumb', false, RvMedia::getDefaultImage()),
+    //                         'price' => $product->price,
+    //                         'sale_price' => $product->sale_price,
+    //                     ];
+    //                 }),
+    //             ];
+    //         });
+    
+    //     $brands = Brand::where(function ($q) use ($query) {
+    //             $q->where('name', 'LIKE', "{$query}%")
+    //               ->orWhere('name', 'LIKE', "%{$query}%")
+    //               ->orWhereHas('slugable', function ($q) use ($query) {
+    //                   $q->where('key', 'LIKE', "{$query}%")
+    //                     ->orWhere('key', 'LIKE', "%{$query}%");
+    //               });
+    //         })
+    //         ->take(5)
+    //         ->with('slugable')
+    //         ->get()
+    //         ->map(function ($brand) {
+    //             return [
+    //                 'id' => $brand->id,
+    //                 'name' => $brand->name,
+    //                 'slug' => optional($brand->slugable)->key,
+    //                 'url' => $brand->url,
+    //                 'image' => RvMedia::getImageUrl($brand->logo, 'thumb', false, RvMedia::getDefaultImage()),
+    //                 'products' => $brand->products->map(function ($product) {
+    //                     return [
+    //                         'id' => $product->id,
+    //                         'name' => $product->name,
+    //                         'slug' => optional($product->slugable)->key,
+    //                         'image' => RvMedia::getImageUrl($product->image, 'thumb', false, RvMedia::getDefaultImage()),
+    //                         'price' => $product->price,
+    //                         'sale_price' => $product->sale_price,
+    //                     ];
+    //                 }),
+    //             ];
+    //         });
+    
+    //     return response()->json([
+    //         'products' => $products,
+    //         'categories' => $categories,
+    //         'brands' => $brands,
+    //     ]);
+    // }
+    public function search(Request $request)
+{
+    $query = $request->input('query');
+
+    if (empty($query)) {
+        $products = Product::where('status', 'published')
+            ->inRandomOrder()
+            ->take(4)
             ->with('slugable')
             ->get()
-            ->map(function ($category) {
+            ->map(function ($product) {
                 return [
-                    'id' => $category->id,
-                    'name' => $category->name,
-                    'slug' => optional($category->slugable)->key,
-                    'url' => $category->url,
-                    'image' => RvMedia::getImageUrl($category->image, 'thumb', false, RvMedia::getDefaultImage()),
-                    'products' => $category->products->map(function ($product) {
-                        return [
-                            'id' => $product->id,
-                            'name' => $product->name,
-                            'slug' => optional($product->slugable)->key,
-                            'image' => RvMedia::getImageUrl($product->image, 'thumb', false, RvMedia::getDefaultImage()),
-                            'price' => $product->price,
-                            'sale_price' => $product->sale_price,
-                        ];
-                    }),
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'url' => $product->url,
+                    'image' => RvMedia::getImageUrl($product->image, 'thumb', false, RvMedia::getDefaultImage()),
                 ];
             });
-    
-        $brands = Brand::where(function ($q) use ($query) {
-                $q->where('name', 'LIKE', "{$query}%")
-                  ->orWhere('name', 'LIKE', "%{$query}%")
-                  ->orWhereHas('slugable', function ($q) use ($query) {
-                      $q->where('key', 'LIKE', "{$query}%")
-                        ->orWhere('key', 'LIKE', "%{$query}%");
-                  });
-            })
-            ->take(5)
-            ->with('slugable')
-            ->get()
-            ->map(function ($brand) {
-                return [
-                    'id' => $brand->id,
-                    'name' => $brand->name,
-                    'slug' => optional($brand->slugable)->key,
-                    'url' => $brand->url,
-                    'image' => RvMedia::getImageUrl($brand->logo, 'thumb', false, RvMedia::getDefaultImage()),
-                    'products' => $brand->products->map(function ($product) {
-                        return [
-                            'id' => $product->id,
-                            'name' => $product->name,
-                            'slug' => optional($product->slugable)->key,
-                            'image' => RvMedia::getImageUrl($product->image, 'thumb', false, RvMedia::getDefaultImage()),
-                            'price' => $product->price,
-                            'sale_price' => $product->sale_price,
-                        ];
-                    }),
-                ];
-            });
-    
+
+           // Fetch categories with associated products
+            $categories = Productcategory::with(['products' => function($query) {
+                $query->where('status', 'published')->take(3); // Only published products
+            }])->inRandomOrder()->take(4)->get();
+
+            // Fetch brands with associated products
+            $brands = Brand::with(['products' => function($query) {
+                $query->where('status', 'published')->take(3); // Only published products
+            }])->inRandomOrder()->take(4)->get();
+
+        // Mapping the data for output
+        $categories = $categories->map(function ($category) {
+            // Get parent category if exists
+            $parentCategory = null;
+            $parentSlug = null;
+            $parentId = null;
+            $parentParentSlug = null;
+
+            if ($category->parent_id) {
+                $parentCategory = Productcategory::with('slugable')->find($category->parent_id);
+                if ($parentCategory) {
+                    $parentSlug = optional($parentCategory->slugable)->key;
+                    $parentId = $parentCategory->id;
+                    
+                    // Get grandparent if exists
+                    if ($parentCategory->parent_id) {
+                        $grandparentCategory = Productcategory::with('slugable')->find($parentCategory->parent_id);
+                        if ($grandparentCategory) {
+                            $parentParentSlug = optional($grandparentCategory->slugable)->key;
+                        }
+                    }
+                }
+            }
+
+            return [
+                'id' => $category->id,
+                'name' => $category->name,
+                'slug' => optional($category->slugable)->key,
+                'url' => $category->url,
+                'image' => RvMedia::getImageUrl($category->image, 'thumb', false, RvMedia::getDefaultImage()),
+                'parent_id' => $category->parent_id,
+                'parent_slug' => $parentSlug,
+                'parent_parent_slug' => $parentParentSlug,
+                'products' => $category->products->map(function ($product) {
+                    return [
+                        'id' => $product->id,
+                        'name' => $product->name,
+                        'slug' => optional($product->slugable)->key,
+                        'image' => RvMedia::getImageUrl($product->image, 'thumb', false, RvMedia::getDefaultImage()),
+                        'price' => $product->price,
+                        'sale_price' => $product->sale_price,
+                    ];
+                }),
+            ];
+        });
+
+        $brands = $brands->map(function ($brand) {
+            return [
+                'id' => $brand->id,
+                'name' => $brand->name,
+                'url' => $brand->url,
+                'slug' => optional($brand->slugable)->key,
+                'image' => RvMedia::getImageUrl($brand->logo, 'thumb', false, RvMedia::getDefaultImage()),
+                'products' => $brand->products->map(function ($product) {
+                    return [
+                        'id' => $product->id,
+                        'name' => $product->name,
+                        'slug' => optional($product->slugable)->key,
+                        'image' => RvMedia::getImageUrl($product->image, 'thumb', false, RvMedia::getDefaultImage()),
+                        'price' => $product->price,
+                        'sale_price' => $product->sale_price,
+                    ];
+                }),
+            ];
+        });
+
+        
         return response()->json([
             'products' => $products,
             'categories' => $categories,
             'brands' => $brands,
         ]);
     }
-    
+
+    $products = Product::where('status', 'published')
+    ->where(function ($q) use ($query) {
+        $q->where('name', 'LIKE', "{$query}%")
+          ->orWhere('name', 'LIKE', "%{$query}%")
+          ->orWhere('sku', 'LIKE', "{$query}%")
+          ->orWhere('sku', 'LIKE', "%{$query}%")
+          ->orWhereHas('slugable', function ($q) use ($query) {
+              $q->where('key', 'LIKE', "{$query}%")
+                ->orWhere('key', 'LIKE', "%{$query}%");
+          });
+    })
+    ->take(5)
+    ->with('slugable') 
+    ->get()
+    ->map(function ($product) {
+        return [
+            'id' => $product->id,
+            'name' => $product->name,
+            'image' => $this->getFullImageUrl($product->image),
+            'slug' => optional($product->slugable)->key,
+            'price' => $product->price,
+            'sale_price' => $product->sale_price,
+        ];
+    });
+
+
+    $categories = Productcategory::where(function ($q) use ($query) {
+            $q->where('name', 'LIKE', "{$query}%")
+              ->orWhere('name', 'LIKE', "%{$query}%")
+              ->orWhereHas('slugable', function ($q) use ($query) {
+                  $q->where('key', 'LIKE', "{$query}%")
+                    ->orWhere('key', 'LIKE', "%{$query}%");
+              });
+        })
+        ->take(5)
+        ->with('slugable')
+        ->get()
+        ->map(function ($category) {
+            // Get parent category if exists
+            $parentCategory = null;
+            $parentSlug = null;
+            $parentId = null;
+            $parentParentSlug = null;
+
+            if ($category->parent_id) {
+                $parentCategory = Productcategory::with('slugable')->find($category->parent_id);
+                if ($parentCategory) {
+                    $parentSlug = optional($parentCategory->slugable)->key;
+                    $parentId = $parentCategory->id;
+                    
+                    // Get grandparent if exists
+                    if ($parentCategory->parent_id) {
+                        $grandparentCategory = Productcategory::with('slugable')->find($parentCategory->parent_id);
+                        if ($grandparentCategory) {
+                            $parentParentSlug = optional($grandparentCategory->slugable)->key;
+                        }
+                    }
+                }
+            }
+
+            return [
+                'id' => $category->id,
+                'name' => $category->name,
+                'slug' => optional($category->slugable)->key,
+                'url' => $category->url,
+                'image' => RvMedia::getImageUrl($category->image, 'thumb', false, RvMedia::getDefaultImage()),
+                'parent_id' => $category->parent_id,
+                'parent_slug' => $parentSlug,
+                'parent_parent_slug' => $parentParentSlug,
+                'products' => $category->products->map(function ($product) {
+                    return [
+                        'id' => $product->id,
+                        'name' => $product->name,
+                        'slug' => optional($product->slugable)->key,
+                        'image' => RvMedia::getImageUrl($product->image, 'thumb', false, RvMedia::getDefaultImage()),
+                        'price' => $product->price,
+                        'sale_price' => $product->sale_price,
+                    ];
+                }),
+            ];
+        });
+
+    $brands = Brand::where(function ($q) use ($query) {
+            $q->where('name', 'LIKE', "{$query}%")
+              ->orWhere('name', 'LIKE', "%{$query}%")
+              ->orWhereHas('slugable', function ($q) use ($query) {
+                  $q->where('key', 'LIKE', "{$query}%")
+                    ->orWhere('key', 'LIKE', "%{$query}%");
+              });
+        })
+        ->take(5)
+        ->with('slugable')
+        ->get()
+        ->map(function ($brand) {
+            return [
+                'id' => $brand->id,
+                'name' => $brand->name,
+                'slug' => optional($brand->slugable)->key,
+                'url' => $brand->url,
+                'image' => RvMedia::getImageUrl($brand->logo, 'thumb', false, RvMedia::getDefaultImage()),
+                'products' => $brand->products->map(function ($product) {
+                    return [
+                        'id' => $product->id,
+                        'name' => $product->name,
+                        'slug' => optional($product->slugable)->key,
+                        'image' => RvMedia::getImageUrl($product->image, 'thumb', false, RvMedia::getDefaultImage()),
+                        'price' => $product->price,
+                        'sale_price' => $product->sale_price,
+                    ];
+                }),
+            ];
+        });
+
+    return response()->json([
+        'products' => $products,
+        'categories' => $categories,
+        'brands' => $brands,
+    ]);
+}
   
 
 
