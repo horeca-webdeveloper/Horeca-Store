@@ -16,4 +16,6 @@ class AttributeGroup extends BaseModel
     {
         return $this->hasMany(AttributeValue::class, 'attribute_id');
     }
+
+    
 }
