@@ -1188,6 +1188,7 @@ public function getSpecificationFilters(Request $request)
         $product->images = collect(is_array($product->images) ? $product->images : [])->map(function ($img) {
             return preg_match('/^(http|https):\/\//', $img) ? $img : asset('storage/' . $img);
         })->toArray();
+        $product->video_path = is_array($product->video_path) ? $product->video_path : (is_string($product->video_path) ? json_decode($product->video_path, true) ?: [] : []);
 
         unset($product->currency, $product->reviews, $product->brand);
         return $product;
