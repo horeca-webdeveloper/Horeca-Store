@@ -1346,12 +1346,24 @@ public function getSpecificationFilters(Request $request)
         'filter_values' => [5, 4, 3, 2, 1],
     ];
 
+    $minPrice = Product::whereIn('id', $allCategoryProductIds)
+    ->where('status', 'published')
+    ->selectRaw('MIN(COALESCE(sale_price, price)) as min_price')
+        ->value('min_price');
+
+    $maxPrice = Product::whereIn('id', $allCategoryProductIds)
+        ->where('status', 'published')
+        ->selectRaw('MAX(COALESCE(sale_price, price)) as max_price')
+        ->value('max_price');
+
     // Return the combined response with debug info
     return response()->json([
         'success' => true,
         'filters' => $filters,
         'products' => $paginatedProducts,
         'brands' => $brands,
+        'price_min' => $minPrice,
+        'price_max' => $maxPrice,
         'rating_filter' => $ratingFilter,
         'debug_info' => $debugInfo
     ]);
