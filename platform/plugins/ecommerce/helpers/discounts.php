@@ -159,7 +159,7 @@ if (! function_exists('get_discount_description')) {
                     case DiscountTargetEnum::PRODUCT_CATEGORIES:
                         $categories = $discount
                             ->productCategories()
-                            ->pluck('ec_product_categories.name', 'ec_product_categories.id')
+                            ->pluck('categories.name', 'categories.id')
                             ->all();
 
                         $categoryLinks = [];

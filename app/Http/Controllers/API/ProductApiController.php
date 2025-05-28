@@ -157,11 +157,11 @@ class ProductApiController extends Controller
 
                         $product->benefits_features = json_decode($product->benefits_features, true);
 
-                        
+
                         if (is_string($product->description)) {
                             $product->description = json_decode($product->description, true);
                         }
-                        
+
 
                         // Handle images
                         $product->images = collect($product->images)->map(function ($image) {
@@ -255,11 +255,11 @@ class ProductApiController extends Controller
                             if ($product->frequently_bought_together) {
                                 $frequentlyBoughtData = json_decode($product->frequently_bought_together, true);
                                 $frequentlyBoughtSkus = array_column($frequentlyBoughtData, 'value');
-                            
+
                                 $frequentlyBoughtProducts = Product::whereIn('sku', $frequentlyBoughtSkus)
                                     ->with('reviews', 'currency')
                                     ->get();
-                            
+
                                 $frequentlyBoughtProducts->transform(function ($fbProduct) {
                                     return [
                                         'id' => $fbProduct->id,
@@ -285,10 +285,10 @@ class ProductApiController extends Controller
                                         'best_price' => $fbProduct->price,
                                     ];
                                 });
-                            
+
                                 $product->frequently_bought_together = $frequentlyBoughtProducts;
                             }
-                            
+
 
                         // Handle same SKU products
                         $sameSkuProducts = Product::where('sku', $product->sku)
@@ -515,7 +515,7 @@ class ProductApiController extends Controller
                         if (is_string($product->description)) {
                             $product->description = json_decode($product->description, true);
                         }
-                        
+
 
                         // Handle images
                         $product->images = collect($product->images)->map(function ($image) {
@@ -610,11 +610,11 @@ class ProductApiController extends Controller
                     if ($product->frequently_bought_together) {
                                 $frequentlyBoughtData = json_decode($product->frequently_bought_together, true);
                                 $frequentlyBoughtSkus = array_column($frequentlyBoughtData, 'value');
-                            
+
                                 $frequentlyBoughtProducts = Product::whereIn('sku', $frequentlyBoughtSkus)
                                     ->with('reviews', 'currency')
                                     ->get();
-                            
+
                                 $frequentlyBoughtProducts->transform(function ($fbProduct) {
                                     return [
                                         'id' => $fbProduct->id,
@@ -640,10 +640,10 @@ class ProductApiController extends Controller
                                         'best_price' => $fbProduct->price,
                                     ];
                                 });
-                            
+
                                 $product->frequently_bought_together = $frequentlyBoughtProducts;
                             }
-                            
+
                         // Handle same SKU products
                         $sameSkuProducts = Product::where('sku', $product->sku)
                             ->where('id', '!=', $product->id)
@@ -1609,7 +1609,7 @@ class ProductApiController extends Controller
 //     if ($request->has('category')) {
 //         $categoryIds = explode(',', $request->category);
 //         $query->whereHas('categories', function($q) use ($categoryIds) {
-//             $q->whereIn('ec_product_categories.id', $categoryIds);
+//             $q->whereIn('categories.id', $categoryIds);
 //         });
 //     }
 
@@ -1732,7 +1732,7 @@ public function relatedProducts($id)
     }
 
     $relatedProducts = Product::whereHas('categories', function ($query) use ($categoryIds) {
-            $query->whereIn('ec_product_categories.id', $categoryIds);
+            $query->whereIn('categories.id', $categoryIds);
         })
         ->where('id', '!=', $id)
         ->where('status', 'published')

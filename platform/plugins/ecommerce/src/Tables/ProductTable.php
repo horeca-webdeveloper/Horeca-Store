@@ -86,7 +86,7 @@ class ProductTable extends TableAbstract
                 ) . $productType;
             })
 
-            
+
             ->editColumn('price', function (Product $item) {
                 return $item->price_in_table;
             })
@@ -370,7 +370,7 @@ class ProductTable extends TableAbstract
                     break;
                 }
 
-                if (! BaseHelper::isJoined($query, 'ec_product_categories')) {
+                if (! BaseHelper::isJoined($query, 'categories')) {
                     $query = $query
                         ->join(
                             'ec_product_category_product',
@@ -379,10 +379,10 @@ class ProductTable extends TableAbstract
                             'ec_products.id'
                         )
                         ->join(
-                            'ec_product_categories',
+                            'categories',
                             'ec_product_category_product.category_id',
                             '=',
-                            'ec_product_categories.id'
+                            'categories.id'
                         )
                         ->select($query->getModel()->getTable() . '.*');
                 }

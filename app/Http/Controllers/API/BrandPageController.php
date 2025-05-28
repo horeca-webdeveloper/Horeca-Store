@@ -49,10 +49,10 @@ class BrandPageController extends Controller
         }
         $categoryIds = array_unique($categoryIds);
 
-        // Fetch category details from ec_product_categories table
+        // Fetch category details from categories table
         $categories = [];
         if (!empty($categoryIds)) {
-            $categories = \DB::table('ec_product_categories')
+            $categories = \DB::table('categories')
                 ->whereIn('id', $categoryIds)
                 ->get();
         }
@@ -69,12 +69,12 @@ class BrandPageController extends Controller
             foreach ($templateData->category_id as $categoryItem) {
                 $catId = $categoryItem['category_id'];
                 $newItem = $categoryItem; // Copy the original item
-                
+
                 if (isset($categoryData[$catId])) {
                     // Add category details to the copied item
                     $newItem['category_details'] = $categoryData[$catId];
                 }
-                
+
                 $enhancedCategoryData[] = $newItem;
             }
         }

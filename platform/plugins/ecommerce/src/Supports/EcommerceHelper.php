@@ -1092,7 +1092,7 @@ class EcommerceHelper
                     ->when(! empty($categoryIds), function (BaseQueryBuilder $query) use ($categoryIds): void {
                         $query
                             ->whereHas('categories', function (BaseQueryBuilder $query) use ($categoryIds): void {
-                                $query->whereIn('ec_product_categories.id', $categoryIds);
+                                $query->whereIn('categories.id', $categoryIds);
                             });
                     })
                     ->max('price');
@@ -1141,7 +1141,7 @@ class EcommerceHelper
                     $query
                         ->whereDoesntHave('categories')
                         ->orWhereHas('categories', function ($query) use ($categoryIds) {
-                            $query->whereIn('ec_product_categories.id', $categoryIds);
+                            $query->whereIn('categories.id', $categoryIds);
                         });
                 });
             })
@@ -1149,7 +1149,7 @@ class EcommerceHelper
                 'products' => function ($query) use ($categoryIds) {
                     if ($categoryIds) {
                         $query->whereHas('categories', function ($query) use ($categoryIds) {
-                            $query->whereIn('ec_product_categories.id', $categoryIds);
+                            $query->whereIn('categories.id', $categoryIds);
                         });
                     }
 
@@ -1175,7 +1175,7 @@ class EcommerceHelper
                 'products' => function ($query) use ($categoryIds) {
                     if ($categoryIds) {
                         $query->whereHas('categories', function ($query) use ($categoryIds) {
-                            $query->whereIn('ec_product_categories.id', $categoryIds);
+                            $query->whereIn('categories.id', $categoryIds);
                         });
                     }
 
@@ -1202,7 +1202,7 @@ class EcommerceHelper
                 'products' => function ($query) use ($categoryIds) {
                     if ($categoryIds) {
                         $query->whereHas('categories', function ($query) use ($categoryIds) {
-                            $query->whereIn('ec_product_categories.id', $categoryIds);
+                            $query->whereIn('categories.id', $categoryIds);
                         });
                     }
 

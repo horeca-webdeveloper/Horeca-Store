@@ -272,7 +272,7 @@ if (! function_exists('get_related_products')) {
             $params['condition'][] = ['ec_products.id', 'IN', $relatedIds];
         } else {
             $params['condition'][] = ['ec_products.id', '!=', $product->getKey()];
-            $filters = ['categories' => $product->categories()->pluck('ec_product_categories.id')->all()];
+            $filters = ['categories' => $product->categories()->pluck('categories.id')->all()];
         }
 
         return app(ProductInterface::class)->filterProducts($filters, $params);

@@ -7,14 +7,14 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-        Schema::table('ec_product_categories', function (Blueprint $table) {
+        Schema::table('categories', function (Blueprint $table) {
             $table->index(['parent_id', 'status']);
         });
     }
 
     public function down(): void
     {
-        Schema::table('ec_product_categories', function (Blueprint $table) {
+        Schema::table('categories', function (Blueprint $table) {
             $table->dropIndex(['parent_id', 'status']);
         });
     }

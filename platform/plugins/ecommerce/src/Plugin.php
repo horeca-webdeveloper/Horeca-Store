@@ -35,7 +35,7 @@ class Plugin extends PluginOperationAbstract
         Schema::dropIfExists('ec_products');
         Schema::dropIfExists('ec_currencies');
         Schema::dropIfExists('ec_product_collections');
-        Schema::dropIfExists('ec_product_categories');
+        Schema::dropIfExists('categories');
         Schema::dropIfExists('ec_product_tag_product');
         Schema::dropIfExists('ec_product_tags');
         Schema::dropIfExists('ec_brands');

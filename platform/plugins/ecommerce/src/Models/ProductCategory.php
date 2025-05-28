@@ -23,7 +23,7 @@ class ProductCategory extends BaseModel implements HasTreeCategoryContract
 {
 	use HasTreeCategory;
 
-	protected $table = 'ec_product_categories';
+	protected $table = 'categories';
 
 	protected $fillable = [
 		'name',
