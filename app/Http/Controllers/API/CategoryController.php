@@ -1355,14 +1355,20 @@ public function getSpecificationFilters(Request $request)
     ->where('status', 'published')
     ->selectRaw('MAX(COALESCE(NULLIF(sale_price, 0), price)) as max_price')
     ->value('max_price');
+    // Remove duplicate filter values
     foreach ($filters as &$filter) {
         if (isset($filter['filter_values']) && is_array($filter['filter_values'])) {
-            sort($filter['filter_values']); // Sort in ascending order
+            $filter['filter_values'] = array_values(array_unique($filter['filter_values']));
         }
     }
-    unset($filter); // Clean up reference
+    unset($filter);
 
-    // Return the combined response with debug info
+    // 🔽 Sort filters alphabetically by name
+    usort($filters, function ($a, $b) {
+        return strcmp($a['filter_name'], $b['filter_name']);
+    });
+
+// Return filters as JSON
     return response()->json([
         'success' => true,
         'filters' => $filters,
