@@ -1351,11 +1351,16 @@ public function getSpecificationFilters(Request $request)
     ->selectRaw('MIN(COALESCE(NULLIF(sale_price, 0), price)) as min_price')
     ->value('min_price');
 
-$maxPrice = Product::whereIn('id', $allCategoryProductIds)
+    $maxPrice = Product::whereIn('id', $allCategoryProductIds)
     ->where('status', 'published')
     ->selectRaw('MAX(COALESCE(NULLIF(sale_price, 0), price)) as max_price')
     ->value('max_price');
-
+    foreach ($filters as &$filter) {
+        if (isset($filter['filter_values']) && is_array($filter['filter_values'])) {
+            sort($filter['filter_values']); // Sort in ascending order
+        }
+    }
+    unset($filter); // Clean up reference
 
     // Return the combined response with debug info
     return response()->json([
