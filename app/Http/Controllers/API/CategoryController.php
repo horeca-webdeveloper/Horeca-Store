@@ -1038,12 +1038,15 @@ public function getSpecificationFilters(Request $request)
         }
     }
 
-        foreach ($groupedFilters as &$values) {
-            usort($values, function($a, $b) {
-                return extractNumber($a) <=> extractNumber($b);
-            });
+        foreach ($groupedFilters as &$filter) {
+            if (isset($filter['specification_value']) && is_array($filter['specification_value'])) {
+                usort($filter['specification_value'], function($a, $b) {
+                    return extractNumber($a) <=> extractNumber($b);
+                });
+            }
         }
-        unset($values);  // break the reference
+        unset($filter);
+        
     
 
     $debugInfo['grouped_filters'] = $groupedFilters;
@@ -1364,10 +1367,10 @@ public function getSpecificationFilters(Request $request)
     ->selectRaw('MAX(COALESCE(NULLIF(sale_price, 0), price)) as max_price')
     ->value('max_price');
     // Remove duplicate filter values
-    foreach ($filters as &$filter) {
-        if (isset($filter['filter_values']) && is_array($filter['filter_values'])) {
-            usort($filter['filter_values'], function ($a, $b) {
-                return strnatcmp($a['value'] ?? '', $b['value'] ?? '');
+    foreach ($groupedFilters as &$filter) {
+        if (isset($filter['specification_value']) && is_array($filter['specification_value'])) {
+            usort($filter['specification_value'], function($a, $b) {
+                return extractNumber($a) <=> extractNumber($b);
             });
         }
     }
@@ -1389,18 +1392,29 @@ public function getSpecificationFilters(Request $request)
 
 
 function extractNumber($str) {
-    // Extract numbers including fractions from the string, e.g. "12 3/4" => 12.75
-    if (preg_match('/(\d+)\s*(\d+\/\d+)?/', $str, $matches)) {
-        $whole = (int)$matches[1];
+    // Clean the string: remove units and extra spaces, normalize slashes
+    $str = strtolower($str);
+    $str = str_replace(['oz', 'ounces', 'inch', 'inches', '.', ' '], '', $str);
+    $str = str_replace('\\/', '/', $str); // Fix escaped slashes
+    
+    // Now $str could be like: "9 1/2", "12 3/4", "9.5", "30"
+    
+    // Check for fraction with optional whole number
+    if (preg_match('/^(\d+)?(?:\s*(\d+)\/(\d+))?$/', $str, $matches)) {
+        $whole = isset($matches[1]) && $matches[1] !== '' ? (int)$matches[1] : 0;
         $fraction = 0;
-        if (isset($matches[2]) && !empty($matches[2])) {
-            list($num, $den) = explode('/', $matches[2]);
-            if ($den != 0) {
-                $fraction = $num / $den;
-            }
+        if (isset($matches[2], $matches[3]) && $matches[2] !== '' && $matches[3] !== '') {
+            $fraction = $matches[2] / $matches[3];
         }
         return $whole + $fraction;
     }
+    
+    // Fallback: try float conversion directly
+    if (is_numeric($str)) {
+        return (float)$str;
+    }
+    
+    // Could not extract a number
     return 0;
 }
 
