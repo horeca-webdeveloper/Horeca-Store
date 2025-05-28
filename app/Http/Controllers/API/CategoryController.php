@@ -1359,11 +1359,12 @@ public function getSpecificationFilters(Request $request)
     foreach ($filters as &$filter) {
         if (isset($filter['filter_values']) && is_array($filter['filter_values'])) {
             usort($filter['filter_values'], function ($a, $b) {
-                return strcmp($a['value'] ?? '', $b['value'] ?? '');
+                return strnatcmp($a['value'] ?? '', $b['value'] ?? '');
             });
         }
     }
-    unset($filter); // avoid reference issues
+    unset($filter);
+    
     
 // Return filters as JSON
     return response()->json([
