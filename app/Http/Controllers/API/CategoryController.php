@@ -1255,6 +1255,7 @@ public function getSpecificationFilters(Request $request)
                     ->join('attributes as at', 'at.id', '=', 'pa.attribute_id')
                     ->whereIn('pa.product_id', $allCategoryProductIds)
                     ->whereIn('pa.attribute_id', $attributeIds)
+                    ->orderBy('pa.attribute_value', 'asc')  // <- sort ascending
                     ->select('at.name as attribute_name', 'pa.attribute_value', 'at.id as attribute_id')
                     ->get();
 
@@ -1358,21 +1359,7 @@ public function getSpecificationFilters(Request $request)
     // Remove duplicate filter values
 
     
-        // Sort the specification values ascending for each specification name
-        foreach ($groupedFilters as $specName => &$values) {
-            // Remove duplicates to avoid sorting duplicates
-            $values = array_unique($values);
-
-            // Sort numeric values and string values properly
-            // If values are numeric, sort numerically
-            if (count($values) > 0 && is_numeric(reset($values))) {
-                sort($values, SORT_NUMERIC);
-            } else {
-                sort($values, SORT_STRING);
-            }
-        }
-        unset($values); // break the reference
-
+       
     return response()->json([
         'success' => true,
         'filters' => $filters,
