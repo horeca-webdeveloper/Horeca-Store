@@ -1038,17 +1038,6 @@ public function getSpecificationFilters(Request $request)
         }
     }
 
-        foreach ($groupedFilters as &$filter) {
-            if (isset($filter['specification_value']) && is_array($filter['specification_value'])) {
-                usort($filter['specification_value'], function($a, $b) {
-                    return extractNumber($a) <=> extractNumber($b);
-                });
-            }
-        }
-        unset($filter);
-        
-    
-
     $debugInfo['grouped_filters'] = $groupedFilters;
     $debugInfo['range_filters_by_attribute'] = $rangeFiltersByAttribute; // Changed: Updated debug info
 
@@ -1367,17 +1356,23 @@ public function getSpecificationFilters(Request $request)
     ->selectRaw('MAX(COALESCE(NULLIF(sale_price, 0), price)) as max_price')
     ->value('max_price');
     // Remove duplicate filter values
-    foreach ($groupedFilters as &$filter) {
-        if (isset($filter['specification_value']) && is_array($filter['specification_value'])) {
-            usort($filter['specification_value'], function($a, $b) {
-                return extractNumber($a) <=> extractNumber($b);
-            });
+
+    
+        // Sort the specification values ascending for each specification name
+        foreach ($groupedFilters as $specName => &$values) {
+            // Remove duplicates to avoid sorting duplicates
+            $values = array_unique($values);
+
+            // Sort numeric values and string values properly
+            // If values are numeric, sort numerically
+            if (count($values) > 0 && is_numeric(reset($values))) {
+                sort($values, SORT_NUMERIC);
+            } else {
+                sort($values, SORT_STRING);
+            }
         }
-    }
-    unset($filter);
-    
-    
-    // Return filters as JSON
+        unset($values); // break the reference
+
     return response()->json([
         'success' => true,
         'filters' => $filters,
@@ -1389,34 +1384,5 @@ public function getSpecificationFilters(Request $request)
         'debug_info' => $debugInfo
     ]);
 }
-
-
-function extractNumber($str) {
-    // Clean the string: remove units and extra spaces, normalize slashes
-    $str = strtolower($str);
-    $str = str_replace(['oz', 'ounces', 'inch', 'inches', '.', ' '], '', $str);
-    $str = str_replace('\\/', '/', $str); // Fix escaped slashes
-    
-    // Now $str could be like: "9 1/2", "12 3/4", "9.5", "30"
-    
-    // Check for fraction with optional whole number
-    if (preg_match('/^(\d+)?(?:\s*(\d+)\/(\d+))?$/', $str, $matches)) {
-        $whole = isset($matches[1]) && $matches[1] !== '' ? (int)$matches[1] : 0;
-        $fraction = 0;
-        if (isset($matches[2], $matches[3]) && $matches[2] !== '' && $matches[3] !== '') {
-            $fraction = $matches[2] / $matches[3];
-        }
-        return $whole + $fraction;
-    }
-    
-    // Fallback: try float conversion directly
-    if (is_numeric($str)) {
-        return (float)$str;
-    }
-    
-    // Could not extract a number
-    return 0;
-}
-
 
 }
