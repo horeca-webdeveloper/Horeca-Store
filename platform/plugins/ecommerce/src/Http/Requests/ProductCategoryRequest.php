@@ -17,7 +17,7 @@ class ProductCategoryRequest extends Request
             'parent_id' => [
                 'nullable',
                 Rule::when($this->input('parent_id'), function () {
-                    return Rule::exists('ec_product_categories', 'id');
+                    return Rule::exists('categories', 'id');
                 }),
             ],
             'order' => ['nullable', 'integer', 'min:0', 'max:127'],

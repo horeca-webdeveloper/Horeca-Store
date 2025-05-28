@@ -150,8 +150,8 @@ class ProductCategoryHelper
                 ->toBase()
                 ->where('status', BaseStatusEnum::PUBLISHED)
                 ->select([
-                    'ec_product_categories.id',
-                    'ec_product_categories.name',
+                    'categories.id',
+                    'categories.name',
                     'parent_id',
                 ])
                 ->orderBy('order')
@@ -183,9 +183,9 @@ class ProductCategoryHelper
             ->toBase()
             ->where('status', BaseStatusEnum::PUBLISHED)
             ->select([
-                'ec_product_categories.id',
-                'ec_product_categories.name',
-                'ec_product_categories.order',
+                'categories.id',
+                'categories.name',
+                'categories.order',
                 'parent_id',
                 DB::raw("CONCAT(slugs.prefix, '/', slugs.key) as url"),
                 'icon',
@@ -194,7 +194,7 @@ class ProductCategoryHelper
             ])
             ->leftJoin('slugs', function (JoinClause $join) {
                 $join
-                    ->on('slugs.reference_id', 'ec_product_categories.id')
+                    ->on('slugs.reference_id', 'categories.id')
                     ->where('slugs.reference_type', ProductCategory::class);
             })
             ->when($this->isEnabledMultiLanguages(), function (Builder $query) {
@@ -210,10 +210,10 @@ class ProductCategoryHelper
                         )
                     );
             })
-            ->orderBy('ec_product_categories.order')
+            ->orderBy('categories.order')
             ->when(
                 ! empty($categoryIds),
-                fn (Builder $query) => $query->whereIn('ec_product_categories.id', $categoryIds)
+                fn (Builder $query) => $query->whereIn('categories.id', $categoryIds)
             )
             ->when($limit > 0, fn ($query) => $query->limit($limit))
             ->when($condition, fn ($query) => $query->where($condition));
@@ -233,10 +233,10 @@ class ProductCategoryHelper
             return $query
                 ->leftJoin('ec_product_categories_translations as ct', function (JoinClause $join) {
                     $join
-                        ->on('ec_product_categories_id', 'ec_product_categories.id')
+                        ->on('ec_product_categories_id', 'categories.id')
                         ->where('ct.lang_code', Language::getCurrentLocaleCode());
                 })
-                ->addSelect(DB::raw('IF(ct.name IS NOT NULL, ct.name, ec_product_categories.name) as name'));
+                ->addSelect(DB::raw('IF(ct.name IS NOT NULL, ct.name, categories.name) as name'));
         }
 
         return $query;

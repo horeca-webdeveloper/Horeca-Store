@@ -154,7 +154,7 @@ class CategoryController extends Controller
 	{
 		$validated = $request->validate([
 			'name' => 'required|string|max:255',
-			'parent_id' => 'nullable|exists:ec_product_categories,id',
+			'parent_id' => 'nullable|exists:categories,id',
 			'description' => 'nullable|string',
 			'status' => 'required|boolean',
 			'image' => 'nullable|string',
@@ -172,7 +172,7 @@ class CategoryController extends Controller
 	{
 		$validated = $request->validate([
 			'name' => 'required|string|max:255',
-			'parent_id' => 'nullable|exists:ec_product_categories,id',
+			'parent_id' => 'nullable|exists:categories,id',
 			'description' => 'nullable|string',
 			'status' => 'required|boolean',
 			'image' => 'nullable|string',
@@ -311,7 +311,7 @@ class CategoryController extends Controller
 //     // Get all child categories based on parent_id
 //     $childCategories = ProductCategory::where('parent_id', $category->id)->get();
 //     $childCategoryIds = $childCategories->pluck('id')->toArray();
-    
+
 //     // Get all products from child categories
 //     $childProductIds = [];
 //     if (!empty($childCategoryIds)) {
@@ -321,10 +321,10 @@ class CategoryController extends Controller
 // 			// $childProductIds = array_merge($childProductIds, $childCategory->products()->where('status', 'published')->pluck('id')->all());
 //         }
 //     }
-    
+
 //     // Combine products from current category and all child categories
 //     $allCategoryProductIds = array_unique(array_merge($currentCategoryProducts, $childProductIds));
-    
+
 //     // Debug info for verification
 //     $debugInfo = [
 //         'category_id' => $request->category_id,
@@ -334,7 +334,7 @@ class CategoryController extends Controller
 //         'child_products_count' => count($childProductIds),
 //         'total_products' => count($allCategoryProductIds)
 //     ];
-    
+
 //     if (empty($allCategoryProductIds)) {
 //         return response()->json([
 //             'success' => true,
@@ -465,37 +465,37 @@ class CategoryController extends Controller
 
 //     // Initialize filters array - will remain empty if subcategory doesn't exist
 //     $filters = [];
-    
+
 //     // Get subcategory for this category
 //     $subCategory = DB::table('sub_categories')
 //         ->where('category_id', $request->category_id)
 //         ->first();
-    
+
 //     $debugInfo['has_subcategory'] = $subCategory ? true : false;
-    
+
 //     // Only process attribute filters if the subcategory exists
 //     if ($subCategory) {
 //         $attributeIdsField = null;
 //         $attributeIds = [];
-        
+
 //         // Check which attribute ID field exists
 //         if (property_exists($subCategory, 'attributes_ids') || isset($subCategory->attributes_ids)) {
 //             $attributeIdsField = 'attributes_ids';
 //         } else if (property_exists($subCategory, 'attributes_jd') || isset($subCategory->attributes_jd)) {
 //             $attributeIdsField = 'attributes_jd';
 //         }
-        
+
 //         $debugInfo['attribute_ids_field'] = $attributeIdsField;
-        
+
 //         // Process attribute IDs if the field exists and has value
 //         if ($attributeIdsField && !empty($subCategory->$attributeIdsField)) {
 //             $attributeIdsValue = $subCategory->$attributeIdsField;
-            
+
 //             // Parse attribute IDs based on data type
 //             if (is_string($attributeIdsValue)) {
 //                 $attributeIds = json_decode($attributeIdsValue, true);
 //                 $debugInfo['json_decode_error'] = json_last_error_msg();
-                
+
 //                 // If it's not valid JSON, try comma-separated format
 //                 if (json_last_error() !== JSON_ERROR_NONE) {
 //                     $attributeIds = explode(',', $attributeIdsValue);
@@ -509,11 +509,11 @@ class CategoryController extends Controller
 //             } else {
 //                 $attributeIds = $attributeIdsValue;
 //             }
-            
+
 //             // Ensure we have an array of integers
 //             $attributeIds = array_map('intval', (array)$attributeIds);
 //             $debugInfo['attribute_ids_parsed'] = $attributeIds;
-            
+
 //             // Only proceed if we have valid attribute IDs
 //             if (!empty($attributeIds)) {
 //                 // Get attribute filters for both parent and child category products
@@ -524,13 +524,13 @@ class CategoryController extends Controller
 //                     ->whereIn('pa.attribute_id', $attributeIds)
 //                     ->select('at.name as attribute_name', 'pa.attribute_value', 'at.id as attribute_id')
 //                     ->get();
-                    
+
 //                 $debugInfo['attribute_values_count'] = $attributeValues->count();
-                
+
 //                 // If we have any attribute values
 //                 if ($attributeValues->count() > 0) {
 //                     $attributeValues = $attributeValues->groupBy('attribute_name');
-                    
+
 //                     // Process attribute filters
 //                     foreach ($attributeValues as $attributeName => $values) {
 //                         $uniqueValues = $values->pluck('attribute_value')->unique()->filter()->values();
@@ -573,7 +573,7 @@ class CategoryController extends Controller
 
 //     $ratingFilter = [
 //         'filter_name' => 'Rating',
-//         'filter_type' => 'rating',  
+//         'filter_type' => 'rating',
 //         'filter_values' => [5, 4, 3, 2, 1],
 //     ];
 
@@ -616,7 +616,7 @@ class CategoryController extends Controller
 //     // Get all child categories based on parent_id
 //     $childCategories = ProductCategory::where('parent_id', $category->id)->get();
 //     $childCategoryIds = $childCategories->pluck('id')->toArray();
-    
+
 //     // Get all products from child categories
 //     $childProductIds = [];
 //     if (!empty($childCategoryIds)) {
@@ -625,10 +625,10 @@ class CategoryController extends Controller
 //             $childProductIds = array_merge($childProductIds, $childCategory->products()->where('status', 'published')->pluck('id')->all());
 //         }
 //     }
-    
+
 //     // Combine products from current category and all child categories
 //     $allCategoryProductIds = array_unique(array_merge($currentCategoryProducts, $childProductIds));
-    
+
 //     // Debug info for verification
 //     $debugInfo = [
 //         'category_id' => $request->category_id,
@@ -638,7 +638,7 @@ class CategoryController extends Controller
 //         'child_products_count' => count($childProductIds),
 //         'total_products' => count($allCategoryProductIds)
 //     ];
-    
+
 //     if (empty($allCategoryProductIds)) {
 //         return response()->json([
 //             'success' => true,
@@ -664,10 +664,10 @@ class CategoryController extends Controller
 //             if (!isset($filter['specification_name']) || !isset($filter['specification_value']) || empty($filter['specification_value'])) {
 //                 continue;
 //             }
-            
+
 //             $specName = $filter['specification_name'];
 //             $specValues = is_array($filter['specification_value']) ? $filter['specification_value'] : [$filter['specification_value']];
-            
+
 //             if (!isset($groupedFilters[$specName])) {
 //                 $groupedFilters[$specName] = [];
 //             }
@@ -778,37 +778,37 @@ class CategoryController extends Controller
 
 //     // Initialize filters array - will remain empty if subcategory doesn't exist
 //     $filters = [];
-    
+
 //     // Get subcategory for this category
 //     $subCategory = DB::table('sub_categories')
 //         ->where('category_id', $request->category_id)
 //         ->first();
-    
+
 //     $debugInfo['has_subcategory'] = $subCategory ? true : false;
-    
+
 //     // Only process attribute filters if the subcategory exists
 //     if ($subCategory) {
 //         $attributeIdsField = null;
 //         $attributeIds = [];
-        
+
 //         // Check which attribute ID field exists
 //         if (property_exists($subCategory, 'attributes_ids') || isset($subCategory->attributes_ids)) {
 //             $attributeIdsField = 'attributes_ids';
 //         } else if (property_exists($subCategory, 'attributes_jd') || isset($subCategory->attributes_jd)) {
 //             $attributeIdsField = 'attributes_jd';
 //         }
-        
+
 //         $debugInfo['attribute_ids_field'] = $attributeIdsField;
-        
+
 //         // Process attribute IDs if the field exists and has value
 //         if ($attributeIdsField && !empty($subCategory->$attributeIdsField)) {
 //             $attributeIdsValue = $subCategory->$attributeIdsField;
-            
+
 //             // Parse attribute IDs based on data type
 //             if (is_string($attributeIdsValue)) {
 //                 $attributeIds = json_decode($attributeIdsValue, true);
 //                 $debugInfo['json_decode_error'] = json_last_error_msg();
-                
+
 //                 // If it's not valid JSON, try comma-separated format
 //                 if (json_last_error() !== JSON_ERROR_NONE) {
 //                     $attributeIds = explode(',', $attributeIdsValue);
@@ -822,11 +822,11 @@ class CategoryController extends Controller
 //             } else {
 //                 $attributeIds = $attributeIdsValue;
 //             }
-            
+
 //             // Ensure we have an array of integers
 //             $attributeIds = array_map('intval', (array)$attributeIds);
 //             $debugInfo['attribute_ids_parsed'] = $attributeIds;
-            
+
 //             // Only proceed if we have valid attribute IDs
 //             if (!empty($attributeIds)) {
 //                 // Get attribute filters for both parent and child category products
@@ -836,17 +836,17 @@ class CategoryController extends Controller
 //                     ->whereIn('pa.attribute_id', $attributeIds)
 //                     ->select('at.name as attribute_name', 'pa.attribute_value', 'at.id as attribute_id')
 //                     ->get();
-                    
+
 //                 $debugInfo['attribute_values_count'] = $attributeValues->count();
-                
+
 //                 // If we have any attribute values
 //                 if ($attributeValues->count() > 0) {
 //                     $attributeValues = $attributeValues->groupBy('attribute_name');
-                    
+
 //                     // Process attribute filters
 //                     foreach ($attributeValues as $attributeName => $values) {
 //                         $uniqueValues = $values->pluck('attribute_value')->unique()->filter()->values();
-                        
+
 //                         // Helper function to extract clean integer from various formats
 //                         $extractIntegerValue = function($value) {
 //                             // Handle fractions like "13 4/5"
@@ -873,14 +873,14 @@ class CategoryController extends Controller
 //                             }
 //                             return $cleanedVal;
 //                         });
-                        
+
 //                         if ($numericValues && $cleanedValues->count() > 2) {
 //                             $sorted = $cleanedValues->filter(function($value) {
 //                                 return is_numeric($value);
 //                             })->map(function($val) {
 //                                 return (int)$val;
 //                             })->unique()->sort()->values();
-                            
+
 //                             $chunkCount = min(5, ceil($sorted->count() / 2));
 //                             $chunkSize = ceil($sorted->count() / $chunkCount);
 
@@ -917,7 +917,7 @@ class CategoryController extends Controller
 
 //     $ratingFilter = [
 //         'filter_name' => 'Rating',
-//         'filter_type' => 'rating',  
+//         'filter_type' => 'rating',
 //         'filter_values' => [5, 4, 3, 2, 1],
 //     ];
 
@@ -960,7 +960,7 @@ public function getSpecificationFilters(Request $request)
     // Get all child categories based on parent_id
     $childCategories = ProductCategory::where('parent_id', $category->id)->get();
     $childCategoryIds = $childCategories->pluck('id')->toArray();
-    
+
     // Get all products from child categories
     $childProductIds = [];
     if (!empty($childCategoryIds)) {
@@ -969,10 +969,10 @@ public function getSpecificationFilters(Request $request)
             $childProductIds = array_merge($childProductIds, $childCategory->products()->where('status', 'published')->pluck('id')->all());
         }
     }
-    
+
     // Combine products from current category and all child categories
     $allCategoryProductIds = array_unique(array_merge($currentCategoryProducts, $childProductIds));
-    
+
     // Debug info for verification
     $debugInfo = [
         'category_id' => $request->category_id,
@@ -982,7 +982,7 @@ public function getSpecificationFilters(Request $request)
         'child_products_count' => count($childProductIds),
         'total_products' => count($allCategoryProductIds)
     ];
-    
+
     if (empty($allCategoryProductIds)) {
         return response()->json([
             'success' => true,
@@ -1004,22 +1004,22 @@ public function getSpecificationFilters(Request $request)
     // Group filters by specification name for proper application
     $groupedFilters = [];
     $rangeFiltersByAttribute = []; // Changed: Store range filters by attribute name
-    
+
     if ($request->has('filters') && is_array($request->filters)) {
         foreach ($request->filters as $filter) {
             if (!isset($filter['specification_name']) || !isset($filter['specification_value']) || empty($filter['specification_value'])) {
                 continue;
             }
-            
+
             $specName = $filter['specification_name'];
             $specValues = is_array($filter['specification_value']) ? $filter['specification_value'] : [$filter['specification_value']];
-            
+
             // Check if this is a range filter
             $isRangeFilter = false;
             foreach ($specValues as $value) {
                 if (is_array($value) && isset($value['min']) && isset($value['max'])) {
                     $isRangeFilter = true;
-                    
+
                     // Changed: Store range filters by attribute name
                     if (!isset($rangeFiltersByAttribute[$specName])) {
                         $rangeFiltersByAttribute[$specName] = [];
@@ -1027,7 +1027,7 @@ public function getSpecificationFilters(Request $request)
                     $rangeFiltersByAttribute[$specName][] = $value;
                 }
             }
-            
+
             // If not a range filter, add to regular grouped filters
             if (!$isRangeFilter) {
                 if (!isset($groupedFilters[$specName])) {
@@ -1037,7 +1037,7 @@ public function getSpecificationFilters(Request $request)
             }
         }
     }
-    
+
     $debugInfo['grouped_filters'] = $groupedFilters;
     $debugInfo['range_filters_by_attribute'] = $rangeFiltersByAttribute; // Changed: Updated debug info
 
@@ -1076,7 +1076,7 @@ public function getSpecificationFilters(Request $request)
             ]);
         }
     }
-    
+
     // Changed: Apply range filters by attribute
     foreach ($rangeFiltersByAttribute as $specName => $ranges) {
         // Find attribute ID based on name
@@ -1084,35 +1084,35 @@ public function getSpecificationFilters(Request $request)
         if (!$attribute) {
             continue;
         }
-        
+
         // Start with the base query
         $query = DB::table('product_attributes as pa')
             ->where('pa.attribute_id', $attribute->id)
             ->whereIn('pa.product_id', $filteredProductIds);
-        
+
         // Build range conditions for this attribute - using OR between ranges of the same attribute
         $rangeConditions = [];
         foreach ($ranges as $range) {
             $min = $range['min'];
             $max = $range['max'];
-            
+
             // For numeric attribute values, handle different formats
-            $rangeConditions[] = "(CAST(pa.attribute_value AS DECIMAL(10,2)) BETWEEN $min AND $max OR 
+            $rangeConditions[] = "(CAST(pa.attribute_value AS DECIMAL(10,2)) BETWEEN $min AND $max OR
                                CAST(REGEXP_REPLACE(pa.attribute_value, '[^0-9].*', '') AS DECIMAL(10,2)) BETWEEN $min AND $max)";
         }
-        
+
         // Only add WHERE condition if we have range conditions
         if (count($rangeConditions) > 0) {
             // Use OR between ranges of the same attribute
             $query->whereRaw('(' . implode(' OR ', $rangeConditions) . ')');
         }
-        
+
         // Get products that match ANY of the ranges for this attribute
         $matchingProductIds = $query->pluck('pa.product_id')->unique();
-        
+
         // Intersect with our running list of product IDs
         $filteredProductIds = $filteredProductIds->intersect($matchingProductIds);
-        
+
         // If no products match these filters, return empty results early
         if ($filteredProductIds->isEmpty()) {
             return response()->json([
@@ -1199,37 +1199,37 @@ public function getSpecificationFilters(Request $request)
 
     // Initialize filters array - will remain empty if subcategory doesn't exist
     $filters = [];
-    
+
     // Get subcategory for this category
     $subCategory = DB::table('sub_categories')
         ->where('category_id', $request->category_id)
         ->first();
-    
+
     $debugInfo['has_subcategory'] = $subCategory ? true : false;
-    
+
     // Only process attribute filters if the subcategory exists
     if ($subCategory) {
         $attributeIdsField = null;
         $attributeIds = [];
-        
+
         // Check which attribute ID field exists
         if (property_exists($subCategory, 'attributes_ids') || isset($subCategory->attributes_ids)) {
             $attributeIdsField = 'attributes_ids';
         } else if (property_exists($subCategory, 'attributes_jd') || isset($subCategory->attributes_jd)) {
             $attributeIdsField = 'attributes_jd';
         }
-        
+
         $debugInfo['attribute_ids_field'] = $attributeIdsField;
-        
+
         // Process attribute IDs if the field exists and has value
         if ($attributeIdsField && !empty($subCategory->$attributeIdsField)) {
             $attributeIdsValue = $subCategory->$attributeIdsField;
-            
+
             // Parse attribute IDs based on data type
             if (is_string($attributeIdsValue)) {
                 $attributeIds = json_decode($attributeIdsValue, true);
                 $debugInfo['json_decode_error'] = json_last_error_msg();
-                
+
                 // If it's not valid JSON, try comma-separated format
                 if (json_last_error() !== JSON_ERROR_NONE) {
                     $attributeIds = explode(',', $attributeIdsValue);
@@ -1243,11 +1243,11 @@ public function getSpecificationFilters(Request $request)
             } else {
                 $attributeIds = $attributeIdsValue;
             }
-            
+
             // Ensure we have an array of integers
             $attributeIds = array_map('intval', (array)$attributeIds);
             $debugInfo['attribute_ids_parsed'] = $attributeIds;
-            
+
             // Only proceed if we have valid attribute IDs
             if (!empty($attributeIds)) {
                 // Get attribute filters for both parent and child category products
@@ -1257,17 +1257,17 @@ public function getSpecificationFilters(Request $request)
                     ->whereIn('pa.attribute_id', $attributeIds)
                     ->select('at.name as attribute_name', 'pa.attribute_value', 'at.id as attribute_id')
                     ->get();
-                    
+
                 $debugInfo['attribute_values_count'] = $attributeValues->count();
-                
+
                 // If we have any attribute values
                 if ($attributeValues->count() > 0) {
                     $attributeValues = $attributeValues->groupBy('attribute_name');
-                    
+
                     // Process attribute filters
                     foreach ($attributeValues as $attributeName => $values) {
                         $uniqueValues = $values->pluck('attribute_value')->unique()->filter()->values();
-                        
+
                         // Helper function to extract clean integer from various formats
                         $extractIntegerValue = function($value) {
                             // Handle fractions like "13 4/5"
@@ -1294,21 +1294,21 @@ public function getSpecificationFilters(Request $request)
                             }
                             return $cleanedVal;
                         });
-                        
+
                         if ($numericValues && $cleanedValues->count() > 2) {
                             $sorted = $cleanedValues->filter(function($value) {
                                 return is_numeric($value);
                             })->map(function($val) {
                                 return (int)$val;
                             })->unique()->sort()->values();
-                            
+
                             // Store original mapping for debugging
                             $debugInfo['numeric_values_' . $attributeName] = $sorted->toArray();
-                            
+
                             // Calculate ranges based on actual data
                             $chunkCount = min(5, ceil($sorted->count() / 2));
                             $chunkSize = ceil($sorted->count() / $chunkCount);
-                            
+
                             $ranges = $sorted->chunk($chunkSize)->map(function ($chunk) {
                                 return [
                                     'min' => $chunk->first(),
@@ -1342,7 +1342,7 @@ public function getSpecificationFilters(Request $request)
 
     $ratingFilter = [
         'filter_name' => 'Rating',
-        'filter_type' => 'rating',  
+        'filter_type' => 'rating',
         'filter_values' => [5, 4, 3, 2, 1],
     ];
 
@@ -1374,5 +1374,5 @@ public function getSpecificationFilters(Request $request)
         'debug_info' => $debugInfo
     ]);
 }
-	
+
 }

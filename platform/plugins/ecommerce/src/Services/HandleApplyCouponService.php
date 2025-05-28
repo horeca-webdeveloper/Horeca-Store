@@ -388,7 +388,7 @@ class HandleApplyCouponService
 
                         $discountProductCategories = $discount
                             ->productCategories()
-                            ->pluck('ec_product_categories.id')
+                            ->pluck('categories.id')
                             ->all();
 
                         $validCartItems = $cartItems->filter(function ($cartItem) use ($products, $discountProductCategories) {
@@ -523,7 +523,7 @@ class HandleApplyCouponService
 
                         $discountProductCategories = $discount
                             ->productCategories()
-                            ->pluck('ec_product_categories.id')
+                            ->pluck('categories.id')
                             ->all();
 
                         $validCartItems = $cartItems->filter(function ($cartItem) use ($products, $discountProductCategories) {
@@ -612,7 +612,7 @@ class HandleApplyCouponService
 
                     $discountProductCategories = $discount
                         ->productCategories()
-                        ->pluck('ec_product_categories.id')
+                        ->pluck('categories.id')
                         ->all();
 
                     $validCartItems = $cartItems->filter(function ($cartItem) use ($products, $discountProductCategories) {

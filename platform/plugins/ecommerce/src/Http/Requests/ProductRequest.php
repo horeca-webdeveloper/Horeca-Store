@@ -38,7 +38,7 @@ class ProductRequest extends Request
         $this->merge(['options' => $options]);
     }
 
-   
+
 public function rules(): array
 {
     $isAdmin = Auth::guard('web')->check(); // Check if the user is an admin
@@ -93,7 +93,7 @@ public function rules(): array
         'cost_per_item' => ['nullable', 'numeric', 'min:0'],
         'general_license_code' => ['nullable', 'in:0,1'],
         'categories' => ['nullable', 'array'],
-        'categories.*' => ['nullable', 'exists:ec_product_categories,id'],
+        'categories.*' => ['nullable', 'exists:categories,id'],
         'product_collections' => ['nullable', 'array'],
         'product_collections.*' => ['nullable', 'exists:ec_product_collections,id'],
         'cross_sale_products' => ['nullable', 'array'],

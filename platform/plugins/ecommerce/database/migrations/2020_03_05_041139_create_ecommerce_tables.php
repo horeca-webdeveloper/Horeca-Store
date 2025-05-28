@@ -21,7 +21,7 @@ return new class () extends Migration {
             $table->timestamps();
         });
 
-        Schema::create('ec_product_categories', function (Blueprint $table) {
+        Schema::create('categories', function (Blueprint $table) {
             $table->id();
             $table->string('name');
             $table->foreignId('parent_id')->default(0);
@@ -428,7 +428,7 @@ return new class () extends Migration {
         Schema::dropIfExists('ec_products');
         Schema::dropIfExists('ec_currencies');
         Schema::dropIfExists('ec_product_collections');
-        Schema::dropIfExists('ec_product_categories');
+        Schema::dropIfExists('categories');
         Schema::dropIfExists('ec_product_tag_product');
         Schema::dropIfExists('ec_product_tags');
         Schema::dropIfExists('ec_brands');

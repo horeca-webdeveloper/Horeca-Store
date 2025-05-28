@@ -10,9 +10,9 @@ return new class () extends Migration {
     public function up(): void
     {
         try {
-            $categoryIds = DB::table('ec_product_categories')->pluck('id')->all();
+            $categoryIds = DB::table('categories')->pluck('id')->all();
 
-            DB::table('ec_product_categories')
+            DB::table('categories')
                 ->whereColumn('id', 'parent_id')
                 ->orWhere(function (Builder $query) use ($categoryIds) {
                     $query

@@ -15,7 +15,7 @@ return new class () extends Migration {
             $table->index(['product_id', 'customer_id', 'status', 'created_at']);
         });
 
-        Schema::table('ec_product_categories', function (Blueprint $table) {
+        Schema::table('categories', function (Blueprint $table) {
             $table->index(['parent_id', 'status', 'created_at']);
         });
 
@@ -34,7 +34,7 @@ return new class () extends Migration {
             $table->dropIndex(['product_id', 'customer_id', 'status', 'created_at']);
         });
 
-        Schema::table('ec_product_categories', function (Blueprint $table) {
+        Schema::table('categories', function (Blueprint $table) {
             $table->dropIndex(['parent_id', 'status', 'created_at']);
         });
 
