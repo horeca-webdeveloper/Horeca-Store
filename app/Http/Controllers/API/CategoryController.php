@@ -1259,6 +1259,47 @@ public function getSpecificationFilters(Request $request)
                     ->select('at.name as attribute_name', 'pa.attribute_value', 'at.id as attribute_id')
                     ->get();
 
+                    // Custom sorting function to convert strings like "12 3/4 Inches" to decimal number
+            usort($filterValues, function($a, $b) {
+                // Helper function to convert string fraction to float
+                $convert = function($str) {
+                    // Extract the numeric part (e.g., "12 3/4" or "4 3/4" or "4")
+                    preg_match('/([\d\s\/\.]+)/', $str, $matches);
+                    $numStr = $matches[1] ?? '0';
+
+                    // Convert fraction to float
+                    // Example: "12 3/4" => 12.75
+                    // Split by space (e.g., "12 3/4" => ["12", "3/4"])
+                    $parts = explode(' ', trim($numStr));
+                    $whole = 0;
+                    $fraction = 0;
+
+                    if (count($parts) === 2) {
+                        $whole = floatval($parts[0]);
+                        $fractionParts = explode('/', $parts[1]);
+                        if (count($fractionParts) === 2 && $fractionParts[1] != 0) {
+                            $fraction = floatval($fractionParts[0]) / floatval($fractionParts[1]);
+                        }
+                    } elseif (count($parts) === 1) {
+                        if (strpos($parts[0], '/') !== false) {
+                            // Just a fraction, e.g., "3/4"
+                            $fractionParts = explode('/', $parts[0]);
+                            if (count($fractionParts) === 2 && $fractionParts[1] != 0) {
+                                $fraction = floatval($fractionParts[0]) / floatval($fractionParts[1]);
+                            }
+                        } else {
+                            $whole = floatval($parts[0]);
+                        }
+                    }
+
+                    return $whole + $fraction;
+                };
+
+                $valA = $convert($a);
+                $valB = $convert($b);
+
+                return $valA <=> $valB;
+            });
                 $debugInfo['attribute_values_count'] = $attributeValues->count();
 
                 // If we have any attribute values
