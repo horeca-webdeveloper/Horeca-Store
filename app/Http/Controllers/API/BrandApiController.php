@@ -382,87 +382,174 @@ public function getAllHomeBrandProducts(Request $request)
     //     ]);
     //}
 
+    // public function getAllBrandGuestProducts(Request $request)
+    // {
+    //     // Fetch only the latest 5 brands with at least 10 products
+    //     $brands = Brand::with(['products'])
+    //         ->whereHas('products', function ($query) {
+    //             $query->select('brand_id') // Select only the column needed for grouping
+    //                 ->groupBy('brand_id') // Group by the brand_id
+    //                 ->havingRaw('COUNT(*) >= 10'); // Ensure the brand has at least 10 products
+    //         })
+    //         ->orderBy('created_at', 'desc') // Order by latest brands
+    //         ->take(5) // Limit to 5 brands
+    //         ->get();
+    
+    //     return response()->json([
+    //         'success' => true,
+    //         'data' => $brands->map(function ($brand) use ($request) {
+    //             // Filter and limit products to 10 for each brand
+    //             $products = $brand->products()
+    //                 ->when($request->has('search'), function ($query) use ($request) {
+    //                     $query->where('name', 'like', '%' . $request->input('search') . '%');
+    //                 })
+    //                 ->when($request->has('price_min'), function ($query) use ($request) {
+    //                     $query->where('price', '>=', $request->input('price_min'));
+    //                 })
+    //                 ->when($request->has('price_max'), function ($query) use ($request) {
+    //                     $query->where('price', '<=', $request->input('price_max'));
+    //                 })
+    //                 ->when($request->has('rating'), function ($query) use ($request) {
+    //                     $query->whereHas('reviews', function ($q) use ($request) {
+    //                         $q->selectRaw('AVG(star) as avg_rating')
+    //                             ->groupBy('product_id')
+    //                             ->havingRaw('AVG(star) >= ?', [$request->input('rating')]);
+    //                     });
+    //                 })
+    //                 ->orderBy('created_at', 'desc') // Order products by latest
+    //                 ->take(10) // Limit to 10 products per brand
+    //                 ->get();
+    
+    //             // Map brand data
+    //             return [
+    //                 'brand_name' => $brand->name,
+    //                 'products' => $products->map(function ($product) {
+    //                     // Check product images and construct URLs
+    //                     $getImageUrl = function ($imageName) {
+    //                         if (Str::startsWith($imageName, ['http://', 'https://'])) {
+    //                             return $imageName;
+    //                         }
+    
+    //                         $imagePaths = [
+    //                             public_path("storage/products/{$imageName}"),
+    //                             public_path("storage/{$imageName}")
+    //                         ];
+    
+    //                         foreach ($imagePaths as $path) {
+    //                             if (file_exists($path)) {
+    //                                 return asset('storage/' . str_replace(public_path('storage/'), '', $path));
+    //                             }
+    //                         }
+    
+    //                         return null; // Return null if image doesn't exist
+    //                     };
+    
+    //                     $productImages = is_array($product->images) ? $product->images : ($product->images ? $product->images->toArray() : []);
+    
+    //                     return [
+    //                         "id" => $product->id,
+    //                         "name" => $product->name,
+    //                         "images" => array_map(function ($image) use ($getImageUrl) {
+    //                             return $getImageUrl($image);
+    //                         }, $productImages),
+    //                         "sku" => $product->sku ?? '',
+    //                         "price" => $product->price,
+    //                         "original_price" => $product->price,
+    //                         "sale_price" => $product->sale_price ?? null,
+    //                         "rating" => $product->reviews()->avg('star') ?? null,
+    //                     ];
+    //                 }),
+    //             ];
+    //         }),
+    //     ]);
+    // }
     public function getAllBrandGuestProducts(Request $request)
-    {
-        // Fetch only the latest 5 brands with at least 10 products
-        $brands = Brand::with(['products'])
-            ->whereHas('products', function ($query) {
-                $query->select('brand_id') // Select only the column needed for grouping
-                    ->groupBy('brand_id') // Group by the brand_id
-                    ->havingRaw('COUNT(*) >= 10'); // Ensure the brand has at least 10 products
-            })
-            ->orderBy('created_at', 'desc') // Order by latest brands
-            ->take(5) // Limit to 5 brands
-            ->get();
-    
-        return response()->json([
-            'success' => true,
-            'data' => $brands->map(function ($brand) use ($request) {
-                // Filter and limit products to 10 for each brand
-                $products = $brand->products()
-                    ->when($request->has('search'), function ($query) use ($request) {
-                        $query->where('name', 'like', '%' . $request->input('search') . '%');
-                    })
-                    ->when($request->has('price_min'), function ($query) use ($request) {
-                        $query->where('price', '>=', $request->input('price_min'));
-                    })
-                    ->when($request->has('price_max'), function ($query) use ($request) {
-                        $query->where('price', '<=', $request->input('price_max'));
-                    })
-                    ->when($request->has('rating'), function ($query) use ($request) {
-                        $query->whereHas('reviews', function ($q) use ($request) {
-                            $q->selectRaw('AVG(star) as avg_rating')
-                                ->groupBy('product_id')
-                                ->havingRaw('AVG(star) >= ?', [$request->input('rating')]);
-                        });
-                    })
-                    ->orderBy('created_at', 'desc') // Order products by latest
-                    ->take(10) // Limit to 10 products per brand
-                    ->get();
-    
-                // Map brand data
-                return [
-                    'brand_name' => $brand->name,
-                    'products' => $products->map(function ($product) {
-                        // Check product images and construct URLs
-                        $getImageUrl = function ($imageName) {
-                            if (Str::startsWith($imageName, ['http://', 'https://'])) {
-                                return $imageName;
-                            }
-    
-                            $imagePaths = [
-                                public_path("storage/products/{$imageName}"),
-                                public_path("storage/{$imageName}")
-                            ];
-    
-                            foreach ($imagePaths as $path) {
-                                if (file_exists($path)) {
-                                    return asset('storage/' . str_replace(public_path('storage/'), '', $path));
-                                }
-                            }
-    
-                            return null; // Return null if image doesn't exist
-                        };
-    
-                        $productImages = is_array($product->images) ? $product->images : ($product->images ? $product->images->toArray() : []);
-    
-                        return [
-                            "id" => $product->id,
-                            "name" => $product->name,
-                            "images" => array_map(function ($image) use ($getImageUrl) {
-                                return $getImageUrl($image);
-                            }, $productImages),
-                            "sku" => $product->sku ?? '',
-                            "price" => $product->price,
-                            "original_price" => $product->price,
-                            "sale_price" => $product->sale_price ?? null,
-                            "rating" => $product->reviews()->avg('star') ?? null,
-                        ];
-                    }),
-                ];
-            }),
-        ]);
-    }
+{
+    // Subquery for best price and delivery days by SKU
+    $subQuery = Product::select('sku')
+        ->selectRaw('MIN(price) as best_price')
+        ->selectRaw('MIN(delivery_days) as best_delivery_date')
+        ->groupBy('sku');
+
+    // Fetch only the latest 5 brands with at least 10 products
+    $brands = Brand::with(['products'])
+        ->whereHas('products', function ($query) {
+            $query->select('brand_id')
+                ->groupBy('brand_id')
+                ->havingRaw('COUNT(*) >= 10');
+        })
+        ->orderBy('created_at', 'desc')
+        ->take(5)
+        ->get();
+
+    return response()->json([
+        'success' => true,
+        'data' => $brands->map(function ($brand) use ($request, $subQuery) {
+            // Filter and limit products to 10 for each brand
+            $products = $brand->products()
+                ->when($request->has('search'), function ($query) use ($request) {
+                    $query->where('name', 'like', '%' . $request->input('search') . '%');
+                })
+                ->when($request->has('price_min'), function ($query) use ($request) {
+                    $query->where('price', '>=', $request->input('price_min'));
+                })
+                ->when($request->has('price_max'), function ($query) use ($request) {
+                    $query->where('price', '<=', $request->input('price_max'));
+                })
+                ->when($request->has('rating'), function ($query) use ($request) {
+                    $query->whereHas('reviews', function ($q) use ($request) {
+                        $q->selectRaw('AVG(star) as avg_rating')
+                            ->groupBy('product_id')
+                            ->havingRaw('AVG(star) >= ?', [$request->input('rating')]);
+                    });
+                })
+                ->take(10)
+                ->pluck('id'); // Only get product IDs
+
+            // Fetch product details with joined best_price and eager load
+            $productDetails = Product::leftJoinSub($subQuery, 'best_products', function ($join) {
+                    $join->on('ec_products.sku', '=', 'best_products.sku')
+                         ->whereColumn('ec_products.price', 'best_products.best_price');
+                })
+                ->whereIn('ec_products.id', $products)
+                ->with(['reviews', 'currency'])
+                ->get()
+                ->keyBy('id');
+
+            return [
+                'brand_name' => $brand->name,
+                'products' => $productDetails->map(function ($details) {
+                    $totalReviews = $details->reviews->count();
+                    $avgRating = $totalReviews > 0 ? $details->reviews->avg('star') : null;
+                    $leftStock = ($details->quantity ?? 0) - ($details->units_sold ?? 0);
+                    $currencyTitle = $details->currency->title ?? $details->price;
+
+                    $imageUrls = collect($details->images)->map(fn($image) =>
+                        Str::startsWith($image, ['http://', 'https://']) ? $image : asset('storage/' . ltrim($image, '/'))
+                    );
+
+                    return [
+                        'id' => $details->id,
+                        'name' => $details->name,
+                        'sku' => $details->sku,
+                        'price' => $details->best_price ?? $details->price,
+                        'original_price' => $details->price,
+                        'sale_price' => $details->sale_price,
+                        'best_delivery_date' => $details->best_delivery_date,
+                        'total_reviews' => $totalReviews,
+                        'avg_rating' => $avgRating,
+                        'left_stock' => $leftStock,
+                        'currency' => $currencyTitle,
+                        'images' => $imageUrls,
+                        'front_sale_price' => $details->price,
+                        'best_price' => $details->best_price ?? $details->price,
+                    ];
+                })->values(),
+            ];
+        }),
+    ]);
+}
+
 
     
     public function brandsByCategory($id): JsonResponse
