@@ -1257,7 +1257,9 @@ public function getSpecificationFilters(Request $request)
                     ->whereIn('pa.attribute_id', $attributeIds)
                     ->orderBy('pa.attribute_value', 'asc')  // <- sort ascending
                     ->select('at.name as attribute_name', 'pa.attribute_value', 'at.id as attribute_id')
-                    ->get();
+                    ->get()
+                    ->all();  // <-- this converts the collection to array
+
 
                     // Custom sorting function to convert strings like "12 3/4 Inches" to decimal number
             usort($filterValues, function($a, $b) {
