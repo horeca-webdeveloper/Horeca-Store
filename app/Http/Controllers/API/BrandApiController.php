@@ -454,6 +454,7 @@ public function getAllHomeBrandProducts(Request $request)
                             }, $productImages),
                             "sku" => $product->sku ?? '',
                             "price" => $product->price,
+                            "original_price" => $product->price,
                             "sale_price" => $product->sale_price ?? null,
                             "rating" => $product->reviews()->avg('star') ?? null,
                         ];
