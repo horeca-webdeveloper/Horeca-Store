@@ -1358,16 +1358,13 @@ public function getSpecificationFilters(Request $request)
     // Remove duplicate filter values
     foreach ($filters as &$filter) {
         if (isset($filter['filter_values']) && is_array($filter['filter_values'])) {
-            $filter['filter_values'] = array_values(array_unique($filter['filter_values']));
+            usort($filter['filter_values'], function ($a, $b) {
+                return strcmp($a['value'] ?? '', $b['value'] ?? '');
+            });
         }
     }
-    unset($filter);
-
-    // 🔽 Sort filters alphabetically by name
-    usort($filters, function ($a, $b) {
-        return strcmp($a['filter_name'], $b['filter_name']);
-    });
-
+    unset($filter); // avoid reference issues
+    
 // Return filters as JSON
     return response()->json([
         'success' => true,
