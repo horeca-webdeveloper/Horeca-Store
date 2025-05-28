@@ -1038,6 +1038,14 @@ public function getSpecificationFilters(Request $request)
         }
     }
 
+        foreach ($groupedFilters as &$values) {
+            usort($values, function($a, $b) {
+                return extractNumber($a) <=> extractNumber($b);
+            });
+        }
+        unset($values);  // break the reference
+    
+
     $debugInfo['grouped_filters'] = $groupedFilters;
     $debugInfo['range_filters_by_attribute'] = $rangeFiltersByAttribute; // Changed: Updated debug info
 
@@ -1366,7 +1374,7 @@ public function getSpecificationFilters(Request $request)
     unset($filter);
     
     
-// Return filters as JSON
+    // Return filters as JSON
     return response()->json([
         'success' => true,
         'filters' => $filters,
@@ -1378,5 +1386,23 @@ public function getSpecificationFilters(Request $request)
         'debug_info' => $debugInfo
     ]);
 }
+
+
+function extractNumber($str) {
+    // Extract numbers including fractions from the string, e.g. "12 3/4" => 12.75
+    if (preg_match('/(\d+)\s*(\d+\/\d+)?/', $str, $matches)) {
+        $whole = (int)$matches[1];
+        $fraction = 0;
+        if (isset($matches[2]) && !empty($matches[2])) {
+            list($num, $den) = explode('/', $matches[2]);
+            if ($den != 0) {
+                $fraction = $num / $den;
+            }
+        }
+        return $whole + $fraction;
+    }
+    return 0;
+}
+
 
 }
