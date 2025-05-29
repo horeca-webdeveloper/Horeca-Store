@@ -24,9 +24,12 @@ class CategoryController extends Controller
 
 		if ($filterId) {
 			// Fetch the specific category and its children (parent included)
-			$categories = ProductCategory::where('id', $filterId)
-			->orWhere('parent_id', $filterId)
-			->get();
+            $categories = ProductCategory::where('status', 'published')
+            ->where(function ($query) use ($filterId) {
+                $query->where('id', $filterId)
+                      ->orWhere('parent_id', $filterId);
+            })
+            ->get();
 		} else {
 			// Fetch all categories if no ID is provided
 			$categories = ProductCategory::all();
