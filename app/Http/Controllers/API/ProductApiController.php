@@ -155,6 +155,22 @@ class ProductApiController extends Controller
                     // Transform the products collection
                     $products->getCollection()->transform(function ($product) use ($wishlistProductIds) {
 
+                        $product->selling_type = null;
+                        if ($product->relationLoaded('attributeValues')) {
+                            $sellingTypeAttribute = $product->attributeValues
+                                ->filter(function ($attrVal) {
+                                    return strtolower($attrVal->attribute->name ?? '') === 'selling type';
+                                })
+                                ->first();
+                        
+                            if ($sellingTypeAttribute) {
+                                $product->selling_type = [
+                                    'attribute_name' => $sellingTypeAttribute->attribute->name,
+                                    'attribute_value' => $sellingTypeAttribute->value,
+                                ];
+                            }
+                        }
+
                         $product->benefits_features = json_decode($product->benefits_features, true);
 
 
@@ -413,8 +429,6 @@ class ProductApiController extends Controller
     public function getAllPublicProducts(Request $request)
     {
 
-
-
                 // Start building the base query
                 $query = Product::with(['categories', 'brand', 'tags', 'producttypes'])
                     ->where('status', 'published');
@@ -516,6 +530,22 @@ class ProductApiController extends Controller
 
                     // Transform the products collection
                     $products->getCollection()->transform(function ($product) {
+
+                        $product->selling_type = null;
+                        if ($product->relationLoaded('attributeValues')) {
+                            $sellingTypeAttribute = $product->attributeValues
+                                ->filter(function ($attrVal) {
+                                    return strtolower($attrVal->attribute->name ?? '') === 'selling type';
+                                })
+                                ->first();
+                        
+                            if ($sellingTypeAttribute) {
+                                $product->selling_type = [
+                                    'attribute_name' => $sellingTypeAttribute->attribute->name,
+                                    'attribute_value' => $sellingTypeAttribute->value,
+                                ];
+                            }
+                        }
 
                         $product->benefits_features = json_decode($product->benefits_features, true);
 

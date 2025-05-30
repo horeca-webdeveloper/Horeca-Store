@@ -894,6 +894,15 @@ class Product extends BaseModel
     {
         return $this->hasMany(Faq::class);
     }
+    public function attributeValues()
+    {
+        return $this->hasMany(ProductAttributeValue::class, 'product_id');
+    }
 
 
+    public function attribute()
+    {
+        return $this->belongsTo(ProductAttribute::class, 'attribute_id');
+    }
+    
 }
