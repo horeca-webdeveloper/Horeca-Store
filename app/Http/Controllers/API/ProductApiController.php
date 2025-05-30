@@ -155,22 +155,6 @@ class ProductApiController extends Controller
                     // Transform the products collection
                     $products->getCollection()->transform(function ($product) use ($wishlistProductIds) {
 
-                        $sellingType = null;
-
-                        if ($product->attributes) {
-                            foreach ($product->attributes as $attribute) {
-                                if (strtolower($attribute->title ?? '') === 'Selling Unit') {
-                                    $sellingType = $attribute->pivot->attribute_value ?? null;
-                                    break;
-                                }
-                            }
-                        }
-                        
-                        $product->selling_type = $sellingType;
-                        
-
-                                            
-                        $product->selling_type = $sellingType;
                         $product->benefits_features = json_decode($product->benefits_features, true);
 
 
@@ -429,6 +413,8 @@ class ProductApiController extends Controller
     public function getAllPublicProducts(Request $request)
     {
 
+
+
                 // Start building the base query
                 $query = Product::with(['categories', 'brand', 'tags', 'producttypes'])
                     ->where('status', 'published');
@@ -531,20 +517,11 @@ class ProductApiController extends Controller
                     // Transform the products collection
                     $products->getCollection()->transform(function ($product) {
 
-                        $sellingType = null;
+                        $product->benefits_features = json_decode($product->benefits_features, true);
 
-                        if ($product->attributes) {
-                            foreach ($product->attributes as $attribute) {
-                                if (strtolower($attribute->title ?? '') === 'Selling Unit') {
-                                    $sellingType = $attribute->pivot->attribute_value ?? null;
-                                    break;
-                                }
-                            }
+                        if (is_string($product->description)) {
+                            $product->description = json_decode($product->description, true);
                         }
-                        
-                        $product->selling_type = $sellingType;
-                        
-                        
 
 
                         // Handle images
