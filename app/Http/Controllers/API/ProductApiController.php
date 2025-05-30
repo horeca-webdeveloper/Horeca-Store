@@ -159,7 +159,7 @@ class ProductApiController extends Controller
 
                         if ($product->attributes) {
                             foreach ($product->attributes as $attribute) {
-                                if (strtolower($attribute->title ?? '') === 'selling unit') {
+                                if (strtolower($attribute->title ?? '') === 'Selling Unit') {
                                     $sellingType = $attribute->pivot->attribute_value ?? null;
                                     break;
                                 }
@@ -535,7 +535,7 @@ class ProductApiController extends Controller
 
                         if ($product->attributes) {
                             foreach ($product->attributes as $attribute) {
-                                if (strtolower($attribute->title ?? '') === 'selling unit') {
+                                if (strtolower($attribute->title ?? '') === 'Selling Unit') {
                                     $sellingType = $attribute->pivot->attribute_value ?? null;
                                     break;
                                 }
