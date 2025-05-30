@@ -65,6 +65,8 @@ Route::get('seo/paragraphs/{relational_id}', [SEOManagementController::class, 'g
 
 
 Route::get('product/{productId}/attributes', [ProductAttributeController::class, 'getAttributesByProduct']);
+Route::get('/product/{id}/nutrition-facts', [ProductAttributeController::class, 'getNutritionFactsByProduct']);
+Route::get('/product/{id}/nutrition-facts1', [ProductAttributeController::class, 'getNutritionFactsByProduct1']);
 Route::get('product-group/{productId}/attributes', [ProductAttributeController::class, 'getAttributesByProductWithGroup']);
 
 
