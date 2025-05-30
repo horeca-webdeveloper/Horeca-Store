@@ -43,74 +43,76 @@ class ProductAttributeController extends Controller
 
         return response()->json($nutritionFacts);
     }
+
     public function getNutritionFactsByProduct($productId)
-{
-    // Keyword-based sort order (lowercase)
-    $sortKeywords = [
-        'serving',
-        'calories',
-        'total fat',
-        'saturated fat',
-        'trans fat',
-        'cholesterol',
-        'sodium',
-        'total carbohydrate',
-        'dietary fiber',
-        'total sugars',
-        'added sugars',
-        'protein',
-        'vitamin d',
-        'calcium',
-        'iron',
-        'potassium'
-    ];
+    {
+        // Keyword-based sort order (lowercase)
+        $sortKeywords = [
+            'serving',
+            'calories',
+            'total fat',
+            'saturated fat',
+            'trans fat',
+            'cholesterol',
+            'sodium',
+            'total carbohydrate',
+            'dietary fiber',
+            'total sugars',
+            'added sugars',
+            'protein',
+            'vitamin d',
+            'calcium',
+            'iron',
+            'potassium'
+        ];
 
-    // Fetch product attributes in the group
-    $productAttributes = ProductAttributes::with(['attribute' => function ($query) {
-        $query->whereHas('attributeGroup', function ($q) {
-            $q->where('name', 'Nutrition Facts Per Serving Group');
-        })->with('attributeGroup');
-    }])
-    ->where('product_id', $productId)
-    ->get(['attribute_value', 'attribute_id']);
+        // Fetch product attributes in the group
+        $productAttributes = ProductAttributes::with(['attribute' => function ($query) {
+            $query->whereHas('attributeGroup', function ($q) {
+                $q->where('name', 'Nutrition Facts Per Serving Group');
+            })->with('attributeGroup');
+        }])
+        ->where('product_id', $productId)
+        ->get(['attribute_value', 'attribute_id']);
 
-    // Filter out null attributes
-    $nutritionFacts = $productAttributes->filter(function ($item) {
-        return $item->attribute !== null;
-    });
+        // Filter out null attributes
+        $nutritionFacts = $productAttributes->filter(function ($item) {
+            return $item->attribute !== null;
+        });
 
-    if ($nutritionFacts->isEmpty()) {
-        return response()->json([
-            'message' => 'Nutrition Facts Per Serving Group not found for this product.'
-        ], 200);
-    }
-
-    // Sort dynamically based on keyword order
-    $sortedFacts = $nutritionFacts->sortBy(function ($item) use ($sortKeywords) {
-        $name = strtolower($item->attribute->name);
-        foreach ($sortKeywords as $index => $keyword) {
-            if (strpos($name, $keyword) !== false) {
-                return $index;
-            }
+        if ($nutritionFacts->isEmpty()) {
+            return response()->json([
+                'message' => 'Nutrition Facts Per Serving Group not found for this product.'
+            ], 200);
         }
-        return count($sortKeywords) + 1; // Unknown attributes go to end
-    })->values();
 
-    // Build the final response
-    $response = [
-        'group_name' => $sortedFacts[0]->attribute->attributeGroup->name ?? 'Nutrition Facts Per Serving Group',
-        'attributes' => $sortedFacts->map(function ($item) {
-            return [
-                'name'  => $item->attribute->name,
-                'value' => $item->attribute_value
-            ];
-        })
-    ];
+        // Sort dynamically based on keyword order
+        $sortedFacts = $nutritionFacts->sortBy(function ($item) use ($sortKeywords) {
+            $name = strtolower($item->attribute->name);
+            foreach ($sortKeywords as $index => $keyword) {
+                if (strpos($name, $keyword) !== false) {
+                    return $index;
+                }
+            }
+            return count($sortKeywords) + 1; // Unknown attributes go to end
+        })->values();
 
-    return response()->json($response);
-}
-public function getAttributesByProduct($productId)
-{
+        // Build the final response
+        $response = [
+            'group_name' => $sortedFacts[0]->attribute->attributeGroup->name ?? 'Nutrition Facts Per Serving Group',
+            'attributes' => $sortedFacts->map(function ($item) {
+                return [
+                    'name'  => $item->attribute->name,
+                    'value' => $item->attribute_value
+                ];
+            })
+        ];
+
+        return response()->json($response);
+    }
+ 
+    public function getAttributesByProduct($productId)
+    {
     $productAttributes = ProductAttributes::with(['attribute' => function ($query) {
         $query->whereHas('attributeGroup', function ($q) {
             $q->where('name', '!=', 'Nutrition Facts Per Serving Group');
@@ -125,7 +127,7 @@ public function getAttributesByProduct($productId)
     })->values();
 
     return response()->json($filteredAttributes);
-}
+    }   
 
     public function getAttributesByProductWithGroup($productId)
     {
@@ -160,6 +162,90 @@ public function getAttributesByProduct($productId)
 
         return response()->json($formatted);
     }
+
+    public function getAttributesByProduct1($productId)
+    {
+        $productAttributes = ProductAttributes::with(['attribute' => function ($query) {
+            $query->whereHas('attributeGroup', function ($q) {
+                $q->where('name', '!=', 'Nutrition Facts Per Serving Group');
+            });
+        }])
+        ->where('product_id', $productId)
+        ->get(['attribute_value', 'attribute_id']);
+    
+        // Filter out null attributes
+        $filteredAttributes = $productAttributes->filter(function ($item) {
+            return $item->attribute !== null;
+        })->values();
+    
+        // Define fixed order
+        $leftOrder = [
+            'Sku / Item Code',
+            'Manufacturer',
+            'Country of Origin',
+            'Material',
+            'Color',
+            'Capacity',
+            'Width',
+            'Depth',
+            'Height'
+        ];
+    
+        $rightOrder = [
+            'Type',
+            'Pack Type',
+            'Selling Unit',
+            'Warranty',
+            'Certification',
+            'Features'
+        ];
+    
+        $left = [];
+        $right = [];
+        $usedNames = [];
+    
+        // Helper: format item
+        $formatAttr = function ($item) {
+            return [
+                'attribute_name' => $item->attribute->name,
+                'attribute_value' => $item->attribute_value,
+            ];
+        };
+    
+        // Add left ordered attributes
+        foreach ($leftOrder as $name) {
+            $match = $filteredAttributes->firstWhere(fn($item) => $item->attribute->name === $name);
+            if ($match) {
+                $left[] = $formatAttr($match);
+                $usedNames[] = $name;
+            }
+        }
+    
+        // Add right ordered attributes
+        foreach ($rightOrder as $name) {
+            $match = $filteredAttributes->firstWhere(fn($item) => $item->attribute->name === $name);
+            if ($match) {
+                $right[] = $formatAttr($match);
+                $usedNames[] = $name;
+            }
+        }
+    
+        // Get remaining attributes
+        $remaining = $filteredAttributes->filter(function ($item) use ($usedNames) {
+            return !in_array($item->attribute->name, $usedNames);
+        })->map($formatAttr)->values();
+    
+        // Split remaining evenly
+        $mid = ceil(count($remaining) / 2);
+        $left = array_merge($left, array_slice($remaining->toArray(), 0, $mid));
+        $right = array_merge($right, array_slice($remaining->toArray(), $mid));
+    
+        return response()->json([
+            'left' => $left,
+            'right' => $right
+        ]);
+    }
+
 
     // public function getAttributesByProductWithGroup($productId)
     // {
