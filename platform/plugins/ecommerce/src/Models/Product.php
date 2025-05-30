@@ -885,16 +885,11 @@ class Product extends BaseModel
     }
 
     // In Product model
-    // public function attributes()
-    // {
-    //     return $this->belongsToMany(Attribute::class, 'product_attributes'); // Adjust the pivot table name if needed
-    // }
     public function attributes()
     {
-        return $this->belongsToMany(Attribute::class, 'product_attributes')
-                    ->withPivot('attribute_value'); // Use correct column name
+        return $this->belongsToMany(Attribute::class, 'product_attributes'); // Adjust the pivot table name if needed
     }
-
+    
 
     public function faqs()
     {
