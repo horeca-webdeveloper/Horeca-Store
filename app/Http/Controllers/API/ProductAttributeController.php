@@ -164,87 +164,97 @@ class ProductAttributeController extends Controller
     }
 
     public function getAttributesByProduct1($productId)
-    {
-        $productAttributes = ProductAttributes::with(['attribute' => function ($query) {
-            $query->whereHas('attributeGroup', function ($q) {
-                $q->where('name', '!=', 'Nutrition Facts Per Serving Group');
-            });
-        }])
-        ->where('product_id', $productId)
-        ->get(['attribute_value', 'attribute_id']);
-    
-        // Filter out null attributes
-        $filteredAttributes = $productAttributes->filter(function ($item) {
-            return $item->attribute !== null;
-        })->values();
-    
-        // Define fixed order
-        $leftOrder = [
-            'Sku / Item Code',
-            'Manufacturer',
-            'Country of Origin',
-            'Material',
-            'Color',
-            'Capacity',
-            'Width',
-            'Depth',
-            'Height'
+{
+    $productAttributes = ProductAttributes::with(['attribute' => function ($query) {
+        $query->whereHas('attributeGroup', function ($q) {
+            $q->where('name', '!=', 'Nutrition Facts Per Serving Group');
+        });
+    }])
+    ->where('product_id', $productId)
+    ->get(['attribute_value', 'attribute_id']);
+
+    // Filter out null attributes
+    $filteredAttributes = $productAttributes->filter(function ($item) {
+        return $item->attribute !== null;
+    })->values();
+
+    // Define fixed order
+    $leftOrder = [
+        'Sku / Item Code',
+        'Manufacturer',
+        'Country of Origin',
+        'Material',
+        'Color',
+        'Capacity',
+        'Width',
+        'Depth',
+        'Height'
+    ];
+
+    $rightOrder = [
+        'Type',
+        'Pack Type',
+        'Selling Unit',
+        'Warranty',
+        'Certification',
+        'Features'
+    ];
+
+    $left = [];
+    $right = [];
+    $usedNames = [];
+
+    // Helper: format item
+    $formatAttr = function ($item) {
+        return [
+            'attribute_name' => $item->attribute->name,
+            'attribute_value' => $item->attribute_value,
         ];
-    
-        $rightOrder = [
-            'Type',
-            'Pack Type',
-            'Selling Unit',
-            'Warranty',
-            'Certification',
-            'Features'
-        ];
-    
-        $left = [];
-        $right = [];
-        $usedNames = [];
-    
-        // Helper: format item
-        $formatAttr = function ($item) {
-            return [
-                'attribute_name' => $item->attribute->name,
-                'attribute_value' => $item->attribute_value,
-            ];
-        };
-    
-        // Add left ordered attributes
-        foreach ($leftOrder as $name) {
-            $match = $filteredAttributes->firstWhere(fn($item) => $item->attribute->name === $name);
-            if ($match) {
-                $left[] = $formatAttr($match);
-                $usedNames[] = $name;
-            }
+    };
+
+    // Add left ordered attributes
+    foreach ($leftOrder as $name) {
+        $match = $filteredAttributes->firstWhere(fn($item) => $item->attribute->name === $name);
+        if ($match) {
+            $left[] = $formatAttr($match);
+            $usedNames[] = $name;
         }
-    
-        // Add right ordered attributes
-        foreach ($rightOrder as $name) {
-            $match = $filteredAttributes->firstWhere(fn($item) => $item->attribute->name === $name);
-            if ($match) {
-                $right[] = $formatAttr($match);
-                $usedNames[] = $name;
-            }
-        }
-    
-        // Get remaining attributes
-        $remaining = $filteredAttributes->filter(function ($item) use ($usedNames) {
-            return !in_array($item->attribute->name, $usedNames);
-        })->map($formatAttr)->values();
-    
-        // Split remaining evenly
-        $mid = ceil(count($remaining) / 2);
-        $left = array_merge($left, array_slice($remaining->toArray(), 0, $mid));
-        $right = array_merge($right, array_slice($remaining->toArray(), $mid));
-    
-        return response()->json([
-            'left' => $left,
-            'right' => $right
-        ]);
     }
+
+    // Add right ordered attributes
+    foreach ($rightOrder as $name) {
+        $match = $filteredAttributes->firstWhere(fn($item) => $item->attribute->name === $name);
+        if ($match) {
+            $right[] = $formatAttr($match);
+            $usedNames[] = $name;
+        }
+    }
+
+    // Get remaining attributes
+    $remaining = $filteredAttributes->filter(function ($item) use ($usedNames) {
+        return !in_array($item->attribute->name, $usedNames);
+    })->map($formatAttr)->values();
+
+    // Balance total count between left and right
+    $totalLeft = count($left);
+    $totalRight = count($right);
+
+    foreach ($remaining as $item) {
+        if ($totalLeft <= $totalRight) {
+            $left[] = $item;
+            $totalLeft++;
+        } else {
+            $right[] = $item;
+            $totalRight++;
+        }
+    }
+
+    return response()->json([
+        'left' => $left,
+        'right' => $right
+    ]);
+}
+
 
 
     // public function getAttributesByProductWithGroup($productId)
