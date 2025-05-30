@@ -157,14 +157,17 @@ class ProductApiController extends Controller
 
                         $sellingType = null;
 
-                    foreach ($product->attributeOptions as $attribute) {
-                        if (strtolower($attribute->title ?? '') === 'selling unit') {
-                            $sellingType = $attribute->pivot->attribute_value ?? null;
-                            break;
+                        if ($product->attributes) {
+                            foreach ($product->attributes as $attribute) {
+                                if (strtolower($attribute->title ?? '') === 'selling unit') {
+                                    $sellingType = $attribute->pivot->attribute_value ?? null;
+                                    break;
+                                }
+                            }
                         }
-                    }
-
-                    $product->selling_type = $sellingType;
+                        
+                        $product->selling_type = $sellingType;
+                        
 
                                             
                         $product->selling_type = $sellingType;
@@ -530,23 +533,17 @@ class ProductApiController extends Controller
 
                         $sellingType = null;
 
-                        foreach ($product->attributes as $attribute) {
-                            if (strtolower($attribute->title ?? '') === 'Selling Unit') {
-                                $sellingType = $attribute->pivot->attribute_value ?? null;
-                                break;
-                            }
-                        }
-                        
-                        $sellingType = null;
-
-                        foreach ($product->attributeOptions as $attribute) {
-                            if (strtolower($attribute->title ?? '') === 'selling unit') {
-                                $sellingType = $attribute->pivot->attribute_value ?? null;
-                                break;
+                        if ($product->attributes) {
+                            foreach ($product->attributes as $attribute) {
+                                if (strtolower($attribute->title ?? '') === 'selling unit') {
+                                    $sellingType = $attribute->pivot->attribute_value ?? null;
+                                    break;
+                                }
                             }
                         }
                         
                         $product->selling_type = $sellingType;
+                        
                         
 
 
