@@ -9,16 +9,34 @@ use App\Http\Controllers\Controller;
 
 class ProductAttributeController extends Controller
 {
+    // public function getAttributesByProduct($productId)
+    // {
+    //     // Fetch the product attributes with the associated attribute names
+    //     $productAttributes = ProductAttributes::with('attribute:id,name') // Eager load 'attribute' relation
+    //         ->where('product_id', $productId) // Filter by product_id
+    //         ->get(['attribute_value', 'attribute_id']); // Select 'attribute_value' and 'attribute_id' columns
+
+    //     // Return the data in JSON format
+    //     return response()->json($productAttributes);
+    // }
     public function getAttributesByProduct($productId)
     {
-        // Fetch the product attributes with the associated attribute names
-        $productAttributes = ProductAttributes::with('attribute:id,name') // Eager load 'attribute' relation
-            ->where('product_id', $productId) // Filter by product_id
-            ->get(['attribute_value', 'attribute_id']); // Select 'attribute_value' and 'attribute_id' columns
+        $productAttributes = ProductAttributes::with(['attribute' => function ($query) {
+            $query->whereHas('attributeGroup', function ($q) {
+                $q->where('name', '!=', 'Nutrition Facts Per Serving Group');
+            });
+        }])
+        ->where('product_id', $productId)
+        ->get(['attribute_value', 'attribute_id']);
 
-        // Return the data in JSON format
-        return response()->json($productAttributes);
+        // Filter out null attributes (i.e., those in the excluded group)
+        $filteredAttributes = $productAttributes->filter(function ($item) {
+            return $item->attribute !== null;
+        })->values();
+
+        return response()->json($filteredAttributes);
     }
+
 
     public function getAttributesByProductWithGroup($productId)
     {
