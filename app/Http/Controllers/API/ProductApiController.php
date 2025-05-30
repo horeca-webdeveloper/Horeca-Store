@@ -149,7 +149,7 @@ class ProductApiController extends Controller
                 ];
 
                 // Get categories and brands (consider caching these)
-                $categories = ProductCategory::select('id', 'name')->get();
+                // $categories = ProductCategory::select('id', 'name')->get();
                 $brands = Brand::select('id', 'name')->get();
 
                     // Transform the products collection
@@ -381,6 +381,13 @@ class ProductApiController extends Controller
                         $product->tags = $product->tags;
                         $product->producttypes = $product->producttypes;
 
+                        $product->category_list = $product->categories->map(function ($category) {
+                            return [
+                                'id' => $category->id,
+                                'name' => $category->name,
+                            ];
+                        });
+
                         return $product;
                     });
 
@@ -607,7 +614,7 @@ class ProductApiController extends Controller
 
 
 
-                    if ($product->frequently_bought_together) {
+                        if ($product->frequently_bought_together) {
                                 $frequentlyBoughtData = json_decode($product->frequently_bought_together, true);
                                 $frequentlyBoughtSkus = array_column($frequentlyBoughtData, 'value');
 
@@ -734,6 +741,14 @@ class ProductApiController extends Controller
                         // Add tags and types
                         $product->tags = $product->tags;
                         $product->producttypes = $product->producttypes;
+
+                        $product->category_list = $product->categories->map(function ($category) {
+                            return [
+                                'id' => $category->id,
+                                'name' => $category->name,
+                            ];
+                        });
+
 
                         return $product;
                     });
