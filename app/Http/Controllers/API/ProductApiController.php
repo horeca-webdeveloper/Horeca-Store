@@ -159,7 +159,7 @@ class ProductApiController extends Controller
                         if ($product->relationLoaded('attributeValues')) {
                             $sellingTypeAttribute = $product->attributeValues
                                 ->filter(function ($attrVal) {
-                                    return strtolower($attrVal->attribute->name ?? '') === 'selling type';
+                                    return strtolower($attrVal->attribute->name ?? '') === 'Selling Unit';
                                 })
                                 ->first();
                         
@@ -535,7 +535,7 @@ class ProductApiController extends Controller
                         if ($product->relationLoaded('attributeValues')) {
                             $sellingTypeAttribute = $product->attributeValues
                                 ->filter(function ($attrVal) {
-                                    return strtolower($attrVal->attribute->name ?? '') === 'selling type';
+                                    return strtolower($attrVal->attribute->name ?? '') === 'Selling Unit';
                                 })
                                 ->first();
                         
