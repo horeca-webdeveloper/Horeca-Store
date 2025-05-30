@@ -889,7 +889,12 @@ class Product extends BaseModel
     {
         return $this->belongsToMany(Attribute::class, 'product_attributes'); // Adjust the pivot table name if needed
     }
-    
+    // In Product model
+    public function attributeOptions()
+    {
+        return $this->belongsToMany(Attribute::class, 'product_attributes')
+                    ->withPivot('attribute_value');
+    }
 
     public function faqs()
     {

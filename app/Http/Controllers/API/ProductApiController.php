@@ -157,13 +157,16 @@ class ProductApiController extends Controller
 
                         $sellingType = null;
 
-                        foreach ($product->attributes as $attribute) {
-                            if (strtolower($attribute->title ?? '') === 'Selling Unit') {
-                                $sellingType = $attribute->pivot->attribute_value ?? null;
-                                break;
-                            }
+                    foreach ($product->attributeOptions as $attribute) {
+                        if (strtolower($attribute->title ?? '') === 'selling unit') {
+                            $sellingType = $attribute->pivot->attribute_value ?? null;
+                            break;
                         }
-                        
+                    }
+
+                    $product->selling_type = $sellingType;
+
+                                            
                         $product->selling_type = $sellingType;
                         $product->benefits_features = json_decode($product->benefits_features, true);
 
@@ -534,14 +537,17 @@ class ProductApiController extends Controller
                             }
                         }
                         
-                        $product->selling_type = $sellingType;
+                        $sellingType = null;
 
-
-                        $product->benefits_features = json_decode($product->benefits_features, true);
-
-                        if (is_string($product->description)) {
-                            $product->description = json_decode($product->description, true);
+                        foreach ($product->attributeOptions as $attribute) {
+                            if (strtolower($attribute->title ?? '') === 'selling unit') {
+                                $sellingType = $attribute->pivot->attribute_value ?? null;
+                                break;
+                            }
                         }
+                        
+                        $product->selling_type = $sellingType;
+                        
 
 
                         // Handle images
