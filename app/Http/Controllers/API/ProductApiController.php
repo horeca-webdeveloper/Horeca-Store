@@ -155,22 +155,16 @@ class ProductApiController extends Controller
                     // Transform the products collection
                     $products->getCollection()->transform(function ($product) use ($wishlistProductIds) {
 
-                        $product->selling_type = null;
-                        if ($product->relationLoaded('attributeValues')) {
-                            $sellingTypeAttribute = $product->attributeValues
-                                ->filter(function ($attrVal) {
-                                    return strtolower($attrVal->attribute->name ?? '') === 'Selling Unit';
-                                })
-                                ->first();
-                        
-                            if ($sellingTypeAttribute) {
-                                $product->selling_type = [
-                                    'attribute_name' => $sellingTypeAttribute->attribute->name,
-                                    'attribute_value' => $sellingTypeAttribute->value,
-                                ];
+                        $sellingType = null;
+
+                        foreach ($product->attributes as $attribute) {
+                            if (strtolower($attribute->title ?? '') === 'Selling Unit') {
+                                $sellingType = $attribute->pivot->attribute_value ?? null;
+                                break;
                             }
                         }
-
+                        
+                        $product->selling_type = $sellingType;
                         $product->benefits_features = json_decode($product->benefits_features, true);
 
 
@@ -531,21 +525,17 @@ class ProductApiController extends Controller
                     // Transform the products collection
                     $products->getCollection()->transform(function ($product) {
 
-                        $product->selling_type = null;
-                        if ($product->relationLoaded('attributeValues')) {
-                            $sellingTypeAttribute = $product->attributeValues
-                                ->filter(function ($attrVal) {
-                                    return strtolower($attrVal->attribute->name ?? '') === 'Selling Unit';
-                                })
-                                ->first();
-                        
-                            if ($sellingTypeAttribute) {
-                                $product->selling_type = [
-                                    'attribute_name' => $sellingTypeAttribute->attribute->name,
-                                    'attribute_value' => $sellingTypeAttribute->value,
-                                ];
+                        $sellingType = null;
+
+                        foreach ($product->attributes as $attribute) {
+                            if (strtolower($attribute->title ?? '') === 'Selling Unit') {
+                                $sellingType = $attribute->pivot->attribute_value ?? null;
+                                break;
                             }
                         }
+                        
+                        $product->selling_type = $sellingType;
+
 
                         $product->benefits_features = json_decode($product->benefits_features, true);
 
