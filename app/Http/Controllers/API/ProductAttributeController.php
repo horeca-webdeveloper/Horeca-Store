@@ -109,6 +109,23 @@ class ProductAttributeController extends Controller
 
     return response()->json($response);
 }
+public function getAttributesByProduct($productId)
+{
+    $productAttributes = ProductAttributes::with(['attribute' => function ($query) {
+        $query->whereHas('attributeGroup', function ($q) {
+            $q->where('name', '!=', 'Nutrition Facts Per Serving Group');
+        });
+    }])
+    ->where('product_id', $productId)
+    ->get(['attribute_value', 'attribute_id']);
+
+    // Filter out null attributes (i.e., those in the excluded group)
+    $filteredAttributes = $productAttributes->filter(function ($item) {
+        return $item->attribute !== null;
+    })->values();
+
+    return response()->json($filteredAttributes);
+}
 
     public function getAttributesByProductWithGroup($productId)
     {
