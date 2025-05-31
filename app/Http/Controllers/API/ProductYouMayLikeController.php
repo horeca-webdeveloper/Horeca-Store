@@ -39,6 +39,7 @@ class ProductYouMayLikeController extends Controller
             $isUserLoggedIn = $userId !== null;
 
             Log::info('User logged in:', ['user_id' => $userId]);
+            Log::info('Looking for product recommendations for product ID:', ['product_id' => $productId]);
 
             $wishlistProductIds = [];
             if ($isUserLoggedIn) {
@@ -53,12 +54,35 @@ class ProductYouMayLikeController extends Controller
                 $wishlistProductIds = session()->get('guest_wishlist', []);
             }
 
-            // Get the product_you_may_like_id for the given product
-            $productYouMayLike = DB::table('product_you_may_likes')
+            // First, find if there's a ProductYouMayLike record that contains our product
+            // This could be either as the main product or as one of the related products
+            $productYouMayLike = null;
+            
+            // Option 1: Check if this product is the main product in product_you_may_likes
+            $mainProductRecord = DB::table('product_you_may_likes')
                 ->where('product_id', $productId)
                 ->first();
+            
+            if ($mainProductRecord) {
+                $productYouMayLike = $mainProductRecord;
+                Log::info('Found as main product in product_you_may_likes', ['record_id' => $mainProductRecord->id]);
+            } else {
+                // Option 2: Check if this product appears in product_you_may_like_items
+                $relatedProductRecord = DB::table('product_you_may_like_items')
+                    ->where('product_id', $productId)
+                    ->first();
+                
+                if ($relatedProductRecord) {
+                    // Get the parent ProductYouMayLike record
+                    $productYouMayLike = DB::table('product_you_may_likes')
+                        ->where('id', $relatedProductRecord->product_you_may_like_id)
+                        ->first();
+                    Log::info('Found as related product, parent record:', ['parent_id' => $productYouMayLike->id ?? 'null']);
+                }
+            }
 
             if (!$productYouMayLike) {
+                Log::info('No product_you_may_like record found for product:', ['product_id' => $productId]);
                 return response()->json([
                     'success' => true,
                     'message' => 'No related products found',
@@ -85,10 +109,39 @@ class ProductYouMayLikeController extends Controller
                 ->pluck('product_id')
                 ->toArray();
 
+            Log::info('Found related product IDs:', ['ids' => $relatedProductIds, 'count' => count($relatedProductIds)]);
+
             if (empty($relatedProductIds)) {
                 return response()->json([
                     'success' => true,
                     'message' => 'No related products found',
+                    'data' => [],
+                    'pagination' => [
+                        'current_page' => 1,
+                        'last_page' => 1,
+                        'per_page' => 50,
+                        'total' => 0,
+                        'has_more_pages' => false,
+                        'visible_pages' => [1],
+                        'has_previous' => false,
+                        'has_next' => false,
+                        'previous_page' => 0,
+                        'next_page' => 2,
+                    ]
+                ]);
+            }
+
+            // Exclude the current product from recommendations if it appears in the list
+            $relatedProductIds = array_filter($relatedProductIds, function($id) use ($productId) {
+                return $id != $productId;
+            });
+
+            Log::info('Related product IDs after filtering current product:', ['ids' => $relatedProductIds, 'count' => count($relatedProductIds)]);
+
+            if (empty($relatedProductIds)) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'No related products found (after filtering current product)',
                     'data' => [],
                     'pagination' => [
                         'current_page' => 1,
@@ -111,10 +164,13 @@ class ProductYouMayLikeController extends Controller
                 ->whereIn('id', $relatedProductIds);
 
             // Get products maintaining the priority order
-            $products = $query->get()
-                ->sortBy(function($product) use ($relatedProductIds) {
-                    return array_search($product->id, $relatedProductIds);
-                });
+            $products = $query->get();
+            
+            Log::info('Found products from database:', ['count' => $products->count(), 'product_ids' => $products->pluck('id')->toArray()]);
+            
+            $products = $products->sortBy(function($product) use ($relatedProductIds) {
+                return array_search($product->id, $relatedProductIds);
+            });
 
             // Paginate the results
             $perPage = 50;
@@ -230,6 +286,8 @@ class ProductYouMayLikeController extends Controller
                 ];
             });
 
+            Log::info('Returning transformed products:', ['count' => $transformedProducts->count()]);
+
             return response()->json([
                 'success' => true,
                 'data' => $transformedProducts->values(),
@@ -239,6 +297,7 @@ class ProductYouMayLikeController extends Controller
 
         } catch (\Exception $e) {
             Log::error('Error in getProductsYouMayLike: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
             
             return response()->json([
                 'success' => false,
