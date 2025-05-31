@@ -54,7 +54,7 @@ use App\Http\Controllers\API\CountryController;
 use App\Http\Controllers\API\ProductAttributeController;
 use App\Http\Controllers\API\SEOManagementController;
 use App\Http\Controllers\API\BrandPageController;
-
+use App\Http\Controllers\Api\ProductYouMayLikeController;
 use App\Http\Controllers\API\FaqApiController;
 
 Route::get('faqs/product/{product_id}', [FaqApiController::class, 'getFaqsByProduct']);
@@ -62,6 +62,7 @@ Route::get('faqs/product/{product_id}', [FaqApiController::class, 'getFaqsByProd
 Route::get('/seo-management', [SEOManagementController::class, 'index']);
 Route::get('/seo-management/relational/{relational_id}', [SEOManagementController::class, 'getByRelationalId']);
 Route::get('seo/paragraphs/{relational_id}', [SEOManagementController::class, 'getParagraphData']);
+
 
 
 Route::get('product/{productId}/attributes', [ProductAttributeController::class, 'getAttributesByProduct']);
@@ -121,6 +122,13 @@ Route::middleware('auth:sanctum')->get('/customer-reviews', [UserReviewApiContro
 Route::middleware('auth:sanctum')->post('/add-customer-reviews', [UserReviewApiController::class, 'createReview']);
 Route::middleware('auth:sanctum')->put('/customer-reviews-update/{id}', [UserReviewApiController::class, 'updateReview']);
 Route::middleware('auth:sanctum')->delete('/customer-reviews-delete/{id}', [UserReviewApiController::class, 'deleteReview']);
+
+
+// Products You May Like API Route
+Route::middleware('auth:sanctum')->get('/products-you-may-like', [ProductYouMayLikeController::class, 'getProductsYouMayLike']);
+
+// Alternative route with product_id as path parameter
+Route::middleware('auth:sanctum')->get('/products/{product_id}/you-may-like', [ProductYouMayLikeController::class, 'getProductsYouMayLike']);
 
 
 Route::middleware('auth:sanctum')->post('/save-for-later', [SaveForLaterController::class, 'saveForLater']);

@@ -904,5 +904,28 @@ class Product extends BaseModel
     {
         return $this->belongsTo(ProductAttribute::class, 'attribute_id');
     }
+
+
+    public function youMayLike()
+    {
+        return $this->hasOne(ProductYouMayLike::class, 'product_id');
+    }
+
+    /**
+     * Get all the related products that might be liked by users who view this product
+     */
+    public function relatedProductsYouMayLike()
+    {
+        return $this->hasManyThrough(
+            Product::class,
+            ProductYouMayLikeItem::class,
+            'product_you_may_like_id', // Foreign key on product_you_may_like_items table
+            'id', // Foreign key on products table
+            'id', // Local key on products table (through youMayLike relationship)
+            'product_id' // Local key on product_you_may_like_items table
+        )->join('product_you_may_likes', 'product_you_may_likes.id', '=', 'product_you_may_like_items.product_you_may_like_id')
+        ->where('product_you_may_likes.product_id', $this->id)
+        ->orderBy('product_you_may_like_items.priority', 'asc');
+    }
     
 }
