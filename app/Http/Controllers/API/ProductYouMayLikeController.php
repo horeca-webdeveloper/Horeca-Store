@@ -280,18 +280,165 @@ class ProductYouMayLikeController extends Controller
         return [];
     }
 
-   
-function getRelatedProducts($productId)
-{
-    $relatedIds = DB::table('product_you_may_like_items as pyml')
-        ->distinct()
-        ->where('pyml.product_id', $productId)
-        ->whereIn('pyml.product_you_may_like_id', function ($query) {
-            $query->select('id')->from('ec_products');
-        })
-        ->pluck('pyml.product_you_may_like_id');
-
-    return Product::whereIn('id', $relatedIds)->get();
-}
+    public function getProductsYouMayLikeGuest(Request $request, $product_id = null)
+    {
+        try {
+            $productId = $product_id ?? $request->input('product_id');
+    
+            if (!$productId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Product ID is required',
+                ], 400);
+            }
+    
+            Log::info('Fetching recommendations for product:', ['product_id' => $productId]);
+    
+            // Step 1: Find the main "product_you_may_likes" record for this product
+            $productYouMayLike = DB::table('product_you_may_likes')
+                ->where('product_id', $productId)
+                ->first();
+    
+            Log::info('ProductYouMayLike lookup:', [
+                'product_id' => $productId,
+                'found' => $productYouMayLike ? 'yes' : 'no',
+                'record_id' => $productYouMayLike->id ?? null,
+            ]);
+    
+            if (!$productYouMayLike) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'No related products found for this product',
+                    'data' => [],
+                    'pagination' => $this->emptyPagination(),
+                ]);
+            }
+    
+            // Step 2: Get only product IDs from product_you_may_like_items where the product exists in ec_products
+            $relatedProductIds = DB::table('product_you_may_like_items as pyml')
+                ->distinct()
+                ->where('pyml.product_id', $productId)
+                ->whereIn('pyml.product_you_may_like_id', function ($query) {
+                    $query->select('id')->from('ec_products');
+                })
+                ->pluck('pyml.product_you_may_like_id')
+                ->toArray();
+    
+            Log::info('ProductYouMayLikeItems:', [
+                'product_you_may_like_id' => $productYouMayLike->id,
+                'count' => count($relatedProductIds),
+                'product_ids' => $relatedProductIds,
+            ]);
+    
+            if (empty($relatedProductIds)) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'No recommended products configured',
+                    'data' => [],
+                    'pagination' => $this->emptyPagination(),
+                ]);
+            }
+    
+            $productsQuery = Product::with(['categories', 'brand', 'tags', 'producttypes'])
+                ->where('status', 'published')
+                ->whereIn('id', $relatedProductIds);
+    
+            $products = $productsQuery->get();
+    
+            Log::info('Products query result:', [
+                'expected_ids' => $relatedProductIds,
+                'found_count' => $products->count(),
+                'found_ids' => $products->pluck('id')->toArray(),
+            ]);
+    
+            if ($products->isEmpty()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'No published products found in recommendations',
+                    'data' => [],
+                    'pagination' => $this->emptyPagination(),
+                ]);
+            }
+    
+            $products = $products->sortBy(fn($product) => array_search($product->id, $relatedProductIds));
+    
+            $perPage = 50;
+            $page = max(1, (int) $request->input('page', 1));
+            $total = $products->count();
+            $offset = ($page - 1) * $perPage;
+            $paginatedProducts = $products->slice($offset, $perPage);
+    
+            $productIds = $paginatedProducts->pluck('id')->toArray();
+            $productsWithRelations = Product::whereIn('id', $productIds)
+                ->with(['reviews:id,product_id,star', 'currency', 'specifications'])
+                ->get()
+                ->keyBy('id');
+    
+            $pagination = $this->buildPagination($page, $perPage, $total);
+    
+            $transformedProducts = $paginatedProducts->map(function ($product) use ($productsWithRelations) {
+                $productWithRelations = $productsWithRelations->get($product->id) ?? $product;
+    
+                $images = $this->normalizeMediaUrls($product->images);
+                $videos = $this->normalizeMediaUrls($product->video_path);
+    
+                $totalReviews = $productWithRelations->reviews ? $productWithRelations->reviews->count() : 0;
+                $avgRating = $totalReviews > 0 ? $productWithRelations->reviews->avg('star') : null;
+    
+                $quantity = $product->quantity ?? 0;
+                $unitsSold = $product->units_sold ?? 0;
+                $leftStock = $quantity - $unitsSold;
+    
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'images' => $images,
+                    'video_url' => $product->video_url,
+                    'video_path' => $videos,
+                    'sku' => $product->sku,
+                    'original_price' => $product->price,
+                    'front_sale_price' => $product->price,
+                    'sale_price' => $product->sale_price,
+                    'price' => $product->price,
+                    'start_date' => $product->start_date,
+                    'end_date' => $product->end_date,
+                    'warranty_information' => $product->warranty_information,
+                    'currency' => $productWithRelations->currency?->title,
+                    'total_reviews' => $totalReviews,
+                    'avg_rating' => $avgRating,
+                    'best_price' => $product->sale_price ?? $product->price,
+                    'best_delivery_date' => null,
+                    'leftStock' => $leftStock,
+                    'currency_title' => $productWithRelations->currency
+                        ? ($productWithRelations->currency->is_prefix_symbol
+                            ? $productWithRelations->currency->title
+                            : ($product->price . ' ' . $productWithRelations->currency->title))
+                        : $product->price,
+                ];
+            });
+    
+            Log::info('Returning products:', [
+                'total' => $total,
+                'page' => $page,
+                'count' => $transformedProducts->count(),
+            ]);
+    
+            return response()->json([
+                'success' => true,
+                'data' => $transformedProducts->values(),
+                'pagination' => $pagination,
+                'message' => 'Products you may like retrieved successfully',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error in getProductsYouMayLike: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+    
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while fetching products you may like',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
     
 }
