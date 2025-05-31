@@ -290,7 +290,7 @@ class ProductYouMayLikeController extends Controller
 
         // Step 2: Get all product_ids from product_you_may_like_items where product_you_may_like_id in $likeIds
         $relatedProductIds = DB::table('product_you_may_like_items')
-            ->whereIn('product_you_may_like_id', $likeIds)
+            ->whereIn('product_id', $likeIds)
             ->pluck('product_id');
 
         if ($relatedProductIds->isEmpty()) {
