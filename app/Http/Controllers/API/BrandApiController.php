@@ -585,7 +585,7 @@ public function getAllHomeBrandProducts(Request $request)
 
     public function getCategories($id)
 	 {
-		 $brand = Brand::with(['products.categories:id,name'])->findOrFail($id);
+		 $brand = Brand::with(['products.categories:id,name,image'])->findOrFail($id);
 
 		 // Flatten and get unique categories, only with id and name
 		 $categories = $brand->products
@@ -594,7 +594,7 @@ public function getAllHomeBrandProducts(Request $request)
 					 return [
 						 'id' => $category->id,
 						 'name' => $category->name,
-                         'image' =>$category->image
+                         'image' => asset('storage/' . $category->image), // full URL
 					 ];
 				 });
 			 })
