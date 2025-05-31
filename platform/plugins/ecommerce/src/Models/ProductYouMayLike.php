@@ -1,6 +1,5 @@
 <?php
-
-// App/Models/ProductYouMayLike.php
+// In ProductYouMayLike.php
 namespace Botble\Ecommerce\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,38 +12,32 @@ class ProductYouMayLike extends BaseModel
     protected $table = 'product_you_may_likes';
 
     protected $fillable = [
-        'product_id'
+        'product_id',
     ];
 
-    /**
-     * Get the product that owns this "you may like" entry
-     */
+    // The product this recommendation belongs to
     public function product()
     {
-        return $this->belongsTo(Product::class, 'product_id');
+        return $this->belongsTo(Product::class, 'product_id', 'id');
     }
 
-    /**
-     * Get all the related product items for this "you may like" entry
-     */
+    // Items linked to this "you may like" entry
     public function items()
     {
-        return $this->hasMany(ProductYouMayLikeItem::class, 'product_you_may_like_id')
+        return $this->hasMany(ProductYouMayLikeItem::class, 'product_you_may_like_id', 'id')
                     ->orderBy('priority', 'asc');
     }
 
-    /**
-     * Get the related products through the items relationship
-     */
+    // The related products recommended (via the items table)
     public function relatedProducts()
     {
         return $this->hasManyThrough(
             Product::class,
             ProductYouMayLikeItem::class,
             'product_you_may_like_id', // Foreign key on product_you_may_like_items table
-            'id', // Foreign key on products table
-            'id', // Local key on product_you_may_likes table
-            'product_id' // Local key on product_you_may_like_items table
+            'id',                      // Foreign key on products table (local key of product)
+            'id',                      // Local key on product_you_may_likes table
+            'product_id'               // Local key on product_you_may_like_items table
         )->orderBy('product_you_may_like_items.priority', 'asc');
     }
 }

@@ -1,4 +1,5 @@
 <?php
+// In ProductYouMayLikeItem.php
 namespace Botble\Ecommerce\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,32 +14,26 @@ class ProductYouMayLikeItem extends BaseModel
     protected $fillable = [
         'product_you_may_like_id',
         'product_id',
-        'priority'
+        'priority',
     ];
 
     protected $casts = [
-        'priority' => 'integer'
+        'priority' => 'integer',
     ];
 
-    /**
-     * Get the "you may like" entry that owns this item
-     */
+    // The parent "you may like" entry
     public function productYouMayLike()
     {
-        return $this->belongsTo(ProductYouMayLike::class, 'product_you_may_like_id');
+        return $this->belongsTo(ProductYouMayLike::class, 'product_you_may_like_id', 'id');
     }
 
-    /**
-     * Get the product associated with this item
-     */
+    // The recommended product itself
     public function product()
     {
-        return $this->belongsTo(Product::class, 'product_id');
+        return $this->belongsTo(Product::class, 'product_id', 'id');
     }
 
-    /**
-     * Scope to order by priority
-     */
+    // Scope to order by priority
     public function scopeOrderedByPriority($query)
     {
         return $query->orderBy('priority', 'asc');

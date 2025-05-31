@@ -906,10 +906,12 @@ class Product extends BaseModel
     }
 
 
+        // In Product.php (your main product model)
     public function youMayLike()
     {
-        return $this->hasOne(ProductYouMayLike::class, 'product_id');
+        return $this->hasOne(ProductYouMayLike::class, 'product_id', 'id');
     }
+
 
     /**
      * Get all the related products that might be liked by users who view this product
