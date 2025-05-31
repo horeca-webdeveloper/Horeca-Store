@@ -135,16 +135,16 @@ class ProductYouMayLikeController extends Controller
                 $productWithRelations = $productsWithRelations->get($product->id) ?? $product;
 
                 // Decode benefit features safely
-                $benefitFeatures = [];
-                if (!empty($product->benefit_features)) {
-                    $decoded = json_decode($product->benefit_features, true);
-                    if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-                        $benefitFeatures = array_map(fn($b) => [
-                            'benefit' => $b['benefit'] ?? null,
-                            'feature' => $b['feature'] ?? null,
-                        ], $decoded);
-                    }
-                }
+                // $benefitFeatures = [];
+                // if (!empty($product->benefit_features)) {
+                //     $decoded = json_decode($product->benefit_features, true);
+                //     if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                //         $benefitFeatures = array_map(fn($b) => [
+                //             'benefit' => $b['benefit'] ?? null,
+                //             'feature' => $b['feature'] ?? null,
+                //         ], $decoded);
+                //     }
+                // }
 
                 // Normalize images and videos URLs
                 $images = $this->normalizeMediaUrls($product->images);
@@ -182,8 +182,7 @@ class ProductYouMayLikeController extends Controller
                             ? $productWithRelations->currency->title
                             : ($product->price . ' ' . $productWithRelations->currency->title))
                         : $product->price,
-                    'in_wishlist' => in_array($product->id, $wishlistProductIds),
-                    'benefit_features' => $benefitFeatures,
+                    'in_wishlist' => in_array($product->id, $wishlistProductIds)
                 ];
             });
 
