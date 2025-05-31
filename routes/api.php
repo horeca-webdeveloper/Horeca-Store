@@ -133,6 +133,8 @@ Route::get('/products/{product_id}/you-may-like-guest', [ProductYouMayLikeContro
 Route::middleware('auth:sanctum')->get('/related-products/{productId}', [ProductYouMayLikeController::class, 'getRelatedProducts']);
 
 
+
+
 Route::middleware('auth:sanctum')->post('/save-for-later', [SaveForLaterController::class, 'saveForLater']);
 Route::middleware('auth:sanctum')->get('/show-save-for-later', [SaveForLaterController::class, 'showSaveForLater']);
 Route::middleware('auth:sanctum')->post('/remove-from-save-for-later', [SaveForLaterController::class, 'removeFromSaveForLater']);
@@ -208,6 +210,9 @@ Route::post('/login', [CustomerController::class, 'login']);
 Route::get('/customers', [CustomerController::class, 'index']);
 //  Route::get('/products', [ProductApiController::class, 'getAllProducts']);
  Route::get('/brandguestproducts', [BrandApiController::class, 'getAllBrandGuestProducts']);
+
+ Route::get('/brand/{brandId}/category/{categoryId}/products', [BrandApiController::class, 'getProductsByBrandAndCategory']);
+ Route::get('/brand/{id}/categories', [BrandApiController::class, 'getCategories']);
 
 Route::middleware('auth:sanctum')->get('/brandproducts', [BrandApiController::class, 'getAllBrandProducts']);
 Route::middleware('auth:sanctum')->get('/homebrandproducts', [BrandApiController::class, 'getAllHomeBrandProducts']);
