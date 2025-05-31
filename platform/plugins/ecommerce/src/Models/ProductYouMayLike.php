@@ -1,12 +1,12 @@
 <?php
 
 // App/Models/ProductYouMayLike.php
-namespace App\Models;
+namespace Botble\Ecommerce\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class ProductYouMayLike extends Model
+class ProductYouMayLike extends BaseModel
 {
     use HasFactory;
 
