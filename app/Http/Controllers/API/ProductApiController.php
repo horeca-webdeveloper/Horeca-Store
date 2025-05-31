@@ -385,8 +385,10 @@ class ProductApiController extends Controller
                             return [
                                 'id' => $category->id,
                                 'name' => $category->name,
+                                'slug' => optional($category->slugable)->key, // Get slug from the slugs table
                             ];
                         });
+                        
 
                         return $product;
                     });
@@ -746,8 +748,10 @@ class ProductApiController extends Controller
                             return [
                                 'id' => $category->id,
                                 'name' => $category->name,
+                                'slug' => optional($category->slugable)->key, // Get slug from the slugs table
                             ];
                         });
+                        
 
 
                         return $product;
