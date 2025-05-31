@@ -277,7 +277,7 @@ class ProductYouMayLikeController extends Controller
         return [];
     }
 
-    function getRelatedProductIds($productId) {
+    function getRelatedProducts($productId) {
         // Step 1: Get all product_you_may_like_ids that have product_id = $productId
         $likeIds = DB::table('product_you_may_like_items')
             ->where('product_id', $productId)
