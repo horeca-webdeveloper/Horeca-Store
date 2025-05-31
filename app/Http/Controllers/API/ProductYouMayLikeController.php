@@ -18,13 +18,14 @@ class ProductYouMayLikeController extends Controller
      * Get products you may like based on a given product
      *
      * @param Request $request
+     * @param int|null $product_id (route parameter)
      * @return \Illuminate\Http\JsonResponse
      */
-    public function getProductsYouMayLike(Request $request)
+    public function getProductsYouMayLike(Request $request, $product_id = null)
     {
         try {
-            // Get the product_id from request
-            $productId = $request->input('product_id');
+            // Get the product_id from route parameter or request input
+            $productId = $product_id ?? $request->input('product_id');
             
             if (!$productId) {
                 return response()->json([
