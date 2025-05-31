@@ -38,8 +38,7 @@ class ProductYouMayLikeController extends Controller
             $userId = Auth::id();
             $isUserLoggedIn = $userId !== null;
 
-            Log::info('User logged in:', ['user_id' => $userId]);
-            Log::info('Looking for product recommendations for product ID:', ['product_id' => $productId]);
+            Log::info('Fetching recommendations for product:', ['product_id' => $productId, 'user_id' => $userId]);
 
             $wishlistProductIds = [];
             if ($isUserLoggedIn) {
@@ -54,38 +53,21 @@ class ProductYouMayLikeController extends Controller
                 $wishlistProductIds = session()->get('guest_wishlist', []);
             }
 
-            // First, find if there's a ProductYouMayLike record that contains our product
-            // This could be either as the main product or as one of the related products
-            $productYouMayLike = null;
-            
-            // Option 1: Check if this product is the main product in product_you_may_likes
-            $mainProductRecord = DB::table('product_you_may_likes')
+            // Step 1: Find the product_you_may_like record for this product
+            $productYouMayLike = DB::table('product_you_may_likes')
                 ->where('product_id', $productId)
                 ->first();
-            
-            if ($mainProductRecord) {
-                $productYouMayLike = $mainProductRecord;
-                Log::info('Found as main product in product_you_may_likes', ['record_id' => $mainProductRecord->id]);
-            } else {
-                // Option 2: Check if this product appears in product_you_may_like_items
-                $relatedProductRecord = DB::table('product_you_may_like_items')
-                    ->where('product_id', $productId)
-                    ->first();
-                
-                if ($relatedProductRecord) {
-                    // Get the parent ProductYouMayLike record
-                    $productYouMayLike = DB::table('product_you_may_likes')
-                        ->where('id', $relatedProductRecord->product_you_may_like_id)
-                        ->first();
-                    Log::info('Found as related product, parent record:', ['parent_id' => $productYouMayLike->id ?? 'null']);
-                }
-            }
+
+            Log::info('ProductYouMayLike lookup result:', [
+                'product_id' => $productId,
+                'found' => $productYouMayLike ? 'yes' : 'no',
+                'record_id' => $productYouMayLike->id ?? null
+            ]);
 
             if (!$productYouMayLike) {
-                Log::info('No product_you_may_like record found for product:', ['product_id' => $productId]);
                 return response()->json([
                     'success' => true,
-                    'message' => 'No related products found',
+                    'message' => 'No related products found for this product',
                     'data' => [],
                     'pagination' => [
                         'current_page' => 1,
@@ -102,19 +84,26 @@ class ProductYouMayLikeController extends Controller
                 ]);
             }
 
-            // Get related product IDs ordered by priority
-            $relatedProductIds = DB::table('product_you_may_like_items')
+            // Step 2: Get all the recommended product IDs for this product_you_may_like record
+            // The product_you_may_like_id in items table should match the ID from product_you_may_likes table
+            $recommendedProducts = DB::table('product_you_may_like_items')
                 ->where('product_you_may_like_id', $productYouMayLike->id)
                 ->orderBy('priority', 'asc')
-                ->pluck('product_id')
-                ->toArray();
+                ->get(['product_id', 'priority']);
 
-            Log::info('Found related product IDs:', ['ids' => $relatedProductIds, 'count' => count($relatedProductIds)]);
+            $relatedProductIds = $recommendedProducts->pluck('product_id')->toArray();
+
+            Log::info('ProductYouMayLikeItems lookup result:', [
+                'product_you_may_like_id' => $productYouMayLike->id,
+                'found_items_count' => count($relatedProductIds),
+                'product_ids' => $relatedProductIds,
+                'priorities' => $recommendedProducts->pluck('priority')->toArray()
+            ]);
 
             if (empty($relatedProductIds)) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'No related products found',
+                    'message' => 'No recommended products configured',
                     'data' => [],
                     'pagination' => [
                         'current_page' => 1,
@@ -131,46 +120,44 @@ class ProductYouMayLikeController extends Controller
                 ]);
             }
 
-            // Exclude the current product from recommendations if it appears in the list
-            $relatedProductIds = array_filter($relatedProductIds, function($id) use ($productId) {
-                return $id != $productId;
-            });
-
-            Log::info('Related product IDs after filtering current product:', ['ids' => $relatedProductIds, 'count' => count($relatedProductIds)]);
-
-            if (empty($relatedProductIds)) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'No related products found (after filtering current product)',
-                    'data' => [],
-                    'pagination' => [
-                        'current_page' => 1,
-                        'last_page' => 1,
-                        'per_page' => 50,
-                        'total' => 0,
-                        'has_more_pages' => false,
-                        'visible_pages' => [1],
-                        'has_previous' => false,
-                        'has_next' => false,
-                        'previous_page' => 0,
-                        'next_page' => 2,
-                    ]
-                ]);
-            }
-
-            // Build query for related products
-            $query = Product::with(['categories', 'brand', 'tags', 'producttypes'])
+            // Step 3: Get the actual products from the products table
+            $productsQuery = Product::with(['categories', 'brand', 'tags', 'producttypes'])
                 ->where('status', 'published')
                 ->whereIn('id', $relatedProductIds);
 
-            // Get products maintaining the priority order
-            $products = $query->get();
-            
-            Log::info('Found products from database:', ['count' => $products->count(), 'product_ids' => $products->pluck('id')->toArray()]);
-            
+            $products = $productsQuery->get();
+
+            Log::info('Products query result:', [
+                'searched_ids' => $relatedProductIds,
+                'found_products_count' => $products->count(),
+                'found_product_ids' => $products->pluck('id')->toArray(),
+                'missing_ids' => array_diff($relatedProductIds, $products->pluck('id')->toArray())
+            ]);
+
+            // Sort products by priority order
             $products = $products->sortBy(function($product) use ($relatedProductIds) {
                 return array_search($product->id, $relatedProductIds);
             });
+
+            if ($products->isEmpty()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'No published products found in recommendations',
+                    'data' => [],
+                    'pagination' => [
+                        'current_page' => 1,
+                        'last_page' => 1,
+                        'per_page' => 50,
+                        'total' => 0,
+                        'has_more_pages' => false,
+                        'visible_pages' => [1],
+                        'has_previous' => false,
+                        'has_next' => false,
+                        'previous_page' => 0,
+                        'next_page' => 2,
+                    ]
+                ]);
+            }
 
             // Paginate the results
             $perPage = 50;
@@ -236,18 +223,25 @@ class ProductYouMayLikeController extends Controller
                     }
                 }
 
-                // Select only required fields for the response
-                $product->images = collect($product->images)->map(function ($image) {
+                // Handle images
+                $images = $product->images;
+                if (is_string($images)) {
+                    $images = json_decode($images, true) ?? [];
+                }
+                $product->images = collect($images)->map(function ($image) {
                     return filter_var($image, FILTER_VALIDATE_URL) ? $image : url('storage/' . ltrim($image, '/'));
                 });
 
-                $videoPaths = json_decode($product->video_path, true); // Decode JSON to array
-
+                // Handle video paths
+                $videoPaths = $product->video_path;
+                if (is_string($videoPaths)) {
+                    $videoPaths = json_decode($videoPaths, true) ?? [];
+                }
                 $product->video_path = collect($videoPaths)->map(function ($video) {
                     if (filter_var($video, FILTER_VALIDATE_URL)) {
-                        return $video; // If it's already a full URL, return it.
+                        return $video;
                     }
-                    return url('storage/' . ltrim($video, '/')); // Manually construct the full URL
+                    return url('storage/' . ltrim($video, '/'));
                 });
 
                 $totalReviews = $productWithRelations->reviews ? $productWithRelations->reviews->count() : 0;
@@ -275,7 +269,7 @@ class ProductYouMayLikeController extends Controller
                     'total_reviews' => $totalReviews,
                     'avg_rating' => $avgRating,
                     'best_price' => $product->sale_price ?? $product->price,
-                    'best_delivery_date' => null, // Customize as needed
+                    'best_delivery_date' => null,
                     'leftStock' => $leftStock,
                     'currency_title' => $productWithRelations->currency
                         ? ($productWithRelations->currency->is_prefix_symbol
@@ -286,7 +280,12 @@ class ProductYouMayLikeController extends Controller
                 ];
             });
 
-            Log::info('Returning transformed products:', ['count' => $transformedProducts->count()]);
+            Log::info('Successfully returning products:', [
+                'total_found' => $total,
+                'page' => $currentPage,
+                'per_page' => $perPage,
+                'returning_count' => $transformedProducts->count()
+            ]);
 
             return response()->json([
                 'success' => true,
