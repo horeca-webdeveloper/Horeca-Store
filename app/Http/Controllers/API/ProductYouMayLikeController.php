@@ -7,9 +7,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use App\Models\Product;
-use App\Models\ProductYouMayLike;
-use App\Models\ProductYouMayLikeItem;
+use Botble\Ecommerce\Models\Product;
+use Botble\Ecommerce\Models\ProductYouMayLikeItem;
+use Botble\Ecommerce\Models\ProductYouMayLike;
+
 
 class ProductYouMayLikeController extends Controller
 {
