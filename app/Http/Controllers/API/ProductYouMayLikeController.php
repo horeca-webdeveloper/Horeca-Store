@@ -62,12 +62,16 @@ class ProductYouMayLikeController extends Controller
             }
 
             // Step 2: Fetch all recommended products linked to this "product_you_may_like" record by product_you_may_like_id
-            $recommendedProducts = DB::table('product_you_may_like_items')
-                ->where('product_you_may_like_id', $productYouMayLike->id)
-                ->orderBy('priority', 'asc')
-                ->get(['product_id', 'priority']);
+           // Step 2 (Updated): Get only product IDs from product_you_may_like_items where the product exists in ec_products
+            $relatedProductIds = DB::table('product_you_may_like_items as pyml')
+            ->distinct()
+            ->where('pyml.product_id', $productId)
+            ->whereIn('pyml.product_you_may_like_id', function ($query) {
+                $query->select('id')->from('ec_products');
+            })
+            ->pluck('pyml.product_you_may_like_id')
+            ->toArray();
 
-            $relatedProductIds = $recommendedProducts->pluck('product_id')->toArray();
 
             Log::info('ProductYouMayLikeItems:', [
                 'product_you_may_like_id' => $productYouMayLike->id,
