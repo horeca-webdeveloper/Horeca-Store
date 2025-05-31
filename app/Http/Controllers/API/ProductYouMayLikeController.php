@@ -277,31 +277,32 @@ class ProductYouMayLikeController extends Controller
         return [];
     }
 
-    public function getRelatedProducts($productId)
-    {
-        // Step 1: Get all product_you_may_likes ids where product_id = $productId
-        $likeIds = DB::table('product_you_may_likes')
+    function getRelatedProductIds($productId) {
+        // Step 1: Get all product_you_may_like_ids that have product_id = $productId
+        $likeIds = DB::table('product_you_may_like_items')
             ->where('product_id', $productId)
-            ->pluck('id');
-
+            ->pluck('product_you_may_like_id');
+    
         if ($likeIds->isEmpty()) {
-            return response()->json(['data' => [], 'message' => 'No related products found'], 200);
+            return []; // No related groups found
         }
-
-        // Step 2: Get all product_ids from product_you_may_like_items where product_you_may_like_id in $likeIds
+    
+        // Step 2: Get all product_ids from those product_you_may_like_id groups excluding the input productId
         $relatedProductIds = DB::table('product_you_may_like_items')
-            ->whereIn('product_id', $likeIds)
+            ->whereIn('product_you_may_like_id', $likeIds)
+            ->where('product_id', '<>', $productId)
             ->pluck('product_id');
-
+    
         if ($relatedProductIds->isEmpty()) {
-            return response()->json(['data' => [], 'message' => 'No related products found'], 200);
+            return []; // No related product ids found
         }
-
+    
         // Step 3: Filter to only those product ids that exist in ec_products
         $validProductIds = DB::table('ec_products')
             ->whereIn('id', $relatedProductIds)
             ->pluck('id');
-
-        return response()->json(['data' => $validProductIds], 200);
+    
+        return $validProductIds->toArray();
     }
+    
 }
