@@ -211,7 +211,7 @@ Route::get('/customers', [CustomerController::class, 'index']);
 //  Route::get('/products', [ProductApiController::class, 'getAllProducts']);
  Route::get('/brandguestproducts', [BrandApiController::class, 'getAllBrandGuestProducts']);
 
- Route::get('/brand/{brandId}/category/{categoryId}/products', [BrandApiController::class, 'getProductsByBrandAndCategory']);
+ Route::get('/products/brand/{brandId}/category/{categoryId?}', [BrandApiController::class, 'getProductsByBrandAndCategory']);
  Route::get('/brand/{id}/categories', [BrandApiController::class, 'getCategories']);
 
 Route::middleware('auth:sanctum')->get('/brandproducts', [BrandApiController::class, 'getAllBrandProducts']);
