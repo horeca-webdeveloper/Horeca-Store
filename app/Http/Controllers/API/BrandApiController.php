@@ -594,6 +594,7 @@ public function getAllHomeBrandProducts(Request $request)
 					 return [
 						 'id' => $category->id,
 						 'name' => $category->name,
+                         'image' =>$category->image
 					 ];
 				 });
 			 })
