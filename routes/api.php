@@ -129,6 +129,7 @@ Route::middleware('auth:sanctum')->get('/products-you-may-like', [ProductYouMayL
 
 // Alternative route with product_id as path parameter
 Route::middleware('auth:sanctum')->get('/products/{product_id}/you-may-like', [ProductYouMayLikeController::class, 'getProductsYouMayLike']);
+Route::middleware('auth:sanctum')->get('/related-products/{productId}', [ProductYouMayLikeController::class, 'getRelatedProducts']);
 
 
 Route::middleware('auth:sanctum')->post('/save-for-later', [SaveForLaterController::class, 'saveForLater']);
