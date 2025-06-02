@@ -181,6 +181,7 @@ class ProductApiController extends Controller
                             return url('storage/' . ltrim($video, '/')); // Manually construct the full URL
                         });
 
+                        $product->sellingUnitAttribute->attribute_value ?? null;
 
                         // Add review and stock details
                         $totalReviews = $product->reviews->count();
