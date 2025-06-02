@@ -932,7 +932,7 @@ class Product extends BaseModel
 
     public function sellingUnitAttribute()
 	{
-		return $this->hasOne(ProductAttribute::class)
+		return $this->hasOne(ProductAttributes::class)
 		->whereHas('attributeDetails', function ($query) {
 			$query->where('name', 'Selling Unit');
 		});

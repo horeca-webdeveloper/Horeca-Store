@@ -32,6 +32,9 @@ class ProductAttributes extends BaseModel
     {
         return $this->belongsTo(AttributeGroup::class, 'attribute_group_id');
     }
-    
+    public function attributeDetails()
+	{
+		return $this->belongsTo(Attribute::class, 'attribute_id');
+	}
 
 }
