@@ -181,11 +181,7 @@ class ProductApiController extends Controller
                             return url('storage/' . ltrim($video, '/')); // Manually construct the full URL
                         });
 
-                        $product->selling_unit_value = $product->sellingUnitAttribute && $product->sellingUnitAttribute->attribute_value
-                        ? '/' . (explode('/', $product->sellingUnitAttribute->attribute_value)[1] ?? $product->sellingUnitAttribute->attribute_value)
-                        : null;
-                    
-
+                        $product->sellingUnitAttribute->attribute_value ?? null;
 
                         // Add review and stock details
                         $totalReviews = $product->reviews->count();
@@ -548,9 +544,8 @@ class ProductApiController extends Controller
                             return url('storage/' . ltrim($video, '/')); // Manually construct the full URL
                         });
 
-                        $product->sellingUnitAttribute->attribute_value
-                        ? '/' . (explode('/', $product->sellingUnitAttribute->attribute_value)[1] ?? $product->sellingUnitAttribute->attribute_value)
-                        : null;
+                        $product->sellingUnitAttribute->attribute_value ?? null;
+
                         // Add review and stock details
                         $totalReviews = $product->reviews->count();
                         $avgRating = $totalReviews > 0 ? $product->reviews->avg('star') : null;
@@ -943,9 +938,8 @@ class ProductApiController extends Controller
                 }
                 return url('storage/' . ltrim($video, '/')); // Manually construct the full URL
             });
-            $product->sellingUnitAttribute->attribute_value
-            ? '/' . (explode('/', $product->sellingUnitAttribute->attribute_value)[1] ?? $product->sellingUnitAttribute->attribute_value)
-            : null;
+
+            $product->sellingUnitAttribute->attribute_value ?? null;
 
             $totalReviews = $product->reviews->count();
             $avgRating = $totalReviews > 0 ? $product->reviews->avg('star') : null;
@@ -1246,9 +1240,8 @@ class ProductApiController extends Controller
                                 }
                                 return url('storage/' . ltrim($video, '/')); // Manually construct the full URL
                             });
-                            $product->sellingUnitAttribute->attribute_value
-                            ? '/' . (explode('/', $product->sellingUnitAttribute->attribute_value)[1] ?? $product->sellingUnitAttribute->attribute_value)
-                            : null;
+
+                            $product->sellingUnitAttribute->attribute_value ?? null;
 
                             $totalReviews = $product->reviews->count();
                             $avgRating = $totalReviews > 0 ? $product->reviews->avg('star') : null;
