@@ -73,4 +73,9 @@ class ProductAttribute extends BaseModel
 
         return 'background-color: ' . ($this->color ?: '#000') . ' !important;';
     }
+
+    public function attributeDetails()
+	{
+		return $this->belongsTo(Attribute::class, 'attribute_id');
+	}
 }
