@@ -32,168 +32,7 @@ class BrandApiController extends Controller
         return session()->get('guest_wishlist', []);
     }
 
-    /**
-     * Optimized query logic for logged-in users.
-     */
-//  public function getAllBrandProducts(Request $request)
-// {
-//     $wishlistIds = $this->getWishlistProductIds();
-
-//     // Cache brands with product filtering
-//     $brands = Cache::remember('logged_in_brands', 60, function () use ($request) {
-//         return Brand::with([
-//             'products' => function ($query) use ($request) {
-//                 if ($request->has('search')) {
-//                     $query->where('name', 'like', '%' . $request->input('search') . '%');
-//                 }
-
-//                 if ($request->has('price_min')) {
-//                     $query->where('price', '>=', $request->input('price_min'));
-//                 }
-
-//                 if ($request->has('price_max')) {
-//                     $query->where('price', '<=', $request->input('price_max'));
-//                 }
-
-//                 if ($request->has('rating')) {
-//                     $query->whereHas('reviews', function ($q) use ($request) {
-//                         $q->selectRaw('AVG(star) as avg_rating')
-//                           ->groupBy('product_id')
-//                           ->havingRaw('AVG(star) >= ?', [$request->input('rating')]);
-//                     });
-//                 }
-                
-//                     // Order products by a column in descending order, e.g., created_at
-//     $query->orderBy('created_at', 'desc'); // Added this line to order the products
-//             }
-//         ])
-//         ->limit(20) // Limit number of brands/products fetched
-//         ->get();
-//     });
-
-//     return response()->json([
-//         'success' => true,
-//         'data' => $brands->map(function ($brand) use ($wishlistIds) {
-//             return [
-//                 'brand_name' => $brand->name,
-//                 'products' => $brand->products->map(function ($product) use ($wishlistIds) {
-                    
-//                     // Function to get the full image URL
-//                     $getImageUrl = function ($imageName) {
-//                         $imagePaths = [
-//                             public_path("storage/products/{$imageName}"),
-//                             public_path("storage/{$imageName}")
-//                         ];
-
-//                         foreach ($imagePaths as $path) {
-//                             if (file_exists($path)) {
-//                                 return asset('storage/' . str_replace(public_path('storage/'), '', $path));
-//                             }
-//                         }
-
-//                         return null; // Return null if image doesn't exist
-//                     };
-
-//                     // Check if 'images' is an array or a collection
-//                     $productImages = is_array($product->images) ? $product->images : ($product->images ? $product->images->toArray() : []);
-
-//                     return [
-//                         "id" => $product->id,
-//                         "name" => $product->name,
-//                         "images" => array_map(function ($image) use ($getImageUrl) {
-//                             return $getImageUrl($image); // Get full URL for each image
-//                         }, $productImages),
-//                         "sku" => $product->sku ?? '',
-//                         "price" => $product->price,
-//                         "sale_price" => $product->sale_price ?? null,
-//                         "rating" => $product->reviews()->avg('star') ?? null,
-//                         "in_wishlist" => in_array($product->id, $wishlistIds),
-//                     ];
-//                 }),
-//             ];
-//         }),
-//     ]);
-// }
-
-// public function getAllBrandProducts(Request $request)
-// {
-//     $wishlistIds = $this->getWishlistProductIds();
-
-//     // Fetch only the latest 5 brands with products
-//     $brands = Brand::with(['products'])
-//         ->has('products') // Only include brands with products
-//         ->orderBy('created_at', 'desc') // Order by latest brands
-//         ->take(5) // Limit to 5 brands
-//         ->get();
-
-//     return response()->json([
-//         'success' => true,
-//         'data' => $brands->map(function ($brand) use ($wishlistIds, $request) {
-//             // Filter and limit products to 10 for each brand
-//             $products = $brand->products()
-//                 ->when($request->has('search'), function ($query) use ($request) {
-//                     $query->where('name', 'like', '%' . $request->input('search') . '%');
-//                 })
-//                 ->when($request->has('price_min'), function ($query) use ($request) {
-//                     $query->where('price', '>=', $request->input('price_min'));
-//                 })
-//                 ->when($request->has('price_max'), function ($query) use ($request) {
-//                     $query->where('price', '<=', $request->input('price_max'));
-//                 })
-//                 ->when($request->has('rating'), function ($query) use ($request) {
-//                     $query->whereHas('reviews', function ($q) use ($request) {
-//                         $q->selectRaw('AVG(star) as avg_rating')
-//                           ->groupBy('product_id')
-//                           ->havingRaw('AVG(star) >= ?', [$request->input('rating')]);
-//                     });
-//                 })
-//                 ->orderBy('created_at', 'desc') // Order products by latest
-//                 ->take(10) // Limit to 10 products per brand
-//                 ->get();
-
-//             // Map brand data
-//             return [
-//                 'brand_name' => $brand->name,
-//                 'products' => $products->map(function ($product) use ($wishlistIds) {
-//                     // Check product images and construct URLs
-//                     $getImageUrl = function ($imageName) {
-//                         if (Str::startsWith($imageName, ['http://', 'https://'])) {
-//                             return $imageName;
-//                         }
-
-//                         $imagePaths = [
-//                             public_path("storage/products/{$imageName}"),
-//                             public_path("storage/{$imageName}")
-//                         ];
-
-//                         foreach ($imagePaths as $path) {
-//                             if (file_exists($path)) {
-//                                 return asset('storage/' . str_replace(public_path('storage/'), '', $path));
-//                             }
-//                         }
-
-//                         return null; // Return null if image doesn't exist
-//                     };
-
-//                     $productImages = is_array($product->images) ? $product->images : ($product->images ? $product->images->toArray() : []);
-
-//                     return [
-//                         "id" => $product->id,
-//                         "name" => $product->name,
-//                         "images" => array_map(function ($image) use ($getImageUrl) {
-//                             return $getImageUrl($image);
-//                         }, $productImages),
-//                         "sku" => $product->sku ?? '',
-//                         "price" => $product->price,
-//                         "sale_price" => $product->sale_price ?? null,
-//                         "rating" => $product->reviews()->avg('star') ?? null,
-//                         "in_wishlist" => in_array($product->id, $wishlistIds),
-//                     ];
-//                 }),
-//             ];
-//         }),
-//     ]);
-// }
+   
 public function getAllHomeBrandProducts(Request $request)
 {
     $wishlistIds = $this->getWishlistProductIds();
@@ -300,169 +139,9 @@ public function getAllHomeBrandProducts(Request $request)
 
 
 
-    /**
-     * Optimized query logic for guest users dfds s.
-     */
-    // public function getAllBrandGuestProducts(Request $request)
-    // {
-    //     $brands = Cache::remember('guest_brands', 60, function () use ($request) {
-    //         return Brand::with([
-    //             'products' => function ($query) use ($request) {
-    //                 if ($request->has('search')) {
-    //                     $query->where('name', 'like', '%' . $request->input('search') . '%');
-    //                 }
+   
 
-    //                 if ($request->has('price_min')) {
-    //                     $query->where('price', '>=', $request->input('price_min'));
-    //                 }
-
-    //                 if ($request->has('price_max')) {
-    //                     $query->where('price', '<=', $request->input('price_max'));
-    //                 }
-
-    //                 if ($request->has('rating')) {
-    //                     $query->whereHas('reviews', function ($q) use ($request) {
-    //                         $q->selectRaw('AVG(star) as avg_rating')
-    //                           ->groupBy('product_id')
-    //                           ->havingRaw('AVG(star) >= ?', [$request->input('rating')]);
-    //                     });
-    //                 }
-    //                     // Order products by a column in descending order, e.g., created_at
-    //      $query->orderBy('created_at', 'desc'); // Added this line to order the products
-    //             }
-    //         ])
-    //         ->limit(20) // Limit number of brands/products fetched
-    //         ->get();
-    //     });
-
-    //     return response()->json([
-    //         'success' => true,
-    //         'data' => $brands->map(function ($brand) {
-    //             return [
-    //                 'brand_name' => $brand->name,
-    //                 'products' => $brand->products->map(function ($product) {
-    //                       // Function to get the full image URL
-    //                 $getImageUrl = function ($imageName) {
-    //                     $imagePaths = [
-    //                         public_path("storage/products/{$imageName}"),
-    //                         public_path("storage/{$imageName}")
-    //                     ];
-
-    //                     foreach ($imagePaths as $path) {
-    //                         if (file_exists($path)) {
-    //                             return asset('storage/' . str_replace(public_path('storage/'), '', $path));
-    //                         }
-    //                     }
-
-    //                     return null; // Return null if image doesn't exist
-    //                 };
-
-    //                 // Check if 'images' is an array or a collection
-    //                 $productImages = is_array($product->images) ? $product->images : ($product->images ? $product->images->toArray() : []);
-                    
-    //                     return [
-    //                           "id" => $product->id,
-                                   
-    //                                  "id" => $product->id,
-    //                                 "name" => $product->name,
-    //                                  "images" => array_map(function ($image) use ($getImageUrl) {
-    //                         return $getImageUrl($image); // Get full URL for each image
-    //                     }, $productImages),
-    //                                 "sku" => $product->sku ?? '',
-    //                                 "price" => $product->price,
-    //                                 "sale_price" => $product->sale_price ?? null,
-                                  
-    //                                 "rating" => $product->reviews()->avg('star') ?? null,
-                                    
-                            
-    //                     ];
-    //                 }),
-    //             ];
-    //         }),
-    //     ]);
-    //}
-
-    // public function getAllBrandGuestProducts(Request $request)
-    // {
-    //     // Fetch only the latest 5 brands with at least 10 products
-    //     $brands = Brand::with(['products'])
-    //         ->whereHas('products', function ($query) {
-    //             $query->select('brand_id') // Select only the column needed for grouping
-    //                 ->groupBy('brand_id') // Group by the brand_id
-    //                 ->havingRaw('COUNT(*) >= 10'); // Ensure the brand has at least 10 products
-    //         })
-    //         ->orderBy('created_at', 'desc') // Order by latest brands
-    //         ->take(5) // Limit to 5 brands
-    //         ->get();
-    
-    //     return response()->json([
-    //         'success' => true,
-    //         'data' => $brands->map(function ($brand) use ($request) {
-    //             // Filter and limit products to 10 for each brand
-    //             $products = $brand->products()
-    //                 ->when($request->has('search'), function ($query) use ($request) {
-    //                     $query->where('name', 'like', '%' . $request->input('search') . '%');
-    //                 })
-    //                 ->when($request->has('price_min'), function ($query) use ($request) {
-    //                     $query->where('price', '>=', $request->input('price_min'));
-    //                 })
-    //                 ->when($request->has('price_max'), function ($query) use ($request) {
-    //                     $query->where('price', '<=', $request->input('price_max'));
-    //                 })
-    //                 ->when($request->has('rating'), function ($query) use ($request) {
-    //                     $query->whereHas('reviews', function ($q) use ($request) {
-    //                         $q->selectRaw('AVG(star) as avg_rating')
-    //                             ->groupBy('product_id')
-    //                             ->havingRaw('AVG(star) >= ?', [$request->input('rating')]);
-    //                     });
-    //                 })
-    //                 ->orderBy('created_at', 'desc') // Order products by latest
-    //                 ->take(10) // Limit to 10 products per brand
-    //                 ->get();
-    
-    //             // Map brand data
-    //             return [
-    //                 'brand_name' => $brand->name,
-    //                 'products' => $products->map(function ($product) {
-    //                     // Check product images and construct URLs
-    //                     $getImageUrl = function ($imageName) {
-    //                         if (Str::startsWith($imageName, ['http://', 'https://'])) {
-    //                             return $imageName;
-    //                         }
-    
-    //                         $imagePaths = [
-    //                             public_path("storage/products/{$imageName}"),
-    //                             public_path("storage/{$imageName}")
-    //                         ];
-    
-    //                         foreach ($imagePaths as $path) {
-    //                             if (file_exists($path)) {
-    //                                 return asset('storage/' . str_replace(public_path('storage/'), '', $path));
-    //                             }
-    //                         }
-    
-    //                         return null; // Return null if image doesn't exist
-    //                     };
-    
-    //                     $productImages = is_array($product->images) ? $product->images : ($product->images ? $product->images->toArray() : []);
-    
-    //                     return [
-    //                         "id" => $product->id,
-    //                         "name" => $product->name,
-    //                         "images" => array_map(function ($image) use ($getImageUrl) {
-    //                             return $getImageUrl($image);
-    //                         }, $productImages),
-    //                         "sku" => $product->sku ?? '',
-    //                         "price" => $product->price,
-    //                         "original_price" => $product->price,
-    //                         "sale_price" => $product->sale_price ?? null,
-    //                         "rating" => $product->reviews()->avg('star') ?? null,
-    //                     ];
-    //                 }),
-    //             ];
-    //         }),
-    //     ]);
-    // }
+   
     public function getAllBrandGuestProducts(Request $request)
 {
     // Subquery for best price and delivery days by SKU
@@ -614,33 +293,43 @@ public function getAllHomeBrandProducts(Request $request)
 
      public function getProductsByBrandAndCategory(Request $request, $brandId, $categoryId = null)
      {
-         try {
-             $brand = Brand::with(['products.categories'])->findOrFail($brandId);
-     
-             // Filter by category if provided
-             $filteredProducts = is_null($categoryId)
-                 ? $brand->products
-                 : $brand->products->filter(function ($product) use ($categoryId) {
-                     return $product->categories->contains('id', $categoryId);
-                 })->values();
-     
-             // 🔍 Apply search if provided
-             if ($search = $request->input('search')) {
-                 $filteredProducts = $filteredProducts->filter(function ($product) use ($search) {
-                     return str_contains(strtolower($product->name), strtolower($search)) ||
-                            str_contains(strtolower($product->sku), strtolower($search));
-                 })->values();
-             }
-     
-             if ($filteredProducts->isEmpty()) {
-                 return response()->json([
-                     'success' => true,
-                     'message' => 'No products found for this brand' . ($categoryId ? ' and category' : '') . ($search ? ' matching search' : ''),
-                     'data' => [],
-                     'pagination' => $this->emptyPagination(),
-                 ]);
-             }
-     
+            try {
+                // Load only published products with published categories
+                $brand = Brand::with(['products' => function ($query) {
+                    $query->where('status', 'published')
+                          ->whereHas('categories', function ($q) {
+                              $q->where('status', 'published');
+                          });
+                }, 'products.categories' => function ($query) {
+                    $query->where('status', 'published');
+                }])->findOrFail($brandId);
+        
+                // Filter by category if provided
+                $filteredProducts = is_null($categoryId)
+                    ? $brand->products
+                    : $brand->products->filter(function ($product) use ($categoryId) {
+                        return $product->categories->contains(function ($category) use ($categoryId) {
+                            return $category->id == $categoryId && $category->status === 'published';
+                        });
+                    })->values();
+        
+                // Apply search if provided
+                if ($search = $request->input('search')) {
+                    $filteredProducts = $filteredProducts->filter(function ($product) use ($search) {
+                        return str_contains(strtolower($product->name), strtolower($search)) ||
+                               str_contains(strtolower($product->sku), strtolower($search));
+                    })->values();
+                }
+        
+                if ($filteredProducts->isEmpty()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'No products found for this brand' . ($categoryId ? ' and category' : '') . ($search ? ' matching search' : ''),
+                        'data' => [],
+                        'pagination' => $this->emptyPagination(),
+                    ]);
+                }
+        
              $productIds = $filteredProducts->pluck('id')->toArray();
      
              $productsWithRelations = Product::whereIn('id', $productIds)
@@ -717,15 +406,16 @@ public function getAllHomeBrandProducts(Request $request)
          }
      }
      
-protected function emptyPagination()
-{
-    return [
-        'total' => 0,
-        'per_page' => 0,
-        'current_page' => 1,
-        'last_page' => 1,
-    ];
-}
+   
+     protected function emptyPagination()
+    {
+        return [
+            'total' => 0,
+            'per_page' => 0,
+            'current_page' => 1,
+            'last_page' => 1,
+        ];
+    }
 
 protected function buildPagination($page, $perPage, $total)
 {
