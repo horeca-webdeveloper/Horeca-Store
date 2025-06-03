@@ -617,17 +617,25 @@ public function getAllHomeBrandProducts(Request $request)
          try {
              $brand = Brand::with(['products.categories'])->findOrFail($brandId);
      
-             // Get all brand products or filter by category
+             // Filter by category if provided
              $filteredProducts = is_null($categoryId)
                  ? $brand->products
                  : $brand->products->filter(function ($product) use ($categoryId) {
                      return $product->categories->contains('id', $categoryId);
                  })->values();
      
+             // 🔍 Apply search if provided
+             if ($search = $request->input('search')) {
+                 $filteredProducts = $filteredProducts->filter(function ($product) use ($search) {
+                     return str_contains(strtolower($product->name), strtolower($search)) ||
+                            str_contains(strtolower($product->sku), strtolower($search));
+                 })->values();
+             }
+     
              if ($filteredProducts->isEmpty()) {
                  return response()->json([
                      'success' => true,
-                     'message' => 'No products found for this brand' . ($categoryId ? ' and category' : ''),
+                     'message' => 'No products found for this brand' . ($categoryId ? ' and category' : '') . ($search ? ' matching search' : ''),
                      'data' => [],
                      'pagination' => $this->emptyPagination(),
                  ]);
