@@ -71,12 +71,6 @@ class ProductApiController extends Controller
                 // Calculate min-max values only for filtered products
                 $priceMin = Product::whereIn('id', $filteredProductIds)->min('sale_price');
                 $priceMax = Product::whereIn('id', $filteredProductIds)->max('sale_price');
-                $lengthMin = Product::whereIn('id', $filteredProductIds)->min('length');
-                $lengthMax = Product::whereIn('id', $filteredProductIds)->max('length');
-                $widthMin = Product::whereIn('id', $filteredProductIds)->min('width');
-                $widthMax = Product::whereIn('id', $filteredProductIds)->max('width');
-                $heightMin = Product::whereIn('id', $filteredProductIds)->min('height');
-                $heightMax = Product::whereIn('id', $filteredProductIds)->max('height');
 
                 $DeliveryMin = Product::whereIn('id', $filteredProductIds)
                     ->whereNotNull('delivery_days')
@@ -163,22 +157,32 @@ class ProductApiController extends Controller
                         }
 
 
+                        // // Handle images
+                        // $product->images = collect($product->images)->map(function ($image) {
+                        //     if (filter_var($image, FILTER_VALIDATE_URL)) {
+                        //         return $image;
+                        //     }
+                        //     $baseUrl = (strpos($image, 'storage/products/') === 0) ? url('storage/products/') : url('storage/');
+                        //     return $baseUrl . '/' . ltrim($image, '/');
+                        // });
+
+                        // $videoPaths = json_decode($product->video_path, true); // Decode JSON to array
+
+                        // $product->video_path = collect($videoPaths)->map(function ($video) {
+                        //     if (filter_var($video, FILTER_VALIDATE_URL)) {
+                        //         return $video; // If it's already a full URL, return it.
+                        //     }
+                        //     return url('storage/' . ltrim($video, '/')); // Manually construct the full URL
+                        // });
                         // Handle images
                         $product->images = collect($product->images)->map(function ($image) {
-                            if (filter_var($image, FILTER_VALIDATE_URL)) {
-                                return $image;
-                            }
-                            $baseUrl = (strpos($image, 'storage/products/') === 0) ? url('storage/products/') : url('storage/');
-                            return $baseUrl . '/' . ltrim($image, '/');
+                            return $image; // Already a full URL, just return it
                         });
 
-                        $videoPaths = json_decode($product->video_path, true); // Decode JSON to array
-
+                        // Handle videos
+                        $videoPaths = json_decode($product->video_path, true);
                         $product->video_path = collect($videoPaths)->map(function ($video) {
-                            if (filter_var($video, FILTER_VALIDATE_URL)) {
-                                return $video; // If it's already a full URL, return it.
-                            }
-                            return url('storage/' . ltrim($video, '/')); // Manually construct the full URL
+                            return $video; // Already a full URL, just return it
                         });
 
                         if ($product->sellingUnitAttribute && $product->sellingUnitAttribute->attribute_value) {
@@ -282,12 +286,15 @@ class ProductApiController extends Controller
                                         'left_stock' => $fbProduct->left_stock ?? 0,
                                         'currency' => $fbProduct->currency->title ?? 'USD',
                                         'in_wishlist' => $fbProduct->in_wishlist ?? false,
+                                        // 'images' => collect($fbProduct->images)->map(function ($image) {
+                                        //     if (filter_var($image, FILTER_VALIDATE_URL)) {
+                                        //         return $image;
+                                        //     }
+                                        //     $baseUrl = (strpos($image, 'storage/products/') === 0) ? url('storage/products/') : url('storage/');
+                                        //     return $baseUrl . '/' . ltrim($image, '/');
+                                        // })->toArray(),
                                         'images' => collect($fbProduct->images)->map(function ($image) {
-                                            if (filter_var($image, FILTER_VALIDATE_URL)) {
-                                                return $image;
-                                            }
-                                            $baseUrl = (strpos($image, 'storage/products/') === 0) ? url('storage/products/') : url('storage/');
-                                            return $baseUrl . '/' . ltrim($image, '/');
+                                            return $image;
                                         })->toArray(),
                                         'original_price' => $fbProduct->price,
                                         'front_sale_price' => $fbProduct->price,
@@ -347,14 +354,15 @@ class ProductApiController extends Controller
                                 ->get();
 
                             $compareProducts->transform(function ($compareProduct) {
-                                $compareProduct->images = collect($compareProduct->images)->map(function ($image) {
-                                    if (filter_var($image, FILTER_VALIDATE_URL)) {
-                                        return $image;
-                                    }
-                                    $baseUrl = (strpos($image, 'storage/products/') === 0) ? url('storage/products/') : url('storage/');
-                                    return $baseUrl . '/' . ltrim($image, '/');
-                                });
-
+                                // $compareProduct->images = collect($compareProduct->images)->
+                                // map(function ($image) {
+                                //     if (filter_var($image, FILTER_VALIDATE_URL)) {
+                                //         return $image;
+                                //     }
+                                //     $baseUrl = (strpos($image, 'storage/products/') === 0) ? url('storage/products/') : url('storage/');
+                                //     return $baseUrl . '/' . ltrim($image, '/');
+                                // });
+                                $compareProduct->images = $compareProduct->images;
                                 $totalReviews = $compareProduct->reviews->count();
                                 $avgRating = $totalReviews > 0 ? $compareProduct->reviews->avg('star') : null;
 
@@ -389,7 +397,6 @@ class ProductApiController extends Controller
                         // Add tags and types
                         $product->tags = $product->tags;
                         $product->producttypes = $product->producttypes;
-
                         $product->category_list = $product->categories->map(function ($category) {
                             return [
                                 'id' => $category->id,
@@ -397,7 +404,6 @@ class ProductApiController extends Controller
                                 'slug' => optional($category->slugable)->key, // Get slug from the slugs table
                             ];
                         });
-                        
 
                         return $product;
                     });
@@ -409,15 +415,8 @@ class ProductApiController extends Controller
                         'brands' => $brands,
                         'categories' => $categories,
                         'price_min' => $priceMin,
-                        'price_max' => $priceMax,
-                        'length_min' => $lengthMin,
-                        'length_max' => $lengthMax,
-                        'width_min' => $widthMin,
-                        'width_max' => $widthMax,
-                        'height_min' => $heightMin,
-                        'height_max' => $heightMax,
-                        'delivery_min' => $DeliveryMin,
-                        'delivery_max' => $DeliveryMax,
+                        'price_max' => $priceMax
+            
                     ]);
     }
 
@@ -443,12 +442,7 @@ class ProductApiController extends Controller
                 // Calculate min-max values only for filtered products
                 $priceMin = Product::whereIn('id', $filteredProductIds)->min('sale_price');
                 $priceMax = Product::whereIn('id', $filteredProductIds)->max('sale_price');
-                $lengthMin = Product::whereIn('id', $filteredProductIds)->min('length');
-                $lengthMax = Product::whereIn('id', $filteredProductIds)->max('length');
-                $widthMin = Product::whereIn('id', $filteredProductIds)->min('width');
-                $widthMax = Product::whereIn('id', $filteredProductIds)->max('width');
-                $heightMin = Product::whereIn('id', $filteredProductIds)->min('height');
-                $heightMax = Product::whereIn('id', $filteredProductIds)->max('height');
+              
 
                 $DeliveryMin = Product::whereIn('id', $filteredProductIds)
                     ->whereNotNull('delivery_days')
@@ -536,36 +530,40 @@ class ProductApiController extends Controller
 
 
                         // Handle images
+                        // $product->images = collect($product->images)->map(function ($image) {
+                        //     if (filter_var($image, FILTER_VALIDATE_URL)) {
+                        //         return $image;
+                        //     }
+                        //     $baseUrl = (strpos($image, 'storage/products/') === 0) ? url('storage/products/') : url('storage/');
+                        //     return $baseUrl . '/' . ltrim($image, '/');
+                        // });
+                        // $videoPaths = json_decode($product->video_path, true); // Decode JSON to array
+
+                        // $product->video_path = collect($videoPaths)->map(function ($video) {
+                        //     if (filter_var($video, FILTER_VALIDATE_URL)) {
+                        //         return $video; // If it's already a full URL, return it.
+                        //     }
+                        //     return url('storage/' . ltrim($video, '/')); // Manually construct the full URL
+                        // });
+
                         $product->images = collect($product->images)->map(function ($image) {
-                            if (filter_var($image, FILTER_VALIDATE_URL)) {
-                                return $image;
-                            }
-                            $baseUrl = (strpos($image, 'storage/products/') === 0) ? url('storage/products/') : url('storage/');
-                            return $baseUrl . '/' . ltrim($image, '/');
-                        });
-                        $videoPaths = json_decode($product->video_path, true); // Decode JSON to array
+                        return $image;
+                    });
 
-                        $product->video_path = collect($videoPaths)->map(function ($video) {
-                            if (filter_var($video, FILTER_VALIDATE_URL)) {
-                                return $video; // If it's already a full URL, return it.
-                            }
-                            return url('storage/' . ltrim($video, '/')); // Manually construct the full URL
-                        });
-
-                        // $product->sellingUnitAttribute->attribute_value ?? null;
-
-                        if ($product->sellingUnitAttribute && $product->sellingUnitAttribute->attribute_value) {
-                            $fullValue = $product->sellingUnitAttribute->attribute_value;
-                            if (strpos($fullValue, '/') !== false) {
-                                $parts = explode('/', $fullValue);
-                                $product->sellingUnitAttribute->attribute_value_unit = trim($parts[1]);
-                            } else {
-                                $product->sellingUnitAttribute->attribute_value_unit = $fullValue;
-                            }
+                    $videoPaths = json_decode($product->video_path, true);
+                    $product->video_path = collect($videoPaths)->map(function ($video) {
+                        return $video;
+                    });
+                    if ($product->sellingUnitAttribute && $product->sellingUnitAttribute->attribute_value) {
+                        $fullValue = $product->sellingUnitAttribute->attribute_value;
+                        if (strpos($fullValue, '/') !== false) {
+                            $parts = explode('/', $fullValue);
+                            $product->sellingUnitAttribute->attribute_value_unit = trim($parts[1]);
+                        } else {
+                            $product->sellingUnitAttribute->attribute_value_unit = $fullValue;
                         }
-                        
-
-                        // Add review and stock details
+                    }
+                                            // Add review and stock details
                         $totalReviews = $product->reviews->count();
                         $avgRating = $totalReviews > 0 ? $product->reviews->avg('star') : null;
                         $quantity = $product->quantity ?? 0;
@@ -638,7 +636,7 @@ class ProductApiController extends Controller
 
 
 
-                        if ($product->frequently_bought_together) {
+                    if ($product->frequently_bought_together) {
                                 $frequentlyBoughtData = json_decode($product->frequently_bought_together, true);
                                 $frequentlyBoughtSkus = array_column($frequentlyBoughtData, 'value');
 
@@ -659,12 +657,15 @@ class ProductApiController extends Controller
                                         'left_stock' => $fbProduct->left_stock ?? 0,
                                         'currency' => $fbProduct->currency->title ?? 'USD',
                                         'in_wishlist' => $fbProduct->in_wishlist ?? false,
+                                        // 'images' => collect($fbProduct->images)->map(function ($image) {
+                                        //     if (filter_var($image, FILTER_VALIDATE_URL)) {
+                                        //         return $image;
+                                        //     }
+                                        //     $baseUrl = (strpos($image, 'storage/products/') === 0) ? url('storage/products/') : url('storage/');
+                                        //     return $baseUrl . '/' . ltrim($image, '/');
+                                        // })->toArray(),
                                         'images' => collect($fbProduct->images)->map(function ($image) {
-                                            if (filter_var($image, FILTER_VALIDATE_URL)) {
-                                                return $image;
-                                            }
-                                            $baseUrl = (strpos($image, 'storage/products/') === 0) ? url('storage/products/') : url('storage/');
-                                            return $baseUrl . '/' . ltrim($image, '/');
+                                            return $image;
                                         })->toArray(),
                                         'original_price' => $fbProduct->price,
                                         'front_sale_price' => $fbProduct->price,
@@ -723,13 +724,15 @@ class ProductApiController extends Controller
                                 ->get();
 
                             $compareProducts->transform(function ($compareProduct) {
-                                $compareProduct->images = collect($compareProduct->images)->map(function ($image) {
-                                    if (filter_var($image, FILTER_VALIDATE_URL)) {
-                                        return $image;
-                                    }
-                                    $baseUrl = (strpos($image, 'storage/products/') === 0) ? url('storage/products/') : url('storage/');
-                                    return $baseUrl . '/' . ltrim($image, '/');
-                                });
+                                // $compareProduct->images = collect($compareProduct->images)->map(function ($image) {
+                                //     if (filter_var($image, FILTER_VALIDATE_URL)) {
+                                //         return $image;
+                                //     }
+                                //     $baseUrl = (strpos($image, 'storage/products/') === 0) ? url('storage/products/') : url('storage/');
+                                //     return $baseUrl . '/' . ltrim($image, '/');
+                                // });
+
+                               $compareProduct->images = $compareProduct->images;
 
                                 $totalReviews = $compareProduct->reviews->count();
                                 $avgRating = $totalReviews > 0 ? $compareProduct->reviews->avg('star') : null;
@@ -765,7 +768,6 @@ class ProductApiController extends Controller
                         // Add tags and types
                         $product->tags = $product->tags;
                         $product->producttypes = $product->producttypes;
-
                         $product->category_list = $product->categories->map(function ($category) {
                             return [
                                 'id' => $category->id,
@@ -773,8 +775,6 @@ class ProductApiController extends Controller
                                 'slug' => optional($category->slugable)->key, // Get slug from the slugs table
                             ];
                         });
-                        
-
 
                         return $product;
                     });
@@ -786,15 +786,8 @@ class ProductApiController extends Controller
                         'brands' => $brands,
                         // 'categories' => $categories,
                         'price_min' => $priceMin,
-                        'price_max' => $priceMax,
-                        'length_min' => $lengthMin,
-                        'length_max' => $lengthMax,
-                        'width_min' => $widthMin,
-                        'width_max' => $widthMax,
-                        'height_min' => $heightMin,
-                        'height_max' => $heightMax,
-                        'delivery_min' => $DeliveryMin,
-                        'delivery_max' => $DeliveryMax,
+                        'price_max' => $priceMax
+        
                     ]);
     }
 
@@ -836,13 +829,7 @@ class ProductApiController extends Controller
         // Calculate min-max values only for filtered products
         $priceMin = Product::whereIn('id', $filteredProductIds)->min('sale_price');
         $priceMax = Product::whereIn('id', $filteredProductIds)->max('sale_price');
-        $lengthMin = Product::whereIn('id', $filteredProductIds)->min('length');
-        $lengthMax = Product::whereIn('id', $filteredProductIds)->max('length');
-        $widthMin = Product::whereIn('id', $filteredProductIds)->min('width');
-        $widthMax = Product::whereIn('id', $filteredProductIds)->max('width');
-        $heightMin = Product::whereIn('id', $filteredProductIds)->min('height');
-        $heightMax = Product::whereIn('id', $filteredProductIds)->max('height');
-
+      
         $DeliveryMin = Product::whereIn('id', $filteredProductIds)
             ->whereNotNull('delivery_days')
             ->selectRaw('MIN(CAST(delivery_days AS UNSIGNED)) as min_delivery_days')
@@ -945,19 +932,27 @@ class ProductApiController extends Controller
                 }
 
             // Select only required fields for the response
+            // $product->images = collect($product->images)->map(function ($image) {
+            //     return filter_var($image, FILTER_VALIDATE_URL) ? $image : url('storage/' . ltrim($image, '/'));
+            // });
+
+            // $videoPaths = json_decode($product->video_path, true); // Decode JSON to array
+
+            // $product->video_path = collect($videoPaths)->map(function ($video) {
+            //     if (filter_var($video, FILTER_VALIDATE_URL)) {
+            //         return $video; // If it's already a full URL, return it.
+            //     }
+            //     return url('storage/' . ltrim($video, '/')); // Manually construct the full URL
+            // });
+
             $product->images = collect($product->images)->map(function ($image) {
-                return filter_var($image, FILTER_VALIDATE_URL) ? $image : url('storage/' . ltrim($image, '/'));
+                return $image;
             });
 
-            $videoPaths = json_decode($product->video_path, true); // Decode JSON to array
-
+            $videoPaths = json_decode($product->video_path, true);
             $product->video_path = collect($videoPaths)->map(function ($video) {
-                if (filter_var($video, FILTER_VALIDATE_URL)) {
-                    return $video; // If it's already a full URL, return it.
-                }
-                return url('storage/' . ltrim($video, '/')); // Manually construct the full URL
+                return $video;
             });
-
             if ($product->sellingUnitAttribute && $product->sellingUnitAttribute->attribute_value) {
                 $fullValue = $product->sellingUnitAttribute->attribute_value;
                 if (strpos($fullValue, '/') !== false) {
@@ -968,7 +963,6 @@ class ProductApiController extends Controller
                 }
             }
             
-
             $totalReviews = $product->reviews->count();
             $avgRating = $totalReviews > 0 ? $product->reviews->avg('star') : null;
             $quantity = $product->quantity ?? 0;
@@ -1012,15 +1006,8 @@ class ProductApiController extends Controller
                 'brands' => $brands,
                 // 'categories' => $categories,
                 'price_min' => $priceMin,
-                'price_max' => $priceMax,
-                'length_min' => $lengthMin,
-                'length_max' => $lengthMax,
-                'width_min' => $widthMin,
-                'width_max' => $widthMax,
-                'height_min' => $heightMin,
-                'height_max' => $heightMax,
-                'delivery_min' => $DeliveryMin,
-                'delivery_max' => $DeliveryMax,
+                'price_max' => $priceMax
+             
             ]);
     }
 
@@ -1172,12 +1159,7 @@ class ProductApiController extends Controller
                         // Calculate min-max values only for filtered products
                         $priceMin = Product::whereIn('id', $filteredProductIds)->min('sale_price');
                         $priceMax = Product::whereIn('id', $filteredProductIds)->max('sale_price');
-                        $lengthMin = Product::whereIn('id', $filteredProductIds)->min('length');
-                        $lengthMax = Product::whereIn('id', $filteredProductIds)->max('length');
-                        $widthMin = Product::whereIn('id', $filteredProductIds)->min('width');
-                        $widthMax = Product::whereIn('id', $filteredProductIds)->max('width');
-                        $heightMin = Product::whereIn('id', $filteredProductIds)->min('height');
-                        $heightMax = Product::whereIn('id', $filteredProductIds)->max('height');
+                      
 
                         $DeliveryMin = Product::whereIn('id', $filteredProductIds)
                             ->whereNotNull('delivery_days')
@@ -1256,19 +1238,27 @@ class ProductApiController extends Controller
                         $products->getCollection()->transform(function ($product)  {
 
                             // Select only required fields for the response
+                            // $product->images = collect($product->images)->map(function ($image) {
+                            //     return filter_var($image, FILTER_VALIDATE_URL) ? $image : url('storage/' . ltrim($image, '/'));
+                            // });
+
+                            // $videoPaths = json_decode($product->video_path, true); // Decode JSON to array
+
+                            // $product->video_path = collect($videoPaths)->map(function ($video) {
+                            //     if (filter_var($video, FILTER_VALIDATE_URL)) {
+                            //         return $video; // If it's already a full URL, return it.
+                            //     }
+                            //     return url('storage/' . ltrim($video, '/')); // Manually construct the full URL
+                            // });
+
                             $product->images = collect($product->images)->map(function ($image) {
-                                return filter_var($image, FILTER_VALIDATE_URL) ? $image : url('storage/' . ltrim($image, '/'));
+                                return $image;
                             });
 
-                            $videoPaths = json_decode($product->video_path, true); // Decode JSON to array
-
+                            $videoPaths = json_decode($product->video_path, true);
                             $product->video_path = collect($videoPaths)->map(function ($video) {
-                                if (filter_var($video, FILTER_VALIDATE_URL)) {
-                                    return $video; // If it's already a full URL, return it.
-                                }
-                                return url('storage/' . ltrim($video, '/')); // Manually construct the full URL
+                                return $video;
                             });
-
                             if ($product->sellingUnitAttribute && $product->sellingUnitAttribute->attribute_value) {
                                 $fullValue = $product->sellingUnitAttribute->attribute_value;
                                 if (strpos($fullValue, '/') !== false) {
@@ -1322,15 +1312,7 @@ class ProductApiController extends Controller
                                 'brands' => $brands,
                                 // 'categories' => $categories,
                                 'price_min' => $priceMin,
-                                'price_max' => $priceMax,
-                                'length_min' => $lengthMin,
-                                'length_max' => $lengthMax,
-                                'width_min' => $widthMin,
-                                'width_max' => $widthMax,
-                                'height_min' => $heightMin,
-                                'height_max' => $heightMax,
-                                'delivery_min' => $DeliveryMin,
-                                'delivery_max' => $DeliveryMax,
+                                'price_max' => $priceMax
                             ]);
             }
 
@@ -1469,15 +1451,7 @@ class ProductApiController extends Controller
                 $query->where('created_at', '<=', $request->input('end_date'));
             }
 
-            // Boolean filters
-            if ($request->has('allow_checkout_when_out_of_stock')) {
-                $query->where('allow_checkout_when_out_of_stock', $request->input('allow_checkout_when_out_of_stock'));
-            }
-
-            if ($request->has('with_storehouse_management')) {
-                $query->where('with_storehouse_management', $request->input('with_storehouse_management'));
-            }
-
+        
             if ($request->has('is_featured')) {
                 $query->where('is_featured', $request->input('is_featured'));
             }
@@ -1485,64 +1459,12 @@ class ProductApiController extends Controller
             if ($request->has('is_variation')) {
                 $query->where('is_variation', $request->input('is_variation'));
             }
-
-            // Variation filters
-            if ($request->has('variant_grams')) {
-                $query->where('variant_grams', $request->input('variant_grams'));
-            }
-
-            if ($request->has('variant_inventory_quantity')) {
-                $query->where('variant_inventory_quantity', $request->input('variant_inventory_quantity'));
-            }
-
-            if ($request->has('variant_inventory_policy')) {
-                $query->where('variant_inventory_policy', $request->input('variant_inventory_policy'));
-            }
-
             if ($request->has('variant_fulfillment_service')) {
                 $query->where('variant_fulfillment_service', $request->input('variant_fulfillment_service'));
             }
 
             if ($request->has('variant_requires_shipping')) {
                 $query->where('variant_requires_shipping', $request->input('variant_requires_shipping'));
-            }
-
-            if ($request->has('variant_barcode')) {
-                $query->where('variant_barcode', $request->input('variant_barcode'));
-            }
-
-            // Dimension filters
-            if ($request->has('length_min')) {
-                $query->where('length', '>=', $request->input('length_min'));
-            }
-
-            if ($request->has('length_max')) {
-                $query->where('length', '<=', $request->input('length_max'));
-            }
-
-            if ($request->has('width_min')) {
-                $query->where('width', '>=', $request->input('width_min'));
-            }
-
-            if ($request->has('width_max')) {
-                $query->where('width', '<=', $request->input('width_max'));
-            }
-
-            if ($request->has('height_min')) {
-                $query->where('height', '>=', $request->input('height_min'));
-            }
-
-            if ($request->has('height_max')) {
-                $query->where('height', '<=', $request->input('height_max'));
-            }
-
-            // Weight filters
-            if ($request->has('weight_min')) {
-                $query->where('weight', '>=', $request->input('weight_min'));
-            }
-
-            if ($request->has('weight_max')) {
-                $query->where('weight', '<=', $request->input('weight_max'));
             }
 
             if ($request->has('rating')) {
@@ -1808,14 +1730,23 @@ public function relatedProducts($id)
         ->get();
 
     $transformed = $relatedProducts->map(function ($product) use ($wishlistProductIds) {
-        $product->images = collect($product->images)->map(function ($image) {
-            return filter_var($image, FILTER_VALIDATE_URL) ? $image : url('storage/' . ltrim($image, '/'));
-        });
+        // $product->images = collect($product->images)->map(function ($image) {
+        //     return filter_var($image, FILTER_VALIDATE_URL) ? $image : url('storage/' . ltrim($image, '/'));
+        // });
 
-        $videoPaths = json_decode($product->video_path, true) ?? [];
-        $product->video_path = collect($videoPaths)->map(function ($video) {
-            return filter_var($video, FILTER_VALIDATE_URL) ? $video : url('storage/' . ltrim($video, '/'));
-        });
+        // $videoPaths = json_decode($product->video_path, true) ?? [];
+        // $product->video_path = collect($videoPaths)->map(function ($video) {
+        //     return filter_var($video, FILTER_VALIDATE_URL) ? $video : url('storage/' . ltrim($video, '/'));
+        // });
+         $product->images = collect($product->images)->map(function ($image) {
+                    return $image;
+                });
+
+                $videoPaths = json_decode($product->video_path, true);
+                $product->video_path = collect($videoPaths)->map(function ($video) {
+                    return $video;
+                });
+
 
         $totalReviews = $product->reviews->count();
         $avgRating = $totalReviews > 0 ? $product->reviews->avg('star') : null;
@@ -1893,14 +1824,23 @@ public function productsByBrand($id, Request $request)
 
     // Transform each product
     $transformed = collect($products->items())->map(function ($product) use ($wishlistProductIds) {
+        // $product->images = collect($product->images)->map(function ($image) {
+        //     return filter_var($image, FILTER_VALIDATE_URL) ? $image : url('storage/' . ltrim($image, '/'));
+        // });
+
+        // $videoPaths = json_decode($product->video_path, true) ?? [];
+        // $product->video_path = collect($videoPaths)->map(function ($video) {
+        //     return filter_var($video, FILTER_VALIDATE_URL) ? $video : url('storage/' . ltrim($video, '/'));
+        // });
         $product->images = collect($product->images)->map(function ($image) {
-            return filter_var($image, FILTER_VALIDATE_URL) ? $image : url('storage/' . ltrim($image, '/'));
+            return $image;
         });
 
-        $videoPaths = json_decode($product->video_path, true) ?? [];
+        $videoPaths = json_decode($product->video_path, true);
         $product->video_path = collect($videoPaths)->map(function ($video) {
-            return filter_var($video, FILTER_VALIDATE_URL) ? $video : url('storage/' . ltrim($video, '/'));
+            return $video;
         });
+
 
         $totalReviews = $product->reviews->count();
         $avgRating = $totalReviews > 0 ? $product->reviews->avg('star') : null;
@@ -1985,15 +1925,23 @@ public function saleProductsByBrand($id, Request $request)
         ->paginate($perPage);
 
     $transformed = collect($products->items())->map(function ($product) use ($wishlistProductIds) {
+        // $product->images = collect($product->images)->map(function ($image) {
+        //     return filter_var($image, FILTER_VALIDATE_URL) ? $image : url('storage/' . ltrim($image, '/'));
+        // });
+
+        // $videoPaths = json_decode($product->video_path, true) ?? [];
+        // $product->video_path = collect($videoPaths)->map(function ($video) {
+        //     return filter_var($video, FILTER_VALIDATE_URL) ? $video : url('storage/' . ltrim($video, '/'));
+        // });
+
         $product->images = collect($product->images)->map(function ($image) {
-            return filter_var($image, FILTER_VALIDATE_URL) ? $image : url('storage/' . ltrim($image, '/'));
-        });
+         return $image;
+            });
 
-        $videoPaths = json_decode($product->video_path, true) ?? [];
-        $product->video_path = collect($videoPaths)->map(function ($video) {
-            return filter_var($video, FILTER_VALIDATE_URL) ? $video : url('storage/' . ltrim($video, '/'));
-        });
-
+            $videoPaths = json_decode($product->video_path, true);
+            $product->video_path = collect($videoPaths)->map(function ($video) {
+                return $video;
+            });
         $totalReviews = $product->reviews->count();
         $avgRating = $totalReviews > 0 ? $product->reviews->avg('star') : null;
         $quantity = $product->quantity ?? 0;
