@@ -574,7 +574,7 @@ class CategoryController extends Controller
              }
 
 
-            unset($product->currency, $product->reviews, $product->brand);
+            unset($product->currency, $product->reviews, $product->brand , $product->sellingUnitAttribute );
             return $product;
         });
 
