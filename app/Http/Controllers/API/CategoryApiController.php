@@ -76,14 +76,20 @@ public function getAllFeaturedProductsByCategory(Request $request)
                 // Process images efficiently
                 $imageUrls = collect($details->images)->map(fn($image) => Str::startsWith($image, ['http://', 'https://']) ? $image : asset('storage/' . ltrim($image, '/')));
                
+                // Then use safe access:
+                $sellingUnit = $details->sellingUnitAttribute?->attribute_value_unit ?? 'N/A';
+
+                // Or process the attribute value safely:
                 if ($details->sellingUnitAttribute && $details->sellingUnitAttribute->attribute_value) {
                     $fullValue = $details->sellingUnitAttribute->attribute_value;
                     if (strpos($fullValue, '/') !== false) {
                         $parts = explode('/', $fullValue);
-                        $details->sellingUnitAttribute->attribute_value_unit = trim($parts[1]);
+                        $sellingUnit = trim($parts[1]);
                     } else {
-                        $details->sellingUnitAttribute->attribute_value_unit = $fullValue;
+                        $sellingUnit = $fullValue;
                     }
+                } else {
+                    $sellingUnit = null;
                 }
 
                 return [
@@ -102,7 +108,7 @@ public function getAllFeaturedProductsByCategory(Request $request)
                     "original_price"=> $details->price,
                     "front_sale_price"=> $details->price,
                     "best_price"=> $details->price,
-                   "selling_unit"=> $details->sellingUnitAttribute->attribute_value_unit
+                   "selling_unit"=> $sellingUnit
                 ];
             })->filter()->values(), // Remove null values and reset array keys
         ];

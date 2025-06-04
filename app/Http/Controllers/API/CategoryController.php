@@ -212,7 +212,7 @@ class CategoryController extends Controller
 		$perPage = request()->get('per_page', 10);
 		$perPage = is_numeric($perPage) && $perPage > 0 ? (int)$perPage : 10;
 
-		$products = $category->products()->with(['categories', 'brand', 'tags', 'producttypes'])->paginate($perPage);
+		$products = $category->products()->with(['categories', 'brand'])->paginate($perPage);
 
 		$productTypes = $products->getCollection()->flatMap(function ($product) {
 			return $product->producttypes;
@@ -251,8 +251,23 @@ class CategoryController extends Controller
 				return asset('storage/default-placeholder.jpg'); // Replace with a valid placeholder image
 			});
 
-			$product->tags = $product->tags;
-			$product->producttypes = $product->producttypes;
+             // Then use safe access:
+             $sellingUnit = $product->sellingUnitAttribute?->attribute_value_unit ?? 'N/A';
+
+             // Or process the attribute value safely:
+             if ($product->sellingUnitAttribute && $product->sellingUnitAttribute->attribute_value) {
+                 $fullValue = $product->sellingUnitAttribute->attribute_value;
+                 if (strpos($fullValue, '/') !== false) {
+                     $parts = explode('/', $fullValue);
+                     $sellingUnit = trim($parts[1]);
+                 } else {
+                     $sellingUnit = $fullValue;
+                 }
+             } else {
+                 $sellingUnit = null;
+             }
+
+
 
 			return $product;
 		});
@@ -260,7 +275,6 @@ class CategoryController extends Controller
 		return response()->json([
 			'category' => $category,
 			'products' => $products,
-			'producttypes' => $productTypes,
 		]);
 	}
 
@@ -542,6 +556,23 @@ class CategoryController extends Controller
             })->toArray();
 
             $product->video_path = is_array($product->video_path) ? $product->video_path : (json_decode($product->video_path, true) ?: []);
+
+             // Then use safe access:
+             $sellingUnit = $product->sellingUnitAttribute?->attribute_value_unit ?? 'N/A';
+
+             // Or process the attribute value safely:
+             if ($product->sellingUnitAttribute && $product->sellingUnitAttribute->attribute_value) {
+                 $fullValue = $product->sellingUnitAttribute->attribute_value;
+                 if (strpos($fullValue, '/') !== false) {
+                     $parts = explode('/', $fullValue);
+                     $sellingUnit = trim($parts[1]);
+                 } else {
+                     $sellingUnit = $fullValue;
+                 }
+             } else {
+                 $sellingUnit = null;
+             }
+
 
             unset($product->currency, $product->reviews, $product->brand);
             return $product;
