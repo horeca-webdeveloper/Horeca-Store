@@ -197,4 +197,12 @@ class ProductCategory extends BaseModel implements HasTreeCategoryContract
 			return $this->belongsTo(ProductCategory::class, 'parent_id');
 		}
 
+		public function sellingUnitAttribute()
+		{
+			return $this->hasOne(ProductAttributes::class)
+			->whereHas('attributeDetails', function ($query) {
+				$query->where('name', 'Selling Unit');
+			});
+		}
+
 	}
