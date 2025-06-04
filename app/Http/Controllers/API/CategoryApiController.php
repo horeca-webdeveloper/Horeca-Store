@@ -57,7 +57,7 @@ public function getAllFeaturedProductsByCategory(Request $request)
                      ->whereColumn('ec_products.price', 'best_products.best_price');
             })
             ->whereIn('ec_products.id', $featuredProducts->pluck('id'))
-            ->with(['reviews', 'currency']) // Eager load relationships
+            ->with(['reviews', 'currency' , 'sellingUnitAttribute']) // Eager load relationships
             ->get()
             ->keyBy('id'); // Use keyBy to quickly fetch by ID later
 
@@ -237,7 +237,7 @@ public function getAllGuestFeaturedProductsByCategory(Request $request)
                      ->whereColumn('ec_products.price', 'best_products.best_price');
             })
             ->whereIn('ec_products.id', $featuredProducts->pluck('id'))
-            ->with(['reviews', 'currency']) // Eager load relationships
+            ->with(['reviews', 'currency' , 'sellingUnitAttribute']) // Eager load relationships
             ->get()
             ->keyBy('id'); // Use keyBy to quickly fetch by ID later
 
