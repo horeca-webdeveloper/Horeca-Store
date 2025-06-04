@@ -13,81 +13,6 @@ use Illuminate\Support\Str;
 class CategoryApiController extends Controller
 {
    
-// public function getAllFeaturedProductsByCategory(Request $request)
-// {
-//     $userId = Auth::id();
-//     $isUserLoggedIn = $userId !== null;
-
-//     $wishlistProductIds = $isUserLoggedIn
-//         ? DB::table('ec_wish_lists')
-//             ->where('customer_id', $userId)
-//             ->pluck('product_id')
-//             ->map(fn($id) => (int) $id)
-//             ->toArray()
-//         : session()->get('guest_wishlist', []);
-
-//     $categories = ProductCategory::whereHas('products', function($query) {
-//         $query->where('is_featured', 1)->where('status', 'published');
-//     })
-//     ->with(['products' => function($query) {
-//         $query->where('is_featured', 1)->where('status', 'published');
-//     }])
-//     ->take(5)
-//     ->get();
-
-//     $subQuery = Product::select('sku')
-//         ->selectRaw('MIN(price) as best_price')
-//         ->selectRaw('MIN(delivery_days) as best_delivery_date')
-//         ->groupBy('sku');
-
-//     $categories = $categories->map(function ($category) use ($subQuery, $wishlistProductIds) {
-//         return [
-//             'category_name' => $category->name,
-//             'featured_products' => $category->products->take(10)->map(function ($product) use ($subQuery, $wishlistProductIds) {
-//                 $productDetails = Product::leftJoinSub($subQuery, 'best_products', function ($join) {
-//                     $join->on('ec_products.sku', '=', 'best_products.sku')
-//                          ->whereColumn('ec_products.price', 'best_products.best_price');
-//                 })
-//                 ->select('ec_products.*', 'best_products.best_price', 'best_products.best_delivery_date')
-//                 ->with('reviews', 'currency')
-//                 ->where('ec_products.id', $product->id)
-//                 ->first();
-
-//                 $totalReviews = $productDetails->reviews->count();
-//                 $avgRating = $totalReviews > 0 ? $productDetails->reviews->avg('star') : null;
-//                 $leftStock = ($productDetails->quantity ?? 0) - ($productDetails->units_sold ?? 0);
-//                 $currencyTitle = $productDetails->currency->title ?? $productDetails->price;
-//                 $isInWishlist = in_array($productDetails->id, $wishlistProductIds);
-
-//                 $imageUrls = collect($productDetails->images)->map(function ($image) {
-//                     if (Str::startsWith($image, ['http://', 'https://'])) {
-//                         return $image; // Leave external URLs unchanged
-//                     } elseif (Str::startsWith($image, 'storage/products/')) {
-//                         return asset($image); // Image inside storage/products folder
-//                     } elseif (Str::startsWith($image, 'storage/')) {
-//                         return asset($image); // Image inside storage folder
-//                     } else {
-//                         return asset('storage/' . $image); // Fallback for other images
-//                     }
-//                 });
-
-//                 return array_merge($productDetails->toArray(), [
-//                     'total_reviews' => $totalReviews,
-//                     'avg_rating' => $avgRating,
-//                     'leftStock' => $leftStock,
-//                     'currency' => $currencyTitle,
-//                     'in_wishlist' => $isInWishlist,
-//                     'images' => $imageUrls,
-//                 ]);
-//             }),
-//         ];
-//     });
-
-//     return response()->json([
-//         'success' => true,
-//         'data' => $categories,
-//     ]);
-// }
 
 public function getAllFeaturedProductsByCategory(Request $request)
 {
@@ -150,6 +75,16 @@ public function getAllFeaturedProductsByCategory(Request $request)
 
                 // Process images efficiently
                 $imageUrls = collect($details->images)->map(fn($image) => Str::startsWith($image, ['http://', 'https://']) ? $image : asset('storage/' . ltrim($image, '/')));
+               
+                if ($details->sellingUnitAttribute && $details->sellingUnitAttribute->attribute_value) {
+                    $fullValue = $details->sellingUnitAttribute->attribute_value;
+                    if (strpos($fullValue, '/') !== false) {
+                        $parts = explode('/', $fullValue);
+                        $details->sellingUnitAttribute->attribute_value_unit = trim($parts[1]);
+                    } else {
+                        $details->sellingUnitAttribute->attribute_value_unit = $fullValue;
+                    }
+                }
 
                 return [
                     'id' => $details->id,
@@ -167,6 +102,7 @@ public function getAllFeaturedProductsByCategory(Request $request)
                     "original_price"=> $details->price,
                     "front_sale_price"=> $details->price,
                     "best_price"=> $details->price,
+                   "selling_unit"=> $details->sellingUnitAttribute->attribute_value_unit
                 ];
             })->filter()->values(), // Remove null values and reset array keys
         ];
@@ -319,6 +255,16 @@ public function getAllGuestFeaturedProductsByCategory(Request $request)
                 // Process images efficiently
                 $imageUrls = collect($details->images)->map(fn($image) => Str::startsWith($image, ['http://', 'https://']) ? $image : asset('storage/' . ltrim($image, '/')));
 
+                if ($details->sellingUnitAttribute && $details->sellingUnitAttribute->attribute_value) {
+                    $fullValue = $details->sellingUnitAttribute->attribute_value;
+                    if (strpos($fullValue, '/') !== false) {
+                        $parts = explode('/', $fullValue);
+                        $details->sellingUnitAttribute->attribute_value_unit = trim($parts[1]);
+                    } else {
+                        $details->sellingUnitAttribute->attribute_value_unit = $fullValue;
+                    }
+                }
+
                 return [
                     'id' => $details->id,
                     'name' => $details->name,
@@ -334,6 +280,8 @@ public function getAllGuestFeaturedProductsByCategory(Request $request)
                     "original_price"=> $details->price,
                     "front_sale_price"=> $details->price,
                     "best_price"=> $details->price,
+                    "selling_unit"=> $details->sellingUnitAttribute->attribute_value_unit
+
                 ];
             })->filter()->values(), // Remove null values and reset array keys
         ];
