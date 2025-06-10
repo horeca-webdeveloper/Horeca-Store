@@ -226,7 +226,7 @@ class ProductAttributeController extends Controller
     $formatAttr = function ($item) {
         $value = $item->attribute_value;
         if ($item->measurementUnit && $item->measurement_unit_id) {
-            $value .= ' ' . $item->measurementUnit->name;
+            $value .= ' ' . $item->measurementUnit->symbol;
         }
     
         return [
