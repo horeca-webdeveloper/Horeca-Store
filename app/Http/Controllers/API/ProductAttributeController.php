@@ -165,13 +165,24 @@ class ProductAttributeController extends Controller
 
     public function getAttributesByProduct1($productId)
 {
-    $productAttributes = ProductAttributes::with(['attribute' => function ($query) {
-        $query->whereHas('attributeGroup', function ($q) {
-            $q->where('name', '!=', 'Nutrition Facts Per Serving Group');
-        });
-    }])
+    // $productAttributes = ProductAttributes::with(['attribute' => function ($query) {
+    //     $query->whereHas('attributeGroup', function ($q) {
+    //         $q->where('name', '!=', 'Nutrition Facts Per Serving Group');
+    //     });
+    // }])
+    // ->where('product_id', $productId)
+    // ->get(['attribute_value', 'attribute_id']);
+
+    $productAttributes = ProductAttributes::with([
+        'attribute' => function ($query) {
+            $query->whereHas('attributeGroup', function ($q) {
+                $q->where('name', '!=', 'Nutrition Facts Per Serving Group');
+            });
+        },
+        'measurementUnit'
+    ])
     ->where('product_id', $productId)
-    ->get(['attribute_value', 'attribute_id']);
+    ->get(['attribute_value', 'attribute_id', 'measurement_unit_id']);
 
     // Filter out null attributes
     $filteredAttributes = $productAttributes->filter(function ($item) {
@@ -205,12 +216,25 @@ class ProductAttributeController extends Controller
     $usedNames = [];
 
     // Helper: format item
+    // $formatAttr = function ($item) {
+    //     return [
+    //         'attribute_name' => $item->attribute->name,
+    //         'attribute_value' => $item->attribute_value,
+    //     ];
+    // };
+
     $formatAttr = function ($item) {
+        $value = $item->attribute_value;
+        if ($item->measurementUnit && $item->measurement_unit_id) {
+            $value .= ' ' . $item->measurementUnit->name;
+        }
+    
         return [
             'attribute_name' => $item->attribute->name,
-            'attribute_value' => $item->attribute_value,
+            'attribute_value' => $value,
         ];
     };
+    
 
     // Add left ordered attributes
     foreach ($leftOrder as $name) {

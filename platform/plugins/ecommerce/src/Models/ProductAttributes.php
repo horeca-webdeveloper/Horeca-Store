@@ -37,4 +37,10 @@ class ProductAttributes extends BaseModel
 		return $this->belongsTo(Attribute::class, 'attribute_id');
 	}
 
+    public function measurementUnit()
+    {
+        return $this->belongsTo(MeasurementUnit::class, 'measurement_unit_id');
+    }
+
+
 }
