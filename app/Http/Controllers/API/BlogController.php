@@ -27,20 +27,42 @@ class BlogController extends Controller
 
     //     return response()->json($blogs);
     // }
-    public function index(Request $request)
+    // public function index(Request $request)
+    // {
+    //     $perPage = $request->get('per_page', 10);
+    //     $blogs = Blog::with('category')
+    //         ->where('status', 'published')
+    //         ->orderByDesc('created_at')
+    //         ->paginate($perPage);
+        
+    //     $blogs->getCollection()->transform(function ($blog) {
+    //         return $this->formatBlog1($blog);
+    //     });
+        
+    //     return response()->json($blogs);
+    // }
+        public function index(Request $request)
     {
         $perPage = $request->get('per_page', 10);
-        $blogs = Blog::with('category')
-            ->where('status', 'published')
-            ->orderByDesc('created_at')
+        $isFeatured = $request->get('is_featured');
+
+        $query = Blog::with('category')
+            ->where('status', 'published');
+
+        if ($isFeatured !== null) {
+            $query->where('is_featured', (int) $isFeatured);
+        }
+
+        $blogs = $query->orderByDesc('created_at')
             ->paginate($perPage);
-        
+
         $blogs->getCollection()->transform(function ($blog) {
             return $this->formatBlog1($blog);
         });
-        
+
         return response()->json($blogs);
     }
+
     
     protected function formatBlog1($blog)
     {
