@@ -298,6 +298,11 @@ class BrandApiController extends Controller
     
         foreach ($brand->products as $product) {
             foreach ($product->categories as $category) {
+                // Only include categories where status is 'published'
+                if ($category->status !== 'published') {
+                    continue;
+                }
+        
                 if (!isset($categoryCounts[$category->id])) {
                     $categoryCounts[$category->id] = [
                         'id' => $category->id,
@@ -306,6 +311,7 @@ class BrandApiController extends Controller
                         'product_count' => 0
                     ];
                 }
+        
                 $categoryCounts[$category->id]['product_count']++;
             }
         }
