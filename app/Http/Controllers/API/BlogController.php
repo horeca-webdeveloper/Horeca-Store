@@ -49,11 +49,7 @@ class BlogController extends Controller
             'id' => $blog->id,
             'name' => $blog->name,
             'slug' => $blog->slug,
-            'description' => $this->limitWords(
-                strip_tags(collect(json_decode($blog->description, true))->pluck('value')->implode(' ')),
-                50
-            ),
-            // 'description' => json_decode($blog->description, true),
+            'description' => json_decode($blog->description, true),
             'desktop_banner' => $blog->desktop_banner,
             'desktop_banner_alt' => $blog->desktop_banner_alt,
             'mobile_banner' => $blog->mobile_banner,
