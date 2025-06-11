@@ -103,6 +103,7 @@ class BlogController extends Controller
             'thumbnail' => $blog->thumbnail,
             'thumbnail_alt' => $blog->thumbnail_alt,
             'tags' => $blog->tags ?? [],
+            'faqs' => $blog->faqs,
             'total_views' => $blog->total_views ?? 0,
             'total_likes' => $blog->total_likes ?? 0,
             'total_shares' => $blog->total_shares ?? 0,
