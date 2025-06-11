@@ -56,7 +56,7 @@ use App\Http\Controllers\API\SEOManagementController;
 use App\Http\Controllers\API\BrandPageController;
 use App\Http\Controllers\API\ProductYouMayLikeController;
 use App\Http\Controllers\API\FaqApiController;
-
+use App\Http\Controllers\Api\BlogController;
 Route::get('faqs/product/{product_id}', [FaqApiController::class, 'getFaqsByProduct']);
 
 Route::get('/seo-management', [SEOManagementController::class, 'index']);
@@ -348,5 +348,18 @@ Route::middleware('web')->group(function () {
     Route::get('brands/{id}/sale-products', [ProductApiController::class, 'saleProductsByBrand']);
     Route::get('brands/{id}/summary-stats', [ProductApiController::class, 'brandSummaryStats']);
     Route::get('/brands/alphabetical', [BrandApiController::class, 'getAllBrandsAlphabetically']);
+
+
+
+    Route::prefix('blogs')->group(function () {
+        Route::get('/', [BlogController::class, 'index']);
+        Route::get('/{slug}', [BlogController::class, 'show']);
+        Route::post('/{id}/like', [BlogController::class, 'like']);
+        Route::post('/{id}/share', [BlogController::class, 'share']);
+        Route::post('/{id}/view', [BlogController::class, 'view']);
+    });
+
+    Route::get('/blog-categories', [BlogController::class, 'categories']);
+
 
 Route::get('/product-specifications', [ProductSpecificationApiController::class, 'getProductSpecifications']); // No productId in the URL
