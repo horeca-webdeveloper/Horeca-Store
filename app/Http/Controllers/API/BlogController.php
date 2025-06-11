@@ -47,17 +47,24 @@ class BlogController extends Controller
         // Handle the description field properly
         $description = [];
         if ($blog->description) {
-            $decoded = json_decode($blog->description, true);
-            
-            // Check if the decoded result is an array (direct array of objects)
-            if (is_array($decoded)) {
-                $description = $decoded;
-            } 
-            // Check if it's a string that contains JSON array
-            else if (is_string($decoded)) {
-                $secondDecode = json_decode($decoded, true);
-                if (is_array($secondDecode)) {
-                    $description = $secondDecode;
+            // Check if it's already an array (Laravel auto-casting or already decoded)
+            if (is_array($blog->description)) {
+                $description = $blog->description;
+            }
+            // If it's a string, try to decode it
+            else if (is_string($blog->description)) {
+                $decoded = json_decode($blog->description, true);
+                
+                // Check if the decoded result is an array (direct array of objects)
+                if (is_array($decoded)) {
+                    $description = $decoded;
+                } 
+                // Check if it's a string that contains JSON array (double encoded)
+                else if (is_string($decoded)) {
+                    $secondDecode = json_decode($decoded, true);
+                    if (is_array($secondDecode)) {
+                        $description = $secondDecode;
+                    }
                 }
             }
         }
