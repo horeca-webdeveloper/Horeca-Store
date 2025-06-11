@@ -147,6 +147,7 @@ class BlogController extends Controller
             'total_likes' => $blog->total_likes ?? 0,
             'total_shares' => $blog->total_shares ?? 0,
             'is_featured' => $blog->is_featured ?? 0,
+            'faqs' => $blog->faqs,
             'created_at' => $blog->created_at,
             'category' => [
                 'id' => $blog->category->id ?? null,
