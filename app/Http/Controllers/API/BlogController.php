@@ -45,7 +45,6 @@ class BlogController extends Controller
 
     protected function formatBlog1($blog)
     {
-        $description = $this->safeJsonDecode($blog->description);
 
         return [
             'id' => $blog->id,
