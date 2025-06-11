@@ -307,7 +307,7 @@ class BrandApiController extends Controller
                     $categoryCounts[$category->id] = [
                         'id' => $category->id,
                         'name' => $category->name,
-                        'image' => asset('storage/' . $category->image),
+                        'image' =>  $category->image,
                         'product_count' => 0
                     ];
                 }
