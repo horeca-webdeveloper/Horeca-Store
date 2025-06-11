@@ -5,6 +5,10 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Botble\Ecommerce\Models\Blog;
 use Botble\Ecommerce\Models\BlogCategory;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
+use Illuminate\Support\Str;
 
 class BlogController extends Controller
 {
@@ -92,4 +96,40 @@ class BlogController extends Controller
             ] : null,
         ];
     }
+
+    public function postComment(Request $request, $id) {
+		/* Validate incoming request data*/
+		$validator = Validator::make($request->all(), [
+			'comment' => 'required|string', /* Comment must be a required text*/
+			'parent_id' => 'nullable|integer', /* Parent ID can be null or an integer*/
+			'created_by' => 'required|integer', /* Created by must be a required integer*/
+		]);
+
+		if ($validator->fails()) {
+			/* Return validation errors as a response*/
+			return response()->json([
+				'status' => 'error',
+				'message' => $validator->errors()->first(),
+				'errors' => $validator->errors(),
+			], Response::HTTP_UNPROCESSABLE_ENTITY);
+		}
+
+		$post = Post::findOrFail($id); /* Ensure the post exists*/
+
+		/* Add the comment*/
+		$comment = $post->comments()->create([
+			'comment' => $request->comment,
+			'parent_id' => $request->parent_id ?? null,
+			'created_by' => $request->created_by,
+		]);
+
+		return response()->json([
+			'status' => 'success',
+			'message' => $request->parent_id ? 'Replied successfully.' : 'Comment added successfully.',
+			'data' => [
+				'post' => $post,
+				'comments' => $post->comments,
+			],
+		], Response::HTTP_OK);
+	}
 }
