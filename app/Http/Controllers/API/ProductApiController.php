@@ -55,7 +55,7 @@ class ProductApiController extends Controller
                 }
 
                 // Start building the base query
-                $query = Product::with(['categories', 'brand', 'tags', 'producttypes' , 'brand.products.reviews'])
+                $query = Product::with(['categories', 'brand' , 'brand.products.reviews'])
                     ->where('status', 'published');
 
                 // Apply filters
@@ -415,8 +415,8 @@ class ProductApiController extends Controller
                         }
 
                         // Add tags and types
-                        $product->tags = $product->tags;
-                        $product->producttypes = $product->producttypes;
+                        // $product->tags = $product->tags;
+                        // $product->producttypes = $product->producttypes;
                         $product->category_list = $product->categories->map(function ($category) {
                             return [
                                 'id' => $category->id,
@@ -833,7 +833,7 @@ class ProductApiController extends Controller
         }
 
         // Start building the base query
-        $query = Product::with(['categories', 'brand', 'tags', 'producttypes' , 'brand.products.reviews'])
+        $query = Product::with(['categories', 'brand' , 'brand.products.reviews'])
             ->where('status', 'published');
 
         // Apply filters
