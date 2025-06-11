@@ -602,17 +602,18 @@ class BrandApiController extends Controller
                   $sellingUnit = $product->sellingUnitAttribute?->attribute_value_unit ?? 'N/A';
 
                   // Or process the attribute value safely:
-                  if ($product->sellingUnitAttribute && $product->sellingUnitAttribute->attribute_value) {
-                      $fullValue = $details->sellingUnitAttribute->attribute_value;
-                      if (strpos($fullValue, '/') !== false) {
-                          $parts = explode('/', $fullValue);
-                          $sellingUnit = trim($parts[1]);
-                      } else {
-                          $sellingUnit = $fullValue;
-                      }
-                  } else {
-                      $sellingUnit = null;
-                  }
+                  if ($productWithRelations->sellingUnitAttribute && $productWithRelations->sellingUnitAttribute->attribute_value) {
+                    $fullValue = $productWithRelations->sellingUnitAttribute->attribute_value;
+                    if (strpos($fullValue, '/') !== false) {
+                        $parts = explode('/', $fullValue);
+                        $sellingUnit = trim($parts[1]);
+                    } else {
+                        $sellingUnit = $fullValue;
+                    }
+                } else {
+                    $sellingUnit = null;
+                }
+                
 
                 return [
                     'id' => $product->id,
