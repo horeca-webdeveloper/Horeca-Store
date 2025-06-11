@@ -30,28 +30,84 @@ class BlogController extends Controller
     public function index(Request $request)
     {
         $perPage = $request->get('per_page', 10);
-
         $blogs = Blog::with('category')
             ->where('status', 'published')
             ->orderByDesc('created_at')
             ->paginate($perPage);
-
+        
         $blogs->getCollection()->transform(function ($blog) {
             return $this->formatBlog1($blog);
         });
-
+        
         return response()->json($blogs);
     }
-
+    
     protected function formatBlog1($blog)
     {
-
+        // Handle the description field properly
+        $description = [];
+        if ($blog->description) {
+            $decoded = json_decode($blog->description, true);
+            
+            // Check if the decoded result is an array (direct array of objects)
+            if (is_array($decoded)) {
+                $description = $decoded;
+            } 
+            // Check if it's a string that contains JSON array
+            else if (is_string($decoded)) {
+                $secondDecode = json_decode($decoded, true);
+                if (is_array($secondDecode)) {
+                    $description = $secondDecode;
+                }
+            }
+        }
+    
         return [
             'id' => $blog->id,
             'name' => $blog->name,
             'slug' => $blog->slug,
-            'description' => json_decode($blog->description, true),
-             'desktop_banner' => $blog->desktop_banner,
+            'description' => $description, // Now this will be an array of objects
+            'desktop_banner' => $blog->desktop_banner,
+            'desktop_banner_alt' => $blog->desktop_banner_alt,
+            'mobile_banner' => $blog->mobile_banner,
+            'mobile_banner_alt' => $blog->mobile_banner_alt,
+            'thumbnail' => $blog->thumbnail,
+            'thumbnail_alt' => $blog->thumbnail_alt,
+            'tags' => $blog->tags ?? [],
+            'total_views' => $blog->total_views ?? 0,
+            'total_likes' => $blog->total_likes ?? 0,
+            'total_shares' => $blog->total_shares ?? 0,
+            'is_featured' => $blog->is_featured ?? 0,
+            'created_at' => $blog->created_at,
+            'category' => [
+                'id' => $blog->category->id ?? null,
+                'name' => $blog->category->name ?? null,
+                'slug' => $blog->category->slug ?? null,
+                'description' => $blog->category->description ?? null,
+            ]
+        ];
+    }
+    
+    // Alternative simpler approach if you're sure about the data structure
+    protected function formatBlog1Alternative($blog)
+    {
+        $description = [];
+        if ($blog->description) {
+            $firstDecode = json_decode($blog->description, true);
+            // If first decode gives us a string, decode again
+            if (is_string($firstDecode)) {
+                $description = json_decode($firstDecode, true) ?? [];
+            } else {
+                $description = $firstDecode ?? [];
+            }
+        }
+    
+        return [
+            'id' => $blog->id,
+            'name' => $blog->name,
+            'slug' => $blog->slug,
+            'description' => $description,
+            'desktop_banner' => $blog->desktop_banner,
             'desktop_banner_alt' => $blog->desktop_banner_alt,
             'mobile_banner' => $blog->mobile_banner,
             'mobile_banner_alt' => $blog->mobile_banner_alt,
