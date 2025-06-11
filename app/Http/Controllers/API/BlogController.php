@@ -45,12 +45,14 @@ class BlogController extends Controller
 
     protected function formatBlog1($blog)
     {
+        $description = $this->safeJsonDecode($blog->description);
+
         return [
             'id' => $blog->id,
             'name' => $blog->name,
             'slug' => $blog->slug,
-            'description' => json_decode($blog->description, true),
-            'desktop_banner' => $blog->desktop_banner,
+            'description' => $description,
+             'desktop_banner' => $blog->desktop_banner,
             'desktop_banner_alt' => $blog->desktop_banner_alt,
             'mobile_banner' => $blog->mobile_banner,
             'mobile_banner_alt' => $blog->mobile_banner_alt,
