@@ -10,6 +10,7 @@ use Botble\Ecommerce\Models\Brand;
 use Illuminate\Support\Str;
 use Botble\Ecommerce\Models\Product;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 
 class BrandApiController extends Controller
 {
