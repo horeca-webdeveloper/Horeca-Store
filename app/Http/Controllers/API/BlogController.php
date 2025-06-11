@@ -179,25 +179,50 @@ class BlogController extends Controller
 
     private function formatBlog($blog)
     {
-        return [
-            'id' => $blog->id,
-            'name' => $blog->name,
-            'slug' => $blog->slug,
-            'description' => json_decode($blog->description, true),
-            'desktop_banner' => $blog->desktop_banner,
-            'desktop_banner_alt' => $blog->desktop_banner_alt,
-            'mobile_banner' => $blog->mobile_banner,
-            'mobile_banner_alt' => $blog->mobile_banner_alt,
-            'thumbnail' => $blog->thumbnail,
-            'thumbnail_alt' => $blog->thumbnail_alt,
-            'faqs' => $blog->faqs,
-            'tags' => $blog->tags,
-            'total_views' => $blog->total_views,
-            'total_likes' => $blog->total_likes,
-            'total_shares' => $blog->total_shares,
-            'is_featured' => $blog->is_featured,
-            'created_at' => $blog->created_at,
-            'category' => $blog->category ? [
+         // Handle the description field properly
+         $description = [];
+         if ($blog->description) {
+             // Check if it's already an array (Laravel auto-casting or already decoded)
+             if (is_array($blog->description)) {
+                 $description = $blog->description;
+             }
+             // If it's a string, try to decode it
+             else if (is_string($blog->description)) {
+                 $decoded = json_decode($blog->description, true);
+                 
+                 // Check if the decoded result is an array (direct array of objects)
+                 if (is_array($decoded)) {
+                     $description = $decoded;
+                 } 
+                 // Check if it's a string that contains JSON array (double encoded)
+                 else if (is_string($decoded)) {
+                     $secondDecode = json_decode($decoded, true);
+                     if (is_array($secondDecode)) {
+                         $description = $secondDecode;
+                     }
+                 }
+             }
+         }
+     
+         return [
+             'id' => $blog->id,
+             'name' => $blog->name,
+             'slug' => $blog->slug,
+             'description' => $description, // Now this will be an array of objects
+             'desktop_banner' => $blog->desktop_banner,
+             'desktop_banner_alt' => $blog->desktop_banner_alt,
+             'mobile_banner' => $blog->mobile_banner,
+             'mobile_banner_alt' => $blog->mobile_banner_alt,
+             'thumbnail' => $blog->thumbnail,
+             'thumbnail_alt' => $blog->thumbnail_alt,
+              'faqs' => $blog->faqs,
+              'tags' => $blog->tags,
+              'total_views' => $blog->total_views,
+              'total_likes' => $blog->total_likes,
+              'total_shares' => $blog->total_shares,
+             'is_featured' => $blog->is_featured,
+              'created_at' => $blog->created_at,
+              'category' => $blog->category ? [
                 'id' => $blog->category->id,
                 'name' => $blog->category->name,
                 'slug' => $blog->category->slug,
