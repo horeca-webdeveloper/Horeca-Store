@@ -156,13 +156,13 @@ class ProductApiController extends Controller
                             $product->description = json_decode($product->description, true);
                         }
 
-                        if ($product->brand) {
-                            $product->brand_id = $product->brand->id;
-                            $product->brand_name = $product->brand->name;
-                            $product->brand_logo = $product->brand->logo;
+                        if ($products->brand) {
+                            $products->brand_id = $products->brand->id;
+                            $products->brand_name = $products->brand->name;
+                            $products->brand_logo = $products->brand->logo;
                         
                             // Get all reviews of all products under this brand
-                            $brandReviews = $product->brand->products->flatMap(function ($p) {
+                            $brandReviews = $products->brand->products->flatMap(function ($p) {
                                 return $p->reviews;
                             });
                         
@@ -171,8 +171,8 @@ class ProductApiController extends Controller
                                 ? round($brandReviews->avg('star'), 1)
                                 : null;
                         
-                            $product->brand_avg_rating = $brandAvgRating;
-                            $product->brand_review_count = $brandReviewCount;
+                            $products->brand_avg_rating = $brandAvgRating;
+                            $products->brand_review_count = $brandReviewCount;
                         }
                         
 
