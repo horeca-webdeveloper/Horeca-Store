@@ -833,7 +833,7 @@ class ProductApiController extends Controller
         }
 
         // Start building the base query
-        $query = Product::with(['categories', 'brand', 'tags', 'producttypes'])
+        $query = Product::with(['categories', 'brand', 'tags', 'producttypes' , 'brand.products.reviews'])
             ->where('status', 'published');
 
         // Apply filters
@@ -950,6 +950,27 @@ class ProductApiController extends Controller
                         $product->benefit_features = [];
                     }
                 }
+
+                
+                if ($product->brand) {
+                    $product->brand_id = $product->brand->id;
+                    $product->brand_name = $product->brand->name;
+                    $product->brand_logo = $product->brand->logo;
+                
+                    // Get all reviews of all products under this brand
+                    $brandReviews = $product->brand->products->flatMap(function ($p) {
+                        return $p->reviews;
+                    });
+                
+                    $brandReviewCount = $brandReviews->count();
+                    $brandAvgRating = $brandReviewCount > 0
+                        ? round($brandReviews->avg('star'), 1)
+                        : null;
+                
+                    $product->brand_avg_rating = $brandAvgRating;
+                    $product->brand_review_count = $brandReviewCount;
+                }
+                
 
             // Select only required fields for the response
             // $product->images = collect($product->images)->map(function ($image) {
