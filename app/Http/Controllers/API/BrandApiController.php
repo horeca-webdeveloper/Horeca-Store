@@ -273,7 +273,7 @@ public function getAllHomeBrandProducts(Request $request)
                     $categoryCounts[$category->id] = [
                         'id' => $category->id,
                         'name' => $category->name,
-                        'image' => $category->image,
+                        'image' => asset('storage/' . $category->image),
                         'product_count' => 0
                     ];
                 }
