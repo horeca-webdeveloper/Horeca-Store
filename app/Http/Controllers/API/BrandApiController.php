@@ -707,7 +707,7 @@ class BrandApiController extends Controller
         $letter = strtoupper($request->query('letter')); // e.g. ?letter=B
 
         $brandsQuery = Brand::where('status', 'published')
-            ->select('id', 'name', 'logo')
+        ->select('id', 'name', 'logo' , 'thumbnail' , 'ar_thumbnail' )
             ->orderBy('name');
 
         if ($letter) {
@@ -716,8 +716,11 @@ class BrandApiController extends Controller
 
         $brands = $brandsQuery->get()->map(function ($brand) {
             $brand->logo = $brand->logo ? asset($brand->logo) : null;
+            $brand->thumbnail = $brand->thumbnail ? asset($brand->thumbnail) : null;
+            $brand->ar_thumbnail = $brand->ar_thumbnail ? asset($brand->ar_thumbnail) : null;
             return $brand;
         });
+    
 
         if ($letter) {
             // Return filtered brands only
