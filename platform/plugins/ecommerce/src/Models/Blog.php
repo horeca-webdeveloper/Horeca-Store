@@ -18,7 +18,9 @@ class Blog extends BaseModel
     protected $casts = [
         'faqs' => 'array',
         'tags' => 'array',
+        'description' => 'array',
     ];
+  
 
     public function category()
     {
