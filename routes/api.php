@@ -357,7 +357,6 @@ Route::middleware('web')->group(function () {
         Route::post('/{id}/like', [BlogController::class, 'like']);
         Route::post('/{id}/share', [BlogController::class, 'share']);
         Route::post('/{id}/view', [BlogController::class, 'view']);
-        Route::get('/{id}/get-views', [BlogController::class, 'getBlogStats']);
 
     });
 
