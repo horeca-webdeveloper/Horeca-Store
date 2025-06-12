@@ -301,7 +301,7 @@ class BlogController extends Controller
     
         foreach ($categories as $category) {
             $blogs = Blog::where('status', 'published')
-                ->where('category_id', $category->id)
+                ->where('blog_category_id', $category->id)
                 ->orderBy('created_at', 'desc')
                 ->get();
     
