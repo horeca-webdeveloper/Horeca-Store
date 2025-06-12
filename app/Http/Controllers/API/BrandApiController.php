@@ -664,46 +664,45 @@ public function getAllHomeBrandProducts(Request $request)
     //     ]);
     // }
     
-public function getAllBrandsAlphabetically(Request $request): JsonResponse
-{
-    $letter = strtoupper($request->query('letter')); // e.g. ?letter=B
 
-    $brandsQuery = Brand::where('status', 'published')
-        ->select('id', 'name', 'logo' , 'thumbnail' , 'ar_thumbnail' )
-        ->orderBy('name');
+    public function getAllBrandsAlphabetically(Request $request): JsonResponse
+    {
+        $letter = strtoupper($request->query('letter')); // e.g. ?letter=B
 
-    if ($letter) {
-        $brandsQuery->where('name', 'LIKE', $letter . '%');
+        $brandsQuery = Brand::where('status', 'published')
+            ->whereNotNull('thumbnail') // Only include brands with a thumbnail
+            ->select('id', 'name', 'logo', 'thumbnail', 'ar_thumbnail')
+            ->orderBy('name');
+
+        if ($letter) {
+            $brandsQuery->where('name', 'LIKE', $letter . '%');
+        }
+
+        $brands = $brandsQuery->get()->map(function ($brand) {
+            $brand->logo = $brand->logo ? asset($brand->logo) : null;
+            $brand->thumbnail = $brand->thumbnail ? asset($brand->thumbnail) : null;
+            $brand->ar_thumbnail = $brand->ar_thumbnail ? asset($brand->ar_thumbnail) : null;
+            return $brand;
+        });
+
+        if ($letter) {
+            return response()->json([
+                'success' => true,
+                'message' => "Brands starting with letter '$letter'.",
+                'data' => $brands
+            ]);
+        } else {
+            $grouped = $brands->groupBy(function ($brand) {
+                return strtoupper(substr($brand->name, 0, 1));
+            })->sortKeys();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Brands grouped alphabetically.',
+                'data' => $grouped
+            ]);
+        }
     }
-
-    $brands = $brandsQuery->get()->map(function ($brand) {
-        $brand->logo = $brand->logo ? asset($brand->logo) : null;
-        $brand->thumbnail = $brand->thumbnail ? asset($brand->thumbnail) : null;
-        $brand->ar_thumbnail = $brand->ar_thumbnail ? asset($brand->ar_thumbnail) : null;
-        return $brand;
-    });
-
-
-    if ($letter) {
-        // Return filtered brands only
-        return response()->json([
-            'success' => true,
-            'message' => "Brands starting with letter '$letter'.",
-            'data' => $brands
-        ]);
-    } else {
-        // Return grouped by A-Z
-        $grouped = $brands->groupBy(function ($brand) {
-            return strtoupper(substr($brand->name, 0, 1));
-        })->sortKeys();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Brands grouped alphabetically.',
-            'data' => $grouped
-        ]);
-    }
-}
 
 
     
