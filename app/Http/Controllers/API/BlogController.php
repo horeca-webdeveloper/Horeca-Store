@@ -291,5 +291,58 @@ class BlogController extends Controller
 		], Response::HTTP_OK);
 	}
 
+    public function categoryWiseBlogs(Request $request)
+    {
+        $categories = BlogCategory::where('status', 'published')
+            ->orderBy('order', 'asc')
+            ->get(['id', 'name', 'slug']);
+
+        $data = [];
+
+        foreach ($categories as $category) {
+            // Manual pagination for each category's blogs
+            $blogs = Blog::where('status', 'published')
+                ->where('category_id', $category->id)
+                ->orderBy('created_at', 'desc')
+                ->paginate(20, ['*'], 'page', $request->get('page', 1)); // Uses ?page=x from request
+
+            $data[] = [
+                'id' => $category->id,
+                'name' => $category->name,
+                'slug' => $category->slug,
+                'blogs' => $blogs
+            ];
+        }
+
+        return response()->json($data);
+    }
+
+    public function blogsByCategorySlug(Request $request, $slug)
+    {
+        $category = BlogCategory::where('slug', $slug)
+            ->where('status', 'published')
+            ->first();
+
+        if (!$category) {
+            return response()->json(['message' => 'Category not found'], 404);
+        }
+
+        $blogs = Blog::where('category_id', $category->id)
+            ->where('status', 'published')
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+
+        return response()->json([
+            'category' => [
+                'id' => $category->id,
+                'name' => $category->name,
+                'slug' => $category->slug,
+            ],
+            'blogs' => $blogs,
+        ]);
+    }
+
+
+
     
 }

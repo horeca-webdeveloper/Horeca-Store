@@ -361,6 +361,8 @@ Route::middleware('web')->group(function () {
     });
 
     Route::get('/blog-categories', [BlogController::class, 'categories']);
+    Route::get('/category/{slug}/blogs', [BlogController::class, 'blogsByCategorySlug']);
+    Route::get('/category/{id}/blogs', [BlogController::class, 'blogsByCategory']);
 
 
 Route::get('/product-specifications', [ProductSpecificationApiController::class, 'getProductSpecifications']); // No productId in the URL
