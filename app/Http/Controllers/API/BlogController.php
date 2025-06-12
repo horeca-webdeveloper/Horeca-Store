@@ -290,4 +290,25 @@ class BlogController extends Controller
 			],
 		], Response::HTTP_OK);
 	}
+
+    public function getBlogStats($id)
+    {
+        $blog = Blog::find($id);
+
+        if (!$blog) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Blog not found.',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'total_views' => $blog->total_views ?? 0,
+                'total_likes' => $blog->total_likes ?? 0,
+                'total_shares' => $blog->total_shares ?? 0,
+            ]
+        ]);
+    }
 }
