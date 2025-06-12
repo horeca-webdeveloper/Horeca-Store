@@ -309,6 +309,7 @@ class BlogController extends Controller
                 'id' => $category->id,
                 'name' => $category->name,
                 'slug' => $category->slug,
+                'description' => $category->description,
                 'blogs' => $blogs
             ];
         }
@@ -337,6 +338,7 @@ class BlogController extends Controller
                 'id' => $category->id,
                 'name' => $category->name,
                 'slug' => $category->slug,
+                'description' => $category->description,
             ],
             'blogs' => $blogs,
         ]);
