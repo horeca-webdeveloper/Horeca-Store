@@ -328,7 +328,7 @@ class BlogController extends Controller
             return response()->json(['message' => 'Category not found'], 404);
         }
 
-        $blogs = Blog::where('category_id', $category->id)
+        $blogs = Blog::where('blog_category_id', $category->id)
             ->where('status', 'published')
             ->orderBy('created_at', 'desc')
             ->paginate(20);
