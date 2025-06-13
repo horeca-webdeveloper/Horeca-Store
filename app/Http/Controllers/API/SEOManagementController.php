@@ -81,28 +81,31 @@ class SEOManagementController extends Controller
     // }
 
     public function getParagraphData($relational_id)
-{
-    $seoData = SEOManagement::where('relational_id', $relational_id)
-        ->get()
-        ->map(function ($item) {
-            return [
-                'id' => $item->id,
-                'relational_id' => $item->relational_id,
-                'relational_type' => $item->relational_type,
-                'internal_links' => $item->internal_links,
-                'paragraph_1' => $item->paragraph_1,
-                'paragraph_2' => $item->paragraph_2,
-                'paragraph_3' => $item->paragraph_3,
-                'paragraph_4' => $item->paragraph_4,
-                'popular_tags' => json_decode($item->popular_tags, true) ?? [],
-            ];
-        });
-
-    return response()->json([
-        'status' => true,
-        'data' => $seoData
-    ]);
-}
+    {
+        $seoData = SEOManagement::where('relational_id', $relational_id)
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'relational_id' => $item->relational_id,
+                    'relational_type' => $item->relational_type,
+                    'internal_links' => $item->internal_links,
+                    'paragraph_1' => $item->paragraph_1,
+                    'paragraph_2' => $item->paragraph_2,
+                    'paragraph_3' => $item->paragraph_3,
+                    'paragraph_4' => $item->paragraph_4,
+                    'popular_tags' => is_string($item->popular_tags)
+                        ? json_decode($item->popular_tags, true)
+                        : ($item->popular_tags ?? []),
+                ];
+            });
+    
+        return response()->json([
+            'status' => true,
+            'data' => $seoData
+        ]);
+    }
+    
 
 
 }

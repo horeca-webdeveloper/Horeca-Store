@@ -1030,7 +1030,7 @@ class ProductApiController extends Controller
 
 
 
-                    private function applyFilters(\Illuminate\Database\Eloquent\Builder $query, \Illuminate\Http\Request $request)
+        private function applyFilters(\Illuminate\Database\Eloquent\Builder $query, \Illuminate\Http\Request $request)
         {
             // Log the request to ensure you're receiving the correct parameters
             \Log::info($request->all());
@@ -1378,10 +1378,6 @@ class ProductApiController extends Controller
 
 //     return $query;
 // }
-
-
-
-
 
 
 
