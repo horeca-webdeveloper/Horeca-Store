@@ -517,11 +517,20 @@ class ProductApiController extends Controller
                 $product->brand_id = $product->brand->id;
                 $product->brand_name = $product->brand->name;
                 $product->brand_logo = $product->brand->logo;
-
-                $brandReviews = $product->brand->products->flatMap->reviews;
-                $product->brand_avg_rating = $brandReviews->count() ? round($brandReviews->avg('star'), 1) : null;
-                $product->brand_review_count = $brandReviews->count();
+        
+                $brandReviews = $product->brand->products->flatMap(function ($p) {
+                    return $p->reviews;
+                });
+        
+                $brandReviewCount = $brandReviews->count();
+                $brandAvgRating = $brandReviewCount > 0
+                    ? round($brandReviews->avg('star'), 1)
+                    : null;
+        
+                $product->brand_avg_rating = $brandAvgRating;
+                $product->brand_review_count = $brandReviewCount;
             }
+        
 
             // Handle media
             $product->images = collect($product->images)->map(fn($img) => $img);
