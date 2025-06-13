@@ -681,20 +681,24 @@ class ProductApiController extends Controller
                             $product->brand_id = $product->brand->id;
                             $product->brand_name = $product->brand->name;
                             $product->brand_logo = $product->brand->logo;
-                    
-                            $brandReviews = $product->brand->products->flatMap(function ($p) {
-                                return $p->reviews;
-                            });
-                    
-                            $brandReviewCount = $brandReviews->count();
+                        
+                            // Get review stats directly from the database
+                            $brandProductIds = \DB::table('ec_products')
+                                ->where('brand_id', $product->brand->id)
+                                ->pluck('id');
+                        
+                            $brandReviewsQuery = \DB::table('ec_reviews')
+                                ->whereIn('product_id', $brandProductIds);
+                        
+                            $brandReviewCount = $brandReviewsQuery->count();
                             $brandAvgRating = $brandReviewCount > 0
-                                ? round($brandReviews->avg('star'), 1)
+                                ? round($brandReviewsQuery->avg('star'), 1)
                                 : null;
-                    
+                        
                             $product->brand_avg_rating = $brandAvgRating;
                             $product->brand_review_count = $brandReviewCount;
                         }
-                    
+                        
                         $product->images = collect($product->images)->map(function ($image) {
                             return $image;
                         });
