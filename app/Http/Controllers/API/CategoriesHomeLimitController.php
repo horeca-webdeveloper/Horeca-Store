@@ -37,7 +37,7 @@ class CategoriesHomeLimitController extends Controller
         // Add product count and adjust image URLs
         foreach ($limitedCategories as $category) {
             $category->productCount = $category->products()->count(); // Count related products
-            $category->image = $this->getImageUrl($category->image); // Adjust image URL
+            $category->image = $category->image; // Adjust image URL
         }
 
         // Return categories with their details
@@ -60,7 +60,7 @@ class CategoriesHomeLimitController extends Controller
     // Add product count and adjust image URLs
     foreach ($allCategories as $category) {
         $category->productCount = $category->products()->count(); // Count related products
-        $category->image = $this->getImageUrl($category->image); // Adjust image URL
+        $category->image = $category->image; // Adjust image URL
     }
 
     // Return all categories with their details
